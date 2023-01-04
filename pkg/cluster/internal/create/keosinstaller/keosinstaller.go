@@ -19,10 +19,14 @@ package keosinstaller
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/eks"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,6 +38,9 @@ type DescriptorFile struct {
 		ExternalDomain string `yaml:"external_domain"`
 		Flavour        string `yaml:"flavour"`
 	} `yaml:"keos"`
+	Credentials struct {
+		Region string `yaml:"region"`
+	} `yaml:"credentials"`
 	K8SVersion string  `yaml:"k8s_version"`
 	Bastion    Bastion `yaml:"bastion"`
 	Networks   struct {
@@ -77,6 +84,21 @@ type Bastion struct {
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
 }
 
+func GetEKSServer(name string, region string) string {
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	}))
+	eksSvc := eks.New(sess)
+	input := &eks.DescribeClusterInput{
+		Name: aws.String("capi-clusters_" + name + "-control-plane"),
+	}
+	result, err := eksSvc.DescribeCluster(input)
+	if err != nil {
+		log.Fatalf("Error calling DescribeCluster: %v", err)
+	}
+	return *result.Cluster.Endpoint
+}
+
 // CreateKEOSDescriptor creates the keos.yaml file
 func CreateKEOSDescriptor() error {
 
@@ -102,6 +124,18 @@ func CreateKEOSDescriptor() error {
 		externalRegistryEntry = "\nexternal_registry:" + externalRegistryData
 	}
 
+	// Process the apiserver
+	var apiserverEntry string
+	endpoint := GetEKSServer(descriptorFile.ClusterID, descriptorFile.Credentials.Region)
+	apiserverEntry = `
+  apiserver:
+    external_lb:
+      address: ` + endpoint + `
+      port: 443
+    internal_lb:
+      address: ` + endpoint + `
+      port: 443`
+
 	// Process the cluster ID
 	var clusterIDEntry string
 	if len(descriptorFile.ClusterID) > 0 {
@@ -126,18 +160,18 @@ func CreateKEOSDescriptor() error {
 		flavourEntry = "\n  flavour: " + descriptorFile.Keos.Flavour
 	}
 
-	keosYAMLData := `---
-k8s_bootstrapping:
-  type: external
+	keosYAMLData := `
 aws:
   eks: true
   enabled: true` +
 		externalRegistryEntry + `
 keos:` +
+		apiserverEntry +
 		clusterIDEntry +
 		flavourEntry +
 		domainEntry +
 		externalDomainEntry + `
+  k8s_installation: false
   storage:
     default_storage_class: gp2
     providers:
