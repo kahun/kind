@@ -172,7 +172,7 @@ func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile,
 			}
 			// fmt.Printf("STG %s", string(specBytes))
 			specBytes = append(specBytes, []byte("associateOIDCProvider: yes")...)
-			specBytes = append(specBytes, []byte("\naddons:\n  - name: aws-ebs-csi-driver\n    version: v1.11.4-eksbuild.1")...)
+			specBytes = append(specBytes, []byte("\naddons:\n  - name: aws-ebs-csi-driver\n    version: v1.14.0-eksbuild.1")...)
 
 			// Note: we take the VMSize as a mandatory parameter
 			if descriptorFile.Bastion.VMSize != "" {
