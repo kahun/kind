@@ -108,6 +108,11 @@ type Bastion struct {
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
 }
 
+type Node struct {
+	AZ string
+	QA int
+}
+
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
 	d.FullyPrivate = false
@@ -156,18 +161,20 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 	}
 
 	funcMap := template.FuncMap{
-		"loop": func(az string) <-chan string {
-			ch := make(chan string)
+		"loop": func(az string, qa int) <-chan Node {
+			ch := make(chan Node)
 			go func() {
 				var azs []string
+				var q int
 				if az != "" {
 					azs = []string{az}
-
+					q = qa
 				} else {
 					azs = []string{"a", "b", "c"}
+					q = qa / 3
 				}
-				for _, v := range azs {
-					ch <- v
+				for _, a := range azs {
+					ch <- Node{AZ: a, QA: q}
 				}
 				close(ch)
 			}()

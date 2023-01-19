@@ -56,7 +56,7 @@ spec:
       - name: ANNOTATE_POD_IP
         value: \"true\"
 {{ range $node := .WorkerNodes }}
-{{ range $az := loop .AZ }}
+{{ range $n := loop .AZ .Quantity }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -65,7 +65,7 @@ metadata:
   namespace: capi-clusters
 spec:
   clusterName: "{{ $.ClusterID }}"
-  replicas: {{ $node.Quantity }}
+  replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
@@ -81,7 +81,7 @@ spec:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: AWSMachineTemplate
       version: "{{ $.K8SVersion }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $az }} {{- else -}} {{ $.Region }}{{ $az }} {{- end }}"
+      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}{{ $n.AZ }} {{- end }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
