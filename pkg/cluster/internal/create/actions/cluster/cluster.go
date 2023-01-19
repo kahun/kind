@@ -81,7 +81,7 @@ type AWS struct {
 		Authenticator     bool `yaml:"authenticator" validate:"boolean"`
 		ControllerManager bool `yaml:"controller_manager" validate:"boolean"`
 		Scheduler         bool `yaml:"scheduler" validate:"boolean"`
-	}
+	} `yaml:"logging"`
 }
 
 type WorkerNodes []struct {

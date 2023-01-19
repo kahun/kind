@@ -4,8 +4,8 @@ region: eu-west-1
 infra_provider: aws
 external_registry:
     auth_required: false
-    type: ecr
-    url: 268367799918.dkr.ecr.eu-west-1.amazonaws.com/keos
+    type: docker
+    url: registry
 keos:
   version: 0.8.0
   domain: cluster.local
