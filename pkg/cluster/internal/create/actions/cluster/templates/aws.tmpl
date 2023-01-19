@@ -1,0 +1,97 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .ClusterID }}"
+  namespace: capi-clusters
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: "{{ .ClusterID }}"
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: "{{ .ClusterID }}-control-plane"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: "{{ .ClusterID }}"
+  namespace: capi-clusters
+spec:
+  region: "{{ .Region }}"
+  sshKeyName: "{{ .SSHKey }}"
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: "{{ .ClusterID }}-control-plane"
+  namespace: capi-clusters
+spec:
+  replicas:{{ if .ControlPlane.HighlyAvailable }} 3 {{ else }} 1 {{ end }}
+  machineTemplate:
+    infrastructureRef:
+      kind: AWSMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      name: "{{ .ClusterID }}-control-plane"
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        name: {{`"{{ ds.meta_data.local_hostname }}"`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: aws
+      controllerManager:
+        extraArgs:
+          cloud-provider: aws
+    joinConfiguration:
+      nodeRegistration:
+        name: {{`"{{ ds.meta_data.local_hostname }}"`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+  version: "{{ .K8SVersion }}"
+---
+kind: AWSMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+metadata:
+  name: "{{ .ClusterID }}-control-plane"
+  namespace: capi-clusters
+spec:
+  template:
+    spec:
+      instanceType: "{{ .ControlPlane.Size }}"
+      iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
+      sshKeyName: \"{{ .SSHKey }}\"
+{{ range .WorkerNodes }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "{{ .Name }}"
+  namespace: capi-clusters
+spec:
+  clusterName: "{{ $.ClusterID }}"
+  replicas: {{ .Quantity }}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "{{ $.ClusterID }}"
+      version: "{{ $.K8SVersion }}"
+      bootstrap:
+        configRef:
+          name: "{{ .Name }}"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "{{ .Name }}"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+{{ end }}

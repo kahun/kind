@@ -19,67 +19,34 @@ package createworker
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+const (
+	capiClustersNamespace = "capi-clusters"
+	kubeconfigPath        = "/kind/worker-cluster.kubeconfig"
+	allowAllEgressNetPol  = `
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  egress:
+  - {}
+  podSelector: {}
+  policyTypes:
+  - Egress`
+)
+
 type action struct{}
-
-// DescriptorFile represents the YAML structure in the cluster.yaml file
-type DescriptorFile struct {
-	ClusterID string `yaml:"cluster_id"`
-	Keos      struct {
-		Domain         string `yaml:"domain"`
-		ExternalDomain string `yaml:"external_domain"`
-		Flavour        string `yaml:"flavour"`
-	} `yaml:"keos"`
-	K8SVersion string  `yaml:"k8s_version"`
-	Bastion    Bastion `yaml:"bastion"`
-	Networks   struct {
-		VPCID string `yaml:"vpc_id"`
-	}
-	ExternalRegistry map[string]interface{} `yaml:"external_registry"`
-	//      ExternalRegistry     struct {
-	//              AuthRequired    bool `yaml: auth_required`
-	//              Type            string `yaml: type`
-	//              URL             string `yaml: url`
-	//      }
-	Nodes struct {
-		KubeNode struct {
-			AmiID string `yaml:"ami_id"`
-			Disks []struct {
-				DeviceName string `yaml:"device_name"`
-				Name       string `yaml:"name"`
-				Path       string `yaml:"path,omitempty"`
-				Size       int    `yaml:"size"`
-				Type       string `yaml:"type"`
-				Volumes    []struct {
-					Name string `yaml:"name"`
-					Path string `yaml:"path"`
-					Size string `yaml:"size"`
-				} `yaml:"volumes,omitempty"`
-			} `yaml:"disks"`
-			NodeType string `yaml:"node_type"`
-			Quantity int    `yaml:"quantity"`
-			VMSize   string `yaml:"vm_size"`
-			Subnet   string `yaml:"subnet"`
-			SSHKey   string `yaml:"ssh_key"`
-			Spot     bool   `yaml:"spot"`
-		} `yaml:"kube_node"`
-	} `yaml:"nodes"`
-}
-
-// Bastion represents the bastion VM
-type Bastion struct {
-	AmiID             string   `yaml:"ami_id"`
-	VMSize            string   `yaml:"vm_size"`
-	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
-}
 
 // SecretsFile represents the YAML structure in the secrets.yaml file
 type SecretsFile struct {
@@ -96,20 +63,6 @@ type SecretsFile struct {
 		GithubToken string `yaml:"github_token"`
 	} `yaml:"secrets"`
 }
-
-const allowAllEgressNetPol = `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-all-egress
-spec:
-  egress:
-  - {}
-  podSelector: {}
-  policyTypes:
-  - Egress`
-
-const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction() actions.Action {
@@ -138,7 +91,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// get the target node for this task
+	// Get the target node for this task
 	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
@@ -158,25 +111,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// Read cluster.yaml file
-
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+	// Get the cluster descriptor
+	descriptorFile, err := cluster.GetClusterDescriptor()
 	if err != nil {
-		return err
+		fmt.Println("Error: ", err)
+		os.Exit(1)
 	}
 
-	var descriptorFile DescriptorFile
-	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
-	if err != nil {
-		return err
-	}
-
-	// TODO STG: make k8s version configurable?
-
-	capiClustersNamespace := "capi-clusters"
-
-	// EKS specific: Generate the manifest
-	descriptorData, err := generateEKSManifest(secretsFile, descriptorFile, capiClustersNamespace)
+	// Generate the manifest
+	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate EKS manifests")
 	}
@@ -246,7 +189,7 @@ spec:
 
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "cluster", descriptorFile.ClusterID)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the worker Cluster")
 	}

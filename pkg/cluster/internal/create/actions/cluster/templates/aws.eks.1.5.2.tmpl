@@ -1,0 +1,103 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .ClusterID }}"
+  namespace: capi-clusters
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: AWSManagedControlPlane
+    name: "{{ .ClusterID }}-control-plane"
+  infrastructureRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: AWSManagedControlPlane
+    name: "{{ .ClusterID }}"
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: AWSManagedControlPlane
+metadata:
+  name: "{{ .ClusterID }}-control-plane"
+  namespace: capi-clusters
+spec:
+  addons:
+    - name: "aws-ebs-csi-driver"
+      version: "v1.14.0-eksbuild.1"
+    - name: "vpc-cni"
+      version: "v1.12.1-eksbuild.1"
+      conflictResolution: "overwrite"
+  associateOIDCProvider: {{ .ControlPlane.AWS.AssociateOIDCProvider }}
+  eksClusterName: "{{ .ClusterID }}"
+  logging:
+    apiServer: {{ .ControlPlane.AWS.Logging.ApiServer }}
+    audit: {{ .ControlPlane.AWS.Logging.Audit }}
+    authenticator: {{ .ControlPlane.AWS.Logging.Authenticator }}
+    controllerManager: {{ .ControlPlane.AWS.Logging.ControllerManager }}
+    scheduler: {{ .ControlPlane.AWS.Logging.Scheduler }}
+  network:
+    vpc:
+      availabilityZoneSelection: Ordered
+      availabilityZoneUsageLimit: 3
+  region: "{{ .Region }}"
+  sshKeyName: \"{{ .SSHKey }}\"
+  version: "{{ .K8SVersion }}"
+  vpcCni:
+    env:
+      - name: ANNOTATE_POD_IP
+        value: \"true\"
+{{ range .WorkerNodes }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "{{ .Name }}"
+  namespace: capi-clusters
+spec:
+  clusterName: "{{ $.ClusterID }}"
+  replicas: {{ .Quantity }}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          name: "{{ .Name }}"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: EKSConfigTemplate
+      clusterName: "{{ $.ClusterID }}"
+      infrastructureRef:
+        name: "{{ .Name }}"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+      version: "{{ $.K8SVersion }}"
+      failureDomain: "{{ .AZ }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AWSMachineTemplate
+metadata:
+  name: "{{ .Name }}"
+  namespace: capi-clusters
+spec:
+  template:
+    spec:
+      iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
+      instanceType: "{{ .Size }}"
+      sshKeyName: \"{{ .SSHKey }}\"
+      {{- range .Disks }}
+      rootVolume:
+        size: {{ .Size }}
+        type: {{ .Type }}
+        encrypted: {{ .Encrypted }}
+      {{ end }}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: EKSConfigTemplate
+metadata:
+  name: "{{ .Name }}"
+  namespace: capi-clusters
+spec:
+  template: {}
+{{ end }}

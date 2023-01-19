@@ -136,7 +136,7 @@ spec:
 
 	// Install CAPA
 	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
+	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws:v2.0.2 --wait-providers")
 	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
