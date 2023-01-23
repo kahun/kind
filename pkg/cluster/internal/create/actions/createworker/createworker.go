@@ -19,7 +19,6 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -114,14 +113,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// Get the cluster descriptor
 	descriptorFile, err := cluster.GetClusterDescriptor()
 	if err != nil {
-		fmt.Println("Error: ", err)
-		os.Exit(1)
+		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
 	// Generate the manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to generate EKS manifests")
+		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
 
 	// Create the cluster manifests file in the container
