@@ -156,7 +156,7 @@ func getTemplateFile(d DescriptorFile) (string, error) {
 		if d.ControlPlane.Managed {
 			t = "templates/aws.eks.tmpl"
 		} else {
-			return "", errors.New("AWS not supported yet")
+			t = "templates/aws.tmpl"
 		}
 	case "gcp":
 		return "", errors.New("GCP not supported yet")
