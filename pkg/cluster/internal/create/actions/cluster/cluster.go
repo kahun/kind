@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"os"
 	"strings"
 	"text/template"
@@ -18,7 +19,7 @@ var ctel embed.FS
 type DescriptorFile struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
-	ClusterID  string `yaml:"cluster_id" validate:"required"`
+	ClusterID  string `yaml:"cluster_id" validate:"required,min=3,max=100"`
 
 	Bastion Bastion `yaml:"bastion"`
 
@@ -32,30 +33,30 @@ type DescriptorFile struct {
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
-	K8SVersion   string `yaml:"k8s_version" validate:"required"`
+	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,len=7"`
 	Region       string `yaml:"region" validate:"required"`
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
 
-	// Networks struct {
-	// 	VPCID   string `yaml:"vpc_id"`
-	// 	subnets []struct {
-	// 		AvailabilityZone string `yaml:"availability_zone"`
-	// 		Name             string `yaml:"name"`
-	// 		PrivateCIDR      string `yaml:"private_cidr"`
-	// 		PublicCIDR       string `yaml:"public_cidr"`
-	// 	} `yaml:"subnets"`
-	// }
+	Networks struct {
+		VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
+		Subnets []struct {
+			AvailabilityZone string `yaml:"availability_zone"`
+			Name             string `yaml:"name"`
+			PrivateCIDR      string `yaml:"private_cidr"`
+			PublicCIDR       string `yaml:"public_cidr"`
+		} `yaml:"subnets"`
+	} `yaml:"networks"`
 
 	ExternalRegistry struct {
-		AuthRequired bool   `yaml: auth_required validate:"boolean"`
-		Type         string `yaml: type`
-		URL          string `yaml: url validate:"url"`
+		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
+		Type         string `yaml:"type"`
+		URL          string `yaml:"url" validate:"required"`
 	} `yaml:"external_registry"`
 
 	Keos struct {
-		Domain         string `yaml:"domain"`
-		ExternalDomain string `yaml:"external_domain"`
+		Domain         string `yaml:"domain" validate:"required,hostname"`
+		ExternalDomain string `yaml:"external_domain" validate:"required,hostname"`
 		Flavour        string `yaml:"flavour"`
 		Version        string `yaml:"version"`
 	} `yaml:"keos"`
@@ -65,8 +66,8 @@ type DescriptorFile struct {
 		Name            string `yaml:"name"`
 		AmiID           string `yaml:"ami_id"`
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
-		Size            string `yaml:"size"`
-		Image           string `yaml:"image"`
+		Size            string `yaml:"size" validate:"required_if=Managed false"`
+		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
 		AWS             AWS    `yaml:"aws"`
 	} `yaml:"control_plane"`
 
@@ -85,11 +86,11 @@ type AWS struct {
 }
 
 type WorkerNodes []struct {
-	Name             string `yaml:"name"`
+	Name             string `yaml:"name" validate:"required"`
 	AmiID            string `yaml:"ami_id"`
 	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
 	Size             string `yaml:"size" validate:"required"`
-	Image            string `yaml:"image"`
+	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
 	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
@@ -148,17 +149,26 @@ func GetClusterDescriptor() (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
-func GetClusterManifest(d DescriptorFile) (string, error) {
-
-	var flavor string
+func getTemplateFile(d DescriptorFile) (string, error) {
+	var t string
 	switch d.InfraProvider {
 	case "aws":
 		if d.ControlPlane.Managed {
-			flavor = "templates/aws.eks.tmpl"
+			t = "templates/aws.eks.tmpl"
 		} else {
-			flavor = "templates/aws.tmpl"
+			t = "templates/aws.tmpl"
+		}
+	case "gcp":
+		if d.ControlPlane.Managed {
+			return "", errors.New("GCP managed control plane not supported yet")
+		} else {
+			t = "templates/gcp.tmpl"
 		}
 	}
+	return t, nil
+}
+
+func GetClusterManifest(d DescriptorFile) (string, error) {
 
 	funcMap := template.FuncMap{
 		"loop": func(az string, qa int) <-chan Node {
@@ -180,6 +190,11 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 			}()
 			return ch
 		},
+	}
+
+	flavor, err := getTemplateFile(d)
+	if err != nil {
+		return "", err
 	}
 
 	var tpl bytes.Buffer
