@@ -25,7 +25,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -68,35 +67,17 @@ func NewAction() actions.Action {
 
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
-
-	ctx.Status.Start("Installing CAPx in local 🎖️")
-	defer ctx.Status.End(false)
-
-	err := installCAPALocal(ctx)
+	var err error
+	// Parse the cluster descriptor
+	descriptorFile, err := cluster.GetClusterDescriptor()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	// mark success
-	ctx.Status.End(true) // End Installing CAPx in local
-
-	ctx.Status.Start("Generating worker cluster manifests 📝")
-	defer ctx.Status.End(false)
-
-	allNodes, err := ctx.Nodes()
-	if err != nil {
-		return err
-	}
-
-	// get the target node for this task
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return err
-	}
-	node := controlPlanes[0] // kind expects at least one always
+	// Get the target node
+	node, err := getNodeForCAPA(ctx)
 
 	// Read secrets.yaml file
-
 	secretRAW, err := os.ReadFile("./secrets.yaml.clear")
 	if err != nil {
 		return err
@@ -108,13 +89,34 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	capiClustersNamespace := "capi-clusters"
+	var envVars []string
 
-	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor()
-	if err != nil {
-		return errors.Wrap(err, "failed to parse cluster descriptor")
+	// AWS specific
+	if descriptorFile.InfraProvider == "aws" {
+		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+		defer ctx.Status.End(false)
+
+		envVars = GetAWSEnvVars(secretsFile)
+		createCloudFormationStack(envVars, node, kubeconfigPath)
+
+		ctx.Status.End(true) // End [CAPA] Ensuring IAM security
 	}
+
+	// Install CAPx in local
+	ctx.Status.Start("Installing CAPx in local 🎖️")
+	defer ctx.Status.End(false)
+
+	err = installCAPALocal(envVars, node, descriptorFile.InfraProvider)
+	if err != nil {
+		return err
+	}
+
+	ctx.Status.End(true) // End Installing CAPx in local
+
+	ctx.Status.Start("Generating worker cluster manifests 📝")
+	defer ctx.Status.End(false)
+
+	capiClustersNamespace := "capi-clusters"
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
@@ -201,7 +203,7 @@ spec:
 
 	ctx.Status.End(true) // End Creating the worker cluster
 
-	ctx.Status.Start("Installing CAPx in EKS 🎖️")
+	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
 
 	// Create the allow-all-egress network policy file in the container
@@ -219,8 +221,7 @@ spec:
 		return errors.Wrap(err, "failed to get the kubeconfig file")
 	}
 
-	// AWS/EKS specific
-	err = installCAPAWorker(secretsFile, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(envVars, node, kubeconfigPath, descriptorFile.InfraProvider, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
