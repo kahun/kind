@@ -13,7 +13,7 @@ func main() {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
-	fmt.Println("Descriptor:", descriptor)
+	//fmt.Println("Descriptor:", descriptor)
 
 	manifest, err := cluster.GetClusterManifest(*descriptor)
 	if err != nil {

@@ -11,6 +11,11 @@ keos:
   domain: cluster.local
   external_domain: domain.ext
   flavour: development
+networks:
+  vpc_id: vpc-0425c335226437144
+  subnets:
+    - id: subnet-0261219d564bb0dc5
+    - id: subnet-0fdcccba78668e013
 control_plane:
   managed: true
   aws:

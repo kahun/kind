@@ -48,6 +48,15 @@ spec:
     vpc:
       availabilityZoneSelection: Ordered
       availabilityZoneUsageLimit: 3
+{{- if ne .Networks.VPCID "" }}
+      id: {{ .Networks.VPCID }}
+    {{- if ne .Networks.Subnets nil }}
+    subnets:
+    {{- range .Networks.Subnets }}
+      - id: {{ .Name }}
+    {{- end }}
+    {{- end }}
+{{- end }}
   region: "{{ .Region }}"
   sshKeyName: \"{{ .SSHKey }}\"
   version: "{{ .K8SVersion }}"
@@ -55,13 +64,13 @@ spec:
     env:
       - name: ANNOTATE_POD_IP
         value: \"true\"
-{{ range $node := .WorkerNodes }}
-{{ range $n := loop .AZ .Quantity }}
+{{- range $node := .WorkerNodes }}
+{{- range $index, $n := loop .AZ .Quantity }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: "{{ $node.Name }}"
+  name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
 spec:
   clusterName: "{{ $.ClusterID }}"
@@ -70,23 +79,23 @@ spec:
     matchLabels:
   template:
     spec:
-      bootstrap:
-        configRef:
-          name: "{{ $node.Name }}"
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
-          kind: EKSConfigTemplate
       clusterName: "{{ $.ClusterID }}"
-      infrastructureRef:
-        name: "{{ $node.Name }}"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: AWSMachineTemplate
       version: "{{ $.K8SVersion }}"
       failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}{{ $n.AZ }} {{- end }}"
+      bootstrap:
+        configRef:
+          name: "{{ $node.Name }}-md-{{ $index }}"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: EKSConfigTemplate
+      infrastructureRef:
+        name: "{{ $node.Name }}-md-{{ $index }}"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
-  name: "{{ $node.Name }}"
+  name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
 spec:
   template:
@@ -102,9 +111,9 @@ spec:
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
 metadata:
-  name: "{{ $node.Name }}"
+  name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
 spec:
   template: {}
-{{- end}}
-{{ end }}
+{{- end }}
+{{- end }}

@@ -8,27 +8,26 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks: ["192.168.0.0/16"]
-  controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: KubeadmControlPlane
-    name: "{{ .ClusterID }}-control-plane"
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: AWSCluster
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: GCPCluster
     name: "{{ .ClusterID }}"
+  controlPlaneRef:
+    kind: KubeadmControlPlane
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    name: "{{ .ClusterID }}-control-plane"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: AWSCluster
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPCluster
 metadata:
   name: "{{ .ClusterID }}"
   namespace: capi-clusters
 spec:
+  project: {{ .Account }}
   region: "{{ .Region }}"
-  sshKeyName: "{{ .SSHKey }}"
 {{- if ne .Networks.VPCID nil }}
   network:
-    vpc:
-      id: {{ .Networks.VPCID }}
+    name: {{ .Networks.VPCID }}
     {{- if ne .Networks.Subnets nil }}
     subnets:
     {{- range .Networks.Subnets }}
@@ -37,8 +36,8 @@ spec:
     {{- end }}
 {{- end }}
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 metadata:
   name: "{{ .ClusterID }}-control-plane"
   namespace: capi-clusters
@@ -46,31 +45,33 @@ spec:
   replicas: {{- if .ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{ end }}
   machineTemplate:
     infrastructureRef:
-      kind: AWSMachineTemplate
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: GCPMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       name: "{{ .ClusterID }}-control-plane"
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
-        name: {{`"{{ ds.meta_data.local_hostname }}"`}}
+        name: {{`"{{ ds.meta_data.local_hostname.split(".")[0] }}"`}}
         kubeletExtraArgs:
-          cloud-provider: aws
+          cloud-provider: gce
     clusterConfiguration:
       apiServer:
+        timeoutForControlPlane: 20m
         extraArgs:
-          cloud-provider: aws
+          cloud-provider: gce
       controllerManager:
         extraArgs:
-          cloud-provider: aws
+          cloud-provider: gce
+          allocate-node-cidrs: "false"
     joinConfiguration:
       nodeRegistration:
-        name: {{`"{{ ds.meta_data.local_hostname }}"`}}
+        name: {{`"{{ ds.meta_data.local_hostname.split(".")[0] }}"`}}
         kubeletExtraArgs:
-          cloud-provider: aws
-  version: "{{ .K8SVersion }}"
+          cloud-provider: gce
+  version: "{{ $.K8SVersion }}"
 ---
-kind: AWSMachineTemplate
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: GCPMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 metadata:
   name: "{{ .ClusterID }}-control-plane"
   namespace: capi-clusters
@@ -78,8 +79,7 @@ spec:
   template:
     spec:
       instanceType: "{{ .ControlPlane.Size }}"
-      iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
-      sshKeyName: \"{{ .SSHKey }}\"
+      image: "{{ .ControlPlane.Image }}"
 {{- range $node := .WorkerNodes }}
 {{- range $index, $n := loop .AZ .Quantity }}
 ---
@@ -89,13 +89,13 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
 spec:
-  clusterName: "{{ $.ClusterID }}"
+  clusterName: "{{ .ClusterID }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     spec:
-      clusterName: "{{ $.ClusterID }}"
+      clusterName: "{{ .ClusterID }}"
       version: "{{ $.K8SVersion }}"
       failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}{{ $n.AZ }} {{- end }}"
       bootstrap:
@@ -105,11 +105,11 @@ spec:
           kind: KubeadmConfigTemplate
       infrastructureRef:
         name: "{{ $node.Name }}-md-{{ $index }}"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: AWSMachineTemplate
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: GCPMachineTemplate
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: AWSMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
@@ -117,12 +117,9 @@ spec:
   template:
     spec:
       instanceType: "{{ $node.Size }}"
-      iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
-      sshKeyName: \"{{ $node.SSHKey }}\"
-      rootVolume:
-        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 20 {{ end }}
-        type: {{- if $node.RootVolume.Type }} {{ $node.RootVolume.Type }} {{ else }} gp2 {{ end }}
-        encrypted: {{ $node.RootVolume.Encrypted }}
+      image: "{{ $node.Image }}"
+      rootDeviceSize: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+      rootDeviceType: {{- if $node.RootVolume.Type }} {{ $node.RootVolume.Type }} {{ else }} pd-standard {{ end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -134,8 +131,8 @@ spec:
     spec:
       joinConfiguration:
         nodeRegistration:
-          name: {{`"{{ ds.meta_data.local_hostname }}"`}}
+          name: {{`"{{ ds.meta_data.local_hostname.split(".")[0] }}"`}}
           kubeletExtraArgs:
-            cloud-provider: aws
+            cloud-provider: gce
 {{- end }}
 {{- end }}

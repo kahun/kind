@@ -11,23 +11,23 @@ keos:
   domain: cluster.local
   external_domain: domain.ext
   flavour: development
+networks:
+  vpc_id: vpc-0425c335226437144
+  subnets:
+    - name: subnet-0261219d564bb0dc5
+    - name: subnet-0fdcccba78668e013
 control_plane:
   managed: false
   size: t3.medium
 worker_nodes:
-  - name: workers-md-0
-    quantity: 1
+  - name: workers
+    quantity: 3
+    size: t3.2xlarge
+    root_volume:
+      size: 30
+      type: gp2
+      encrypted: true
+  - name: gpu
+    quantity: 2
     size: t3.2xlarge
     az: eu-west-1a
-    disks:
-      - name: rootVolume
-        size: 30
-        type: gp2
-  - name: workers-md-1
-    quantity: 1
-    size: t3.2xlarge
-    az: eu-west-1b
-  - name: workers-md-2
-    quantity: 1
-    size: t3.2xlarge
-    az: eu-west-1c
