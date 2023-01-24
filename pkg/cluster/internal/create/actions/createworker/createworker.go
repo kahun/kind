@@ -154,23 +154,23 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// fmt.Println("RAW STRING: " + raw.String())
 
 	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineHealthCheck
-metadata:
-  name: ` + descriptorFile.ClusterID + `-node-unhealthy
-spec:
-  clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 120s
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s`
+	apiVersion: cluster.x-k8s.io/v1alpha3
+	kind: MachineHealthCheck
+	metadata:
+	  name: ` + descriptorFile.ClusterID + `-node-unhealthy
+	spec:
+	  clusterName: ` + descriptorFile.ClusterID + `
+	  nodeStartupTimeout: 300s
+	  selector:
+	    matchLabels:
+	      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
+	  unhealthyConditions:
+	    - type: Ready
+	      status: Unknown
+	      timeout: 60s
+	    - type: Ready
+	      status: 'False'
+	      timeout: 60s`
 
 	// Create the MachineHealthCheck manifest file in the container
 	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
