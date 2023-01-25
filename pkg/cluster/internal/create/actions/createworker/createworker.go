@@ -151,39 +151,40 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 	// fmt.Println("RAW STRING: " + raw.String())
 
-	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1alpha3
-kind: MachineHealthCheck
-metadata:
-  name: ` + descriptorFile.ClusterID + `-node-unhealthy
-spec:
-  clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 500s
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s`
+	// 	var machineHealthCheck = `
+	// apiVersion: cluster.x-k8s.io/v1beta1
+	// kind: MachineHealthCheck
+	// metadata:
+	//   name: ` + descriptorFile.ClusterID + `-node-unhealthy
+	// spec:
+	//   clusterName: ` + descriptorFile.ClusterID + `
+	//   maxUnhealthy: 100%
+	//   nodeStartupTimeout: 5m
+	//   selector:
+	//     matchLabels:
+	//       cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
+	//   unhealthyConditions:
+	//     - type: Ready
+	//       status: Unknown
+	//       timeout: 5m
+	//     - type: Ready
+	//       status: 'False'
+	//       timeout: 5m`
 
-	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
-	}
+	// 	// Create the MachineHealthCheck manifest file in the container
+	// 	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
+	// 	raw = bytes.Buffer{}
+	// 	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
+	// 	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
+	// 	}
 
-	// Enable the cluster's self-healing
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-	}
+	// 	// Enable the cluster's self-healing
+	// 	raw = bytes.Buffer{}
+	// 	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
+	// 	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+	// 	}
 
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
