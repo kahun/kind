@@ -161,14 +161,14 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
 		}
-		if secretFile.Secrets.ExternalRegistryCredentials == (cluster.ExternalRegistryCredentials{}) {
-			if descriptorFile.Credentials.ExternalRegistry != (cluster.ExternalRegistryCredentials{}) {
-				resultRegMap := structs.Map(descriptorFile.Credentials.ExternalRegistry)
+		if secretFile.Secrets.ExternalRegistry == (cluster.DockerRegistryCredentials{}) {
+			if len(descriptorFile.Credentials.DockerRegistries) > 0 &&
+				descriptorFile.Credentials.DockerRegistries[0] != (cluster.DockerRegistryCredentials{}) {
+				resultRegMap := structs.Map(descriptorFile.Credentials.DockerRegistries)
 				resultExternalReg = convertToMapStringString(resultRegMap)
-
 			}
 		} else {
-			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistryCredentials)
+			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistry)
 			resultExternalReg = convertToMapStringString(resultRegMap)
 		}
 
