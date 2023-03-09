@@ -131,6 +131,29 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template:
+    spec:
+      {{- if $.ExternalRegistry.User }}
+      files:
+        - content: |
+            version = 2
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
+            [plugins]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.6\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                {{- $url := hostname $.ExternalRegistry.Url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                  password = \"{{ $.ExternalRegistry.Pass }}\"
+                  username = \"{{ $.ExternalRegistry.User }}\"
+          path: /etc/containerd/config.toml
+      {{- end }}
 {{- end }}
 {{- end }}
