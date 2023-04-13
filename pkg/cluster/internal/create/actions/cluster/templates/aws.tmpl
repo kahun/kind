@@ -1,0 +1,272 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: ["192.168.0.0/16"]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: "{{ .Descriptor.ClusterID }}-control-plane"
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: "{{ .Descriptor.ClusterID }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  region: "{{ .Descriptor.Region }}"
+  {{- if ne .Descriptor.Networks.VPCID "" }}
+  network:
+    vpc:
+      id: {{ .Descriptor.Networks.VPCID }}
+    {{- if ne .Descriptor.Networks.Subnets nil }}
+    subnets:
+      {{- range .Descriptor.Networks.Subnets }}
+      - id: {{ .SubnetId }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  machineTemplate:
+    infrastructureRef:
+      kind: AWSMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      name: "{{ .Descriptor.ClusterID }}-control-plane"
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: aws
+      controllerManager:
+        extraArgs:
+          cloud-provider: aws
+    {{- if .DockerRegistries }}
+    files:
+      - content: |
+          version = 2
+          imports = [\"/etc/containerd/conf.d/*.toml\"]
+          [plugins]
+            [plugins.\"io.containerd.grpc.v1.cri\"]
+              sandbox_image = \"k8s.gcr.io/pause:3.6\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+              runtime_type = \"io.containerd.runc.v2\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+              SystemdCgroup = true
+            [plugins.\"io.containerd.grpc.v1.cri\".registry]
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                  endpoint = [\"https://registry-1.docker.io\"]
+              {{- range $reg := .DockerRegistries }}
+              {{- $url := hostname $reg.url }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                password = \"{{ $reg.pass }}\"
+                username = \"{{ $reg.user }}\"
+              {{- end }}
+        path: /etc/containerd/config.toml
+    {{- end }}
+    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    diskSetup:
+      filesystems:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          filesystem: ext4
+          label: {{ $vol.Label }}
+        {{- end }}
+      partitions:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          layout: true
+          overwrite: false
+          tableType: gpt
+        {{- end }}
+    mounts:
+      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      - - LABEL={{ $vol.Label }}
+        - {{ $vol.MountPath }}
+      {{- end }}
+    {{- end }}
+    joinConfiguration:
+      nodeRegistration:
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+  version: "{{ .Descriptor.K8SVersion }}"
+---
+kind: AWSMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+metadata:
+  name: "{{ .ClusterID }}-control-plane"
+  namespace: capi-clusters
+spec:
+  template:
+    spec:
+      instanceType: "{{ .Descriptor.ControlPlane.Size }}"
+      iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
+      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+        {{- end }}
+      {{- end }}
+      rootVolume:
+        size: {{- if .Descriptor.ControlPlane.RootVolume.Size }} {{ .Descriptor.ControlPlane.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if .Descriptor.ControlPlane.RootVolume.Type }}
+        type: {{ .Descriptor.ControlPlane.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ .Descriptor.ControlPlane.RootVolume.Encrypted }}
+{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+{{- if and (gt $node.NodeGroupMaxSize 0) (gt $node.NodeGroupMinSize 0) }}
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
+{{- end }}
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  replicas: {{ $n.QA }}
+  selector:
+    matchLabels: null
+  template:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+    spec:
+      clusterName: "{{ $.Descriptor.ClusterID }}"
+      bootstrap:
+        configRef:
+          name: "{{ $node.Name }}-md-{{ $index }}"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "{{ $node.Name }}-md-{{ $index }}"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+      failureDomain: "{{ $n.AZ }}"
+      version: "{{ $.Descriptor.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  template:
+    spec:
+      {{- if ne $node.AmiID "" }}
+      ami:
+        id: {{ $node.AmiID }}
+      {{- end }}
+      iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
+      instanceType: "{{ $node.Size }}"
+      {{- if $node.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+        {{- end }}
+      {{- end }}
+      rootVolume:
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if $node.RootVolume.Type }}
+        type: {{ $node.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ $node.RootVolume.Encrypted }}
+      {{- if $node.Spot }}
+      spotMarketOptions: {}
+      {{- end }}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  template:
+    spec:
+      {{- if $.DockerRegistries }}
+      files:
+        - content: |
+            version = 2
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
+            [plugins]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.6\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
+          path: /etc/containerd/config.toml
+        {{- end }}
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            filesystem: xfs
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
+      joinConfiguration:
+        nodeRegistration:
+          name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+          kubeletExtraArgs:
+            cloud-provider: aws
+            {{- if $node.Labels }}
+            node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
+{{- end }}
+{{- end }}

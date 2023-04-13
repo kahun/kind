@@ -9,6 +9,7 @@ ENV CLUSTERAWSADM=v2.0.2
 ENV HELM_VERSION=v3.11.0
 
 # Helm charts
+ENV AWS_EBS_CSI_DRIVER=v2.17.2
 ENV CLUSTER_AUTOSCALER=9.25.0
 ENV TIGERA_OPERATOR=v3.22.3
 
@@ -34,6 +35,7 @@ RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /root
   && chmod +x /usr/local/bin/helm
 
 RUN mkdir -p /stratio/helm \
+  && for i in {1..3}; do timeout 5 helm pull aws-ebs-csi-driver --version ${AWS_EBS_CSI_DRIVER} --repo https://kubernetes-sigs.github.io/aws-ebs-csi-driver --untar --untardir /stratio/helm; done \
   && for i in {1..3}; do timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm; done \
   && helm pull tigera-operator --version ${TIGERA_OPERATOR} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm
 

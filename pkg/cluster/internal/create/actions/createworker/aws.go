@@ -50,12 +50,11 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxImageVersion = "2.0.2-0.1.0-abc39a5"
 	b.capxName = "capa"
 	b.stClassName = "gp2"
+	b.csiNamespace = "kube-system"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
-		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "aws.tmpl"
-		b.csiNamespace = ""
 	}
 }
 
@@ -85,6 +84,17 @@ func (b *AWSBuilder) getProvider() Provider {
 }
 
 func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var err error
+
+	c = "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
+	}
+
 	return nil
 }
 
