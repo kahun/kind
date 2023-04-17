@@ -129,6 +129,10 @@ metadata:
 spec:
   template:
     spec:
+      {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
+      ami:
+        id: {{ .Descriptor.ControlPlane.NodeImage }}
+      {{- end }}
       instanceType: "{{ .Descriptor.ControlPlane.Size }}"
       iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
       {{- if .Descriptor.ControlPlane.ExtraVolumes }}
@@ -146,7 +150,7 @@ spec:
         type: {{ .Descriptor.ControlPlane.RootVolume.Type }}
         {{- end }}
         encrypted: {{ .Descriptor.ControlPlane.RootVolume.Encrypted }}
-      sshKeyName: \"{{ .Descriptor.SSHKey }}\"
+      sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
@@ -191,9 +195,9 @@ metadata:
 spec:
   template:
     spec:
-      {{- if ne $node.AmiID "" }}
+      {{- if ne $node.NodeImage "" }}
       ami:
-        id: {{ $node.AmiID }}
+        id: {{ $node.NodeImage }}
       {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
@@ -212,7 +216,7 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
-      sshKeyName: \"{{ $.Descriptor.SSHKey }}\"
+      sshKeyName: \"{{ $node.SSHKey }}\"
       {{- if $node.Spot }}
       spotMarketOptions: {}
       {{- end }}
