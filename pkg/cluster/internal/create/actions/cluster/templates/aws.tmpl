@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["192.168.0.0/16"]
+      cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -97,20 +97,20 @@ spec:
     diskSetup:
       filesystems:
         {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
-        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
-          filesystem: ext4
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          filesystem: xfs
           label: {{ $vol.Label }}
         {{- end }}
       partitions:
         {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
-        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
           layout: true
           overwrite: false
           tableType: gpt
         {{- end }}
     mounts:
       {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
-      - - LABEL={{ $vol.Label }}
+      - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
         - {{ $vol.MountPath }}
       {{- end }}
     {{- end }}
@@ -124,8 +124,8 @@ spec:
 kind: AWSMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 metadata:
-  name: "{{ .ClusterID }}-control-plane"
-  namespace: capi-clusters
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   template:
     spec:
@@ -146,6 +146,7 @@ spec:
         type: {{ .Descriptor.ControlPlane.RootVolume.Type }}
         {{- end }}
         encrypted: {{ .Descriptor.ControlPlane.RootVolume.Encrypted }}
+      sshKeyName: \"{{ .Descriptor.SSHKey }}\"
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
@@ -211,6 +212,7 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+      sshKeyName: \"{{ $.Descriptor.SSHKey }}\"
       {{- if $node.Spot }}
       spotMarketOptions: {}
       {{- end }}

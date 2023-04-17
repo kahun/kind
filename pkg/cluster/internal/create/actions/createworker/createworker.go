@@ -123,7 +123,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		var registryUser string
 		var registryPass string
 
-		if descriptorFile.ControlPlane.Managed {
+		if descriptorFile.DockerRegistries[0].Type == "ecr" {
 			ecrToken, err := getEcrAuthToken(providerParams)
 			if err != nil {
 				return errors.Wrap(err, "failed to get ECR auth token")
