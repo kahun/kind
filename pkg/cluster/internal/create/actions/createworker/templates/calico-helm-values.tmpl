@@ -25,17 +25,17 @@ installation:
         encapsulation: IPIP
     {{- end }}
   cni:
-    {{- if eq $.InfraProvider "aws" }}
+    {{- if and $.ControlPlane.Managed (eq $.InfraProvider "aws") }}
     ipam:
       type: AmazonVPC
     type: AmazonVPC
     {{- else }}
-    ipam: 
+    ipam:
       type: Calico
     type: Calico
     {{- end }}
   enabled: true
-  kubernetesProvider: "{{- if eq $.InfraProvider "aws" -}} EKS {{- end }}"
+  kubernetesProvider: "{{- if and $.ControlPlane.Managed (eq $.InfraProvider "aws") -}} EKS {{- end }}"
   nodeMetricsPort: 9191
   registry: docker.io
   typhaMetricsPort: 9093
