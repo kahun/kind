@@ -91,7 +91,7 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	c = "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
 	}
