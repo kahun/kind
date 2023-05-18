@@ -24,8 +24,22 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   region: "{{ .Descriptor.Region }}"
-  {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
+    cni:
+      cniIngressRules:
+        - description: \"bgp (calico)\"
+          protocol: tcp
+          fromPort: 179
+          toPort: 179
+        - description: \"IP-in-IP (calico)\"
+          protocol: \"4\"
+          fromPort: -1
+          toPort: 65535
+        - description: \"typha (calico)\"
+          protocol: tcp
+          fromPort: 5473
+          toPort: 5473
+  {{- if ne .Descriptor.Networks.VPCID "" }}
     vpc:
       id: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
