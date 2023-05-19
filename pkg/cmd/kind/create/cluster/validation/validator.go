@@ -76,7 +76,7 @@ func getValidator(provider string, managed bool) (Validator, error) {
 
 	switch provider {
 	case "aws":
-		return newEKSValidator(), nil
+		return newAWSValidator(managed), nil
 	case "gcp":
 		if managed {
 			return nil, errors.New("WIP in manage GCP")

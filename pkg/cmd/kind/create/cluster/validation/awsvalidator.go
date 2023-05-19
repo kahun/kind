@@ -8,41 +8,43 @@ import (
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
-var eksInstance *EKSValidator
+var awsInstance *AWSValidator
 
 const (
 	cidrSizeMax = 65536
 	cidrSizeMin = 16
 )
 
-type EKSValidator struct {
+type AWSValidator struct {
 	commonValidator
+	managed bool
 }
 
-func newEKSValidator() *EKSValidator {
-	if eksInstance == nil {
-		eksInstance = new(EKSValidator)
+func newAWSValidator(managed bool) *AWSValidator {
+	if awsInstance == nil {
+		awsInstance = new(AWSValidator)
 	}
-	return eksInstance
+	awsInstance.managed = managed
+	return awsInstance
 }
 
-func (v *EKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
+func (v *AWSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
 	v.descriptor = descriptorFile
 }
 
-func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
+func (v *AWSValidator) SecretsFile(secrets commons.SecretsFile) {
 	v.secrets = secrets
 }
 
-func (v *EKSValidator) Validate(fileType string) error {
+func (v *AWSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		err := descriptorEksValidations((*v).descriptor)
+		err := descriptorAwsValidations((*v).descriptor)
 		if err != nil {
 			return err
 		}
 	case "secrets":
-		err := secretsEksValidations((*v).secrets)
+		err := secretsAwsValidations((*v).secrets)
 		if err != nil {
 			return err
 		}
@@ -52,7 +54,7 @@ func (v *EKSValidator) Validate(fileType string) error {
 	return nil
 }
 
-func (v *EKSValidator) CommonsValidations() error {
+func (v *AWSValidator) CommonsValidations() error {
 	err := commonsValidations((*v).descriptor, (*v).secrets)
 	if err != nil {
 		return err
@@ -60,7 +62,7 @@ func (v *EKSValidator) CommonsValidations() error {
 	return nil
 }
 
-func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
+func descriptorAwsValidations(descriptorFile commons.DescriptorFile) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
@@ -72,7 +74,7 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
 	return nil
 }
 
-func secretsEksValidations(secretsFile commons.SecretsFile) error {
+func secretsAwsValidations(secretsFile commons.SecretsFile) error {
 	err := commonsSecretsValidations(secretsFile)
 	if err != nil {
 		return err
