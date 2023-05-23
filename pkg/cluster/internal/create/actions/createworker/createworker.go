@@ -439,7 +439,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 
-		if descriptorFile.DeployAutoscaler && !(descriptorFile.InfraProvider == "azure" && descriptorFile.ControlPlane.Managed) {
+		if descriptorFile.DeployAutoscaler {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 

@@ -64,6 +64,11 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
+{{- if gt $node.NodeGroupMaxSize 0 }}
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
+{{- end }}
   name: "{{ $node.Name }}-mp-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
@@ -98,11 +103,6 @@ spec:
   {{- end }}
   availabilityZones:
     - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
-  {{- if gt $node.NodeGroupMaxSize 0 }}
-  scaling:
-    minSize: {{ $n.MinSize }}
-    maxSize: {{ $n.MaxSize }}
-  {{- end }}
   {{- if gt (len $node.Labels) 0 }}
   nodeLabels:
     {{- range $key, $value := $node.Labels }}
