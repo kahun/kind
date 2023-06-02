@@ -17,7 +17,7 @@ certs:
 imagePullSecrets: {}
 installation:
   calicoNetwork:
-    bgp: {{- if eq $.InfraProvider "azure" }} Disabled {{- else }} Enabled {{- end }}
+    bgp: {{- if or ($.ControlPlane.Managed) (eq $.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
   {{- if not $.ControlPlane.Managed }}
     {{- if eq $.InfraProvider "azure" }}
     mtu: 1350

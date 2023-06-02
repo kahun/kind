@@ -77,10 +77,7 @@ func getValidator(provider string, managed bool) (Validator, error) {
 	case "aws":
 		return newAWSValidator(managed), nil
 	case "azure":
-		if managed {
-			return newAKSValidator(), nil
-		}
-		return nil, errors.New("WIP in not manage Azure")
+		return newAzureValidator(managed), nil
 	case "gcp":
 		if managed {
 			return nil, errors.New("WIP in manage GCP")
