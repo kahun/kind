@@ -80,7 +80,7 @@ func getValidator(provider string, managed bool) (Validator, error) {
 		return newAzureValidator(managed), nil
 	case "gcp":
 		if managed {
-			return nil, errors.New("WIP in manage GCP")
+			return nil, errors.New("WIP in managed GCP")
 		}
 		return NewGCPValidator(), nil
 	default:
