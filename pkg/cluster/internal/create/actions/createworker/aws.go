@@ -114,7 +114,7 @@ apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
-    enable: true
+    enable: false
   eks:
     enable: true
     iamRoleCreation: false
