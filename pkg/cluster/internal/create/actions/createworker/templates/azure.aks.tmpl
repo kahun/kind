@@ -103,6 +103,7 @@ spec:
   {{- end }}
   availabilityZones:
     - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
+  scaleSetPriority: {{- if $node.Spot }} Spot {{- else }} Regular {{- end }}
   {{- if gt (len $node.Labels) 0 }}
   nodeLabels:
     {{- range $key, $value := $node.Labels }}
