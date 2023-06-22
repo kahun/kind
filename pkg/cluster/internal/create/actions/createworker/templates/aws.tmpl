@@ -156,6 +156,9 @@ spec:
           size: {{ $vol.Size }}
           type: {{ $vol.Type }}
           encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
       {{- end }}
       rootVolume:
@@ -164,6 +167,9 @@ spec:
         type: {{ .Descriptor.ControlPlane.RootVolume.Type }}
         {{- end }}
         encrypted: {{ .Descriptor.ControlPlane.RootVolume.Encrypted }}
+        {{- if .Descriptor.ControlPlane.EncryptionKey }}
+        encryptionKey: {{ .Descriptor.ControlPlane.EncryptionKey }}
+        {{- end }}
       sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
@@ -222,6 +228,9 @@ spec:
           size: {{ $vol.Size }}
           type: {{ $vol.Type }}
           encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
       {{- end }}
       rootVolume:
@@ -230,6 +239,9 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+        {{- if $node.RootVolume.EncryptionKey }}
+        encryptionKey: {{ $node.RootVolume.EncryptionKey }}
+        {{- end }}
       sshKeyName: \"{{ $node.SSHKey }}\"
       {{- if $node.Spot }}
       spotMarketOptions: {}
