@@ -89,7 +89,7 @@ type DescriptorFile struct {
 	} `yaml:"control_plane"`
 
 	StorageClass StorageClass `yaml:storageclass`
-	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
@@ -104,7 +104,8 @@ type Subnets struct {
 }
 
 type AWSCP struct {
-	AssociateOIDCProvider bool `yaml:"associate_oidc_provider" validate:"boolean"`
+	AssociateOIDCProvider bool   `yaml:"associate_oidc_provider" validate:"boolean"`
+	EncryptionKey         string `yaml:"encryption_key"`
 	Logging               struct {
 		ApiServer         bool `yaml:"api_server" validate:"boolean"`
 		Audit             bool `yaml:"audit" validate:"boolean"`
