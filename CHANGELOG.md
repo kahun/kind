@@ -3,6 +3,7 @@
 ## 0.17.0-0.3.0 (Upcoming)
 
 * Add EKS secrets encryption support
+
 ## 0.17.0-0.2.0 (2023-07-03)
 
 * Add clusterAPI capabilities for AKS
