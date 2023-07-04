@@ -21,9 +21,11 @@ import (
 	"embed"
 	"encoding/base64"
 	"reflect"
+	"strconv"
 	"strings"
 	"text/template"
 
+	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -41,6 +43,7 @@ const (
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
+const defaultScAnnotation = "storageclass.kubernetes.io/is-default-class"
 
 //go:embed files/calico-metrics.yaml
 var calicoMetrics string
@@ -50,7 +53,11 @@ type PBuilder interface {
 	setCapxEnvVars(p commons.ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
+	configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error
+	getParameters(sc commons.StorageClass) commons.SCParameters
 	getAzs(networks commons.Networks) ([]string, error)
+	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
+	getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error)
 }
 
 type Provider struct {
@@ -73,6 +80,19 @@ type Node struct {
 
 type Infra struct {
 	builder PBuilder
+}
+
+type StorageClassDef struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	} `yaml:"metadata"`
+	AllowVolumeExpansion bool                   `yaml:"allowVolumeExpansion"`
+	Provisioner          string                 `yaml:"provisioner"`
+	Parameters           map[string]interface{} `yaml:"parameters"`
+	VolumeBindingMode    string                 `yaml:"volumeBindingMode"`
 }
 
 func getBuilder(builderType string) PBuilder {
@@ -104,6 +124,26 @@ func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
 
 func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
+}
+
+func (i *Infra) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	return i.builder.configureStorageClass(n, k, sc)
+}
+
+func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	requiredIntenalNginx, err := i.builder.internalNginx(networks, credentialsMap, ClusterID)
+	if err != nil {
+		return false, err
+	}
+	return requiredIntenalNginx, nil
+}
+
+func (i *Infra) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+	overrideVars, err := i.builder.getOverrideVars(descriptor, credentialsMap)
+	if err != nil {
+		return nil, err
+	}
+	return overrideVars, nil
 }
 
 func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
@@ -398,4 +438,87 @@ func getManifest(name string, params interface{}) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
+}
+
+func setStorageClassParameters(storageClass string, params map[string]string, lineToStart string) (string, error) {
+
+	paramIndex := strings.Index(storageClass, lineToStart)
+	if paramIndex == -1 {
+		return storageClass, nil
+	}
+
+	var lines []string
+	for key, value := range params {
+		line := "  " + key + ": " + value
+		lines = append(lines, line)
+	}
+
+	linesToInsert := "\n" + strings.Join(lines, "\n") + "\n"
+	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + linesToInsert + storageClass[paramIndex+len(lineToStart):]
+
+	return newStorageClass, nil
+}
+
+func mergeSCParameters(params1, params2 commons.SCParameters) commons.SCParameters {
+	destValue := reflect.ValueOf(&params1).Elem()
+	srcValue := reflect.ValueOf(&params2).Elem()
+
+	for i := 0; i < srcValue.NumField(); i++ {
+		srcField := srcValue.Field(i)
+		destField := destValue.Field(i)
+
+		if srcField.IsValid() && destField.IsValid() && destField.CanSet() {
+			destFieldValue := destField.Interface()
+
+			if reflect.DeepEqual(destFieldValue, reflect.Zero(destField.Type()).Interface()) {
+				destField.Set(srcField)
+			}
+		}
+	}
+
+	return params1
+}
+
+func insertParameters(storageClass StorageClassDef, params commons.SCParameters) (string, error) {
+	paramsYAML, err := structToYAML(params)
+	if err != nil {
+		return "", err
+	}
+
+	newMap := map[string]interface{}{}
+	err = yaml.Unmarshal([]byte(paramsYAML), &newMap)
+	if err != nil {
+		return "", err
+	}
+
+	for key, value := range newMap {
+		newKey := strings.ReplaceAll(key, "_", "-")
+		storageClass.Parameters[newKey] = value
+	}
+
+	if storageClass.Provisioner == "ebs.csi.aws.com" {
+		if labels, ok := storageClass.Parameters["labels"].(string); ok && labels != "" {
+			delete(storageClass.Parameters, "labels")
+			for i, label := range strings.Split(labels, ",") {
+				key_prefix := "tagSpecification_"
+				key := key_prefix + strconv.Itoa(i)
+				storageClass.Parameters[key] = label
+			}
+		}
+	}
+
+	resultYAML, err := yaml.Marshal(storageClass)
+	if err != nil {
+		return "", err
+	}
+
+	return string(resultYAML), nil
+}
+
+func structToYAML(data interface{}) (string, error) {
+	yamlBytes, err := yaml.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	return string(yamlBytes), nil
 }

@@ -50,15 +50,18 @@ var PathsToBackupLocally = []string{
 	"/kind/manifests",
 }
 
-//go:embed files/allow-all-egress_netpol.yaml
+//go:embed files/all/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
+
+//go:embed files/gcp/rbac-loadbalancing.yaml
+var rbacInternalLoadBalancing string
 
 // In common with keos installer
 //
-//go:embed files/deny-all-egress-imds_gnetpol.yaml
+//go:embed files/aws/deny-all-egress-imds_gnetpol.yaml
 var denyallEgressIMDSGNetPol string
 
-//go:embed files/allow-capa-egress-imds_gnetpol.yaml
+//go:embed files/aws/allow-capa-egress-imds_gnetpol.yaml
 var allowCAPAEgressIMDSGNetPol string
 
 // NewAction returns a new action for installing default CAPI
@@ -321,14 +324,54 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 			ctx.Status.End(true) // End Installing Calico in workload cluster
 
-			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			ctx.Status.Start("Installing CSI in workload cluster 💾")
 			defer ctx.Status.End(false)
 
 			err = infra.installCSI(n, kubeconfigPath)
 			if err != nil {
-				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+				return errors.Wrap(err, "failed to install CSI in workload cluster")
 			}
-			ctx.Status.End(true) // End Installing StorageClass in workload cluster
+
+			ctx.Status.End(true)
+		}
+
+		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		defer ctx.Status.End(false)
+
+		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
+		if err != nil {
+			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
+		}
+		ctx.Status.End(true) // End Installing StorageClass in workload cluster
+
+		if provider.capxProvider == "gcp" {
+			// XXX Ref kubernetes/kubernetes#86793 Starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status (in-tree)
+			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
+			defer ctx.Status.End(false)
+
+			requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
+			if err != nil {
+				return err
+			}
+
+			if requiredInternalNginx {
+				rbacInternalLoadBalancingPath := "/kind/internalloadbalancing_rbac.yaml"
+
+				// Deploy Kubernetes RBAC internal loadbalancing
+				c = "echo \"" + rbacInternalLoadBalancing + "\" > " + rbacInternalLoadBalancingPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to write the kubernetes RBAC internal loadbalancing")
+				}
+
+				c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + rbacInternalLoadBalancingPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to the kubernetes RBAC internal loadbalancing")
+				}
+			}
+
+			ctx.Status.End(true)
 		}
 
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
@@ -561,6 +604,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	ctx.Status.End(true) // End Generating KEOS descriptor
+
+	err = override_vars(*descriptorFile, credentialsMap, ctx, infra, provider)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

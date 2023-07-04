@@ -21,6 +21,7 @@ import (
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
+	"io/ioutil"
 	"net/url"
 	"strings"
 
@@ -52,12 +53,40 @@ func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
 
+var defaultGCPSc = "csi-gcp-pd"
+
+var storageClassGCPTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		},
+		Name: "keos",
+	},
+	AllowVolumeExpansion: true,
+	Provisioner:          "pd.csi.storage.gke.io",
+	Parameters:           make(map[string]interface{}),
+	VolumeBindingMode:    "WaitForFirstConsumer",
+}
+
+var standardGCPParameters = commons.SCParameters{
+	Type: "pd-standard",
+}
+
+var premiumGCPParameters = commons.SCParameters{
+	Type: "pd-ssd",
+}
+
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
-	b.stClassName = "csi-gcp-pd"
+	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
@@ -108,17 +137,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 	var cmd exec.Cmd
-	var storageClass = `
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-    storageclass.kubernetes.io/is-default-class: 'true'
-  name: ` + b.stClassName + `
-provisioner: pd.csi.storage.gke.io
-parameters:
-  type: pd-standard
-volumeBindingMode: WaitForFirstConsumer`
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
@@ -139,12 +157,6 @@ volumeBindingMode: WaitForFirstConsumer`
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(csiManifest)).Run(); err != nil {
 		return errors.Wrap(err, "failed to deploy CSI driver")
-	}
-
-	// Create StorageClass
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
 	}
 
 	return nil
@@ -184,4 +196,111 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 
 	return nil, errors.New("Error in project id")
+}
+
+func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var cmd exec.Cmd
+
+	params := b.getParameters(sc)
+	storageClass, err := insertParameters(storageClassGCPTemplate, params)
+	if err != nil {
+		return err
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+	return nil
+
+}
+
+func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
+	if sc.EncryptionKey != "" {
+		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKey
+	}
+	switch class := sc.Class; class {
+	case "standard":
+		return mergeSCParameters(sc.Parameters, standardGCPParameters)
+	case "premium":
+		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
+	default:
+		return mergeSCParameters(sc.Parameters, standardGCPParameters)
+
+	}
+}
+
+func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	if len(b.dataCreds) == 0 {
+		return false, errors.New("Insufficient credentials.")
+	}
+
+	ctx := context.Background()
+	jsonDataCreds, _ := json.Marshal(b.dataCreds)
+	creds := option.WithCredentialsJSON(jsonDataCreds)
+	computeService, err := compute.NewService(ctx, creds)
+	if err != nil {
+		return false, err
+	}
+
+	project := b.dataCreds["project_id"].(string)
+	region := b.region
+
+	if networks.Subnets != nil {
+		for _, subnet := range networks.Subnets {
+			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, project, region, subnet.SubnetId)
+			if len(publicSubnetID) > 0 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, region string, subnetID string) (string, error) {
+	subnet, err := computeService.Subnetworks.Get(projectID, region, subnetID).Do()
+	if err != nil {
+		return "", err
+	}
+
+	if subnet.PrivateIpGoogleAccess {
+		return "", nil
+	} else {
+		return subnetID, nil
+	}
+}
+
+func (b *GCPBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+	overrideVars := map[string][]byte{}
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
+
+	return overrideVars, nil
+}
+
+func (b *GCPBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
+	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if requiredInternalNginx {
+		internalIngressFilePath := "files/" + b.capxProvider + "/internal-ingress-nginx.yaml"
+		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
+		if err != nil {
+			return "", nil, errors.Wrap(err, "error opening the internal ingress nginx file")
+		}
+		defer internalIngressFile.Close()
+
+		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
+		if err != nil {
+			return "", nil, errors.Wrap(err, "error reading the internal ingress nginx file")
+		}
+		return "ingress-nginx.yaml", internalIngressContent, nil
+	}
+	return "", []byte(""), nil
 }
