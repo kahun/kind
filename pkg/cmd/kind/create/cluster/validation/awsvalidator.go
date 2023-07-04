@@ -2,8 +2,11 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/apparentlymart/go-cidr/cidr"
@@ -15,6 +18,7 @@ import (
 )
 
 var awsInstance *AWSValidator
+var provisionersTypesAWS = []string{"io1", "io2", "gp2", "gp3", "sc1", "st1", "standard", "sbp1", "sbg1"}
 
 const (
 	cidrSizeMax = 65536
@@ -45,7 +49,7 @@ func (v *AWSValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *AWSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		err := descriptorAwsValidations((*v).descriptor, (*v).secrets)
+		err := v.descriptorAwsValidations((*v).descriptor, (*v).secrets)
 		if err != nil {
 			return err
 		}
@@ -68,7 +72,7 @@ func (v *AWSValidator) CommonsValidations() error {
 	return nil
 }
 
-func descriptorAwsValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
+func (v *AWSValidator) descriptorAwsValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
@@ -82,6 +86,10 @@ func descriptorAwsValidations(descriptorFile commons.DescriptorFile, secretsFile
 		if err != nil {
 			return err
 		}
+	}
+	err = v.storageClassValidation(descriptorFile)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -202,11 +210,13 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 
 	var isPublic bool
 	for _, associatedRouteTable := range drto.RouteTables {
-
 		for i := range associatedRouteTable.Routes {
-			if *associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
-				associatedRouteTable.Routes[i].GatewayId != nil &&
-				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
+			route := associatedRouteTable.Routes[i]
+
+			if route.DestinationCidrBlock != nil &&
+				route.GatewayId != nil &&
+				*route.DestinationCidrBlock == "0.0.0.0/0" &&
+				strings.Contains(*route.GatewayId, "igw") {
 				isPublic = true
 			}
 		}
@@ -216,4 +226,82 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	} else {
 		return "", nil
 	}
+}
+
+func (v *AWSValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
+	if descriptorFile.StorageClass.EncryptionKey != "" {
+		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
+		if err != nil {
+			return errors.New("Error in StorageClass: " + err.Error())
+		}
+	}
+	err := v.storageClassParametersValidation(descriptorFile)
+	if err != nil {
+		return errors.New("Error in StorageClass: " + err.Error())
+	}
+
+	return nil
+}
+
+func (v *AWSValidator) storageClassKeyFormatValidation(key string) error {
+	regex := regexp.MustCompile(`^arn:aws:kms:[a-zA-Z0-9-]+:\d{12}:key/[a-zA-Z0-9-_]+$`)
+	if !regex.MatchString(key) {
+		return errors.New("Incorrect key for encryption format. It must have the complete arn format")
+	}
+	return nil
+}
+
+func (v *AWSValidator) storageClassParametersValidation(descriptorFile commons.DescriptorFile) error {
+	sc := descriptorFile.StorageClass
+	typesSupportedForIOPS := []string{"io1", "io2", "gp3"}
+	fstypes := []string{"xfs", "ext3", "ext4", "ext2"}
+	err := verifyFields(descriptorFile)
+	if err != nil {
+		return err
+	}
+	if sc.Parameters.Type != "" && !slices.Contains(provisionersTypesAWS, sc.Parameters.Type) {
+		return errors.New("Unsupported type: " + sc.Parameters.Type)
+	}
+	if sc.Parameters.IopsPerGB != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+	}
+	if sc.Parameters.Iops != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+	}
+	if sc.Parameters.Iops != "" {
+		iops, err := strconv.Atoi(sc.Parameters.Iops)
+		if err != nil {
+			return errors.New("Invalid Iops parameter. It must be a number in string format")
+		}
+		if (sc.Class != "premium" && sc.Parameters.Type == "") || sc.Parameters.Type == "gp3" {
+			if iops < 3000 || iops > 16000 {
+				return errors.New("Invalid Iops parameter. It must be greater than 3000 and lower than 16000 for gp3 type")
+			}
+		} else {
+			if iops < 16000 || iops > 64000 {
+				return errors.New("Invalid Iops parameter. It must be greater than 16000 and lower than 64000 for io1 and io2 types")
+			}
+		}
+
+	}
+	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
+		return errors.New("Unsupported fsType: " + sc.Parameters.Type + ". Supported types: " + fmt.Sprint(fstypes))
+	}
+	if sc.Parameters.KmsKeyId != "" {
+		err := v.storageClassKeyFormatValidation(sc.Parameters.KmsKeyId)
+		if err != nil {
+			return err
+		}
+	}
+	if sc.Parameters.Labels != "" {
+		labels := strings.Split(sc.Parameters.Labels, ",")
+		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
+		for _, label := range labels {
+			if !regex.MatchString(label) {
+				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
+			}
+		}
+	}
+
+	return nil
 }
