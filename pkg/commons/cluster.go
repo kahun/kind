@@ -98,8 +98,7 @@ type DescriptorFile struct {
 		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
-	StorageClass StorageClass `yaml:storageclass`
-	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
