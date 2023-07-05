@@ -44,7 +44,6 @@ type AWSBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	scName           string
 	scParameters     commons.SCParameters
 	scProvisioner    string
 	csiNamespace     string
@@ -84,7 +83,6 @@ func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
 }
 
 func (b *AWSBuilder) setSC(p ProviderParams) {
-	b.scName = "keos"
 	b.scProvisioner = "ebs.csi.aws.com"
 
 	if p.StorageClass.EncryptionKey != "" {
@@ -108,7 +106,6 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		scName:           b.scName,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,

@@ -37,6 +37,8 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.4.3"
 	CAPIBootstrapProvider    = "kubeadm:v1.4.3"
 	CAPIControlPlaneProvider = "kubeadm:v1.4.3"
+
+	scName = "keos"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -65,7 +67,6 @@ type Provider struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	scName           string
 	scParameters     commons.SCParameters
 	scProvisioner    string
 	csiNamespace     string
@@ -113,7 +114,7 @@ var scTemplate = KeosStorageClass{
 		Annotations: map[string]string{
 			defaultScAnnotation: "true",
 		},
-		Name: "keos",
+		Name: scName,
 	},
 	AllowVolumeExpansion: true,
 	VolumeBindingMode:    "WaitForFirstConsumer",

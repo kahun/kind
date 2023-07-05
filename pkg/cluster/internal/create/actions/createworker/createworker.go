@@ -600,7 +600,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
 
-	err = createKEOSDescriptor(*descriptorFile, provider.scName)
+	err = createKEOSDescriptor(*descriptorFile, scName)
 	if err != nil {
 		return err
 	}

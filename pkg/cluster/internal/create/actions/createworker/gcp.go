@@ -44,7 +44,6 @@ type GCPBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	scName           string
 	scParameters     commons.SCParameters
 	scProvisioner    string
 	csiNamespace     string
@@ -96,7 +95,6 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 }
 
 func (b *GCPBuilder) setSC(p ProviderParams) {
-	b.scName = "keos"
 	b.scProvisioner = "pd.csi.storage.gke.io"
 
 	if p.StorageClass.EncryptionKey != "" {
@@ -118,7 +116,6 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		scName:           b.scName,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,

@@ -49,7 +49,6 @@ type AzureBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	scName           string
 	scParameters     commons.SCParameters
 	scProvisioner    string
 	csiNamespace     string
@@ -75,7 +74,6 @@ func (b *AzureBuilder) setCapx(managed bool) {
 }
 
 func (b *AzureBuilder) setSC(p ProviderParams) {
-	b.scName = "keos"
 	b.scProvisioner = "disk.csi.azure.com"
 
 	if p.StorageClass.EncryptionKey != "" {
@@ -107,7 +105,6 @@ func (b *AzureBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		scName:           b.scName,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,
