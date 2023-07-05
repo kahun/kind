@@ -167,8 +167,8 @@ spec:
         type: {{ .Descriptor.ControlPlane.RootVolume.Type }}
         {{- end }}
         encrypted: {{ .Descriptor.ControlPlane.RootVolume.Encrypted }}
-        {{- if .Descriptor.ControlPlane.EncryptionKey }}
-        encryptionKey: {{ .Descriptor.ControlPlane.EncryptionKey }}
+        {{- if .Descriptor.ControlPlane.RootVolume.EncryptionKey }}
+        encryptionKey: {{ .Descriptor.ControlPlane.RootVolume.EncryptionKey }}
         {{- end }}
       sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
 {{- range $node := .Descriptor.WorkerNodes }}
