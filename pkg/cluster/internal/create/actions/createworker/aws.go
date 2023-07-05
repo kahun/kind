@@ -36,8 +36,6 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-var defaultAWSSc = "gp2"
-
 var storageClassAWSTemplate = StorageClassDef{
 	APIVersion: "storage.k8s.io/v1",
 	Kind:       "StorageClass",
@@ -56,15 +54,6 @@ var storageClassAWSTemplate = StorageClassDef{
 	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
-var standardAWSParameters = commons.SCParameters{
-	Type: "gp3",
-}
-
-var premiumAWSParameters = commons.SCParameters{
-	Type: "io2",
-	Iops: "64000",
-}
-
 type AWSBuilder struct {
 	capxProvider     string
 	capxVersion      string
@@ -72,7 +61,9 @@ type AWSBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scName           string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 }
 
@@ -80,18 +71,18 @@ func newAWSBuilder() *AWSBuilder {
 	return &AWSBuilder{}
 }
 
-func (b *AWSBuilder) setCapx(managed bool) {
+func (b *AWSBuilder) setCapx(p commons.ProviderParams) {
 	b.capxProvider = "aws"
 	b.capxVersion = "v2.1.4"
 	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
-	b.stClassName = "keos"
-	if managed {
+
+	b.csiNamespace = "kube-system"
+
+	if p.Managed {
 		b.capxTemplate = "aws.eks.tmpl"
-		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "aws.tmpl"
-		b.csiNamespace = ""
 	}
 }
 
@@ -109,6 +100,23 @@ func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	}
 }
 
+func (b *AWSBuilder) setSC(p commons.ProviderParams) {
+	b.scName = "keos"
+	b.scProvisioner = "ebs.csi.aws.com"
+
+	if p.StorageClass.EncryptionKey != "" {
+		b.scParameters.Encrypted = "true"
+		b.scParameters.KmsKeyId = p.StorageClass.EncryptionKey
+	}
+
+	if p.StorageClass.Class == "premium" {
+		b.scParameters.Type = "io1"
+		b.scParameters.Iops = "64000"
+	} else {
+		b.scParameters.Type = "gp3"
+	}
+}
+
 func (b *AWSBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider:     b.capxProvider,
@@ -117,7 +125,9 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		stClassName:      b.stClassName,
+		scName:           b.scName,
+		scParameters:     b.scParameters,
+		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,
 	}
 }
@@ -337,17 +347,10 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 	return parts[1], nil
 }
 
-func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var cmd exec.Cmd
 
-	cmd = n.Command("kubectl", "--kubeconfig", k, "delete", "storageclass", defaultAWSSc)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to delete default StorageClass")
-	}
-
-	params := b.getParameters(sc)
-
-	storageClass, err := insertParameters(storageClassAWSTemplate, params)
+	storageClass, err := insertParameters(storageClassAWSTemplate, b.scParameters)
 	if err != nil {
 		return err
 	}
@@ -358,23 +361,8 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create StorageClass")
 	}
+
 	return nil
-
-}
-
-func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKey != "" {
-		sc.Parameters.Encrypted = "true"
-		sc.Parameters.KmsKeyId = sc.EncryptionKey
-	}
-	switch class := sc.Class; class {
-	case "standard":
-		return mergeSCParameters(sc.Parameters, standardAWSParameters)
-	case "premium":
-		return mergeSCParameters(sc.Parameters, premiumAWSParameters)
-	default:
-		return mergeSCParameters(sc.Parameters, standardAWSParameters)
-	}
 }
 
 func (b *AWSBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {

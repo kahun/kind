@@ -43,7 +43,9 @@ type GCPBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scName           string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 	dataCreds        map[string]interface{}
 	region           string
@@ -52,8 +54,6 @@ type GCPBuilder struct {
 func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
-
-var defaultGCPSc = "csi-gcp-pd"
 
 var storageClassGCPTemplate = StorageClassDef{
 	APIVersion: "storage.k8s.io/v1",
@@ -73,21 +73,13 @@ var storageClassGCPTemplate = StorageClassDef{
 	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
-var standardGCPParameters = commons.SCParameters{
-	Type: "pd-standard",
-}
-
-var premiumGCPParameters = commons.SCParameters{
-	Type: "pd-ssd",
-}
-
-func (b *GCPBuilder) setCapx(managed bool) {
+func (b *GCPBuilder) setCapx(p commons.ProviderParams) {
 	b.capxProvider = "gcp"
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
-	b.stClassName = "keos"
-	if managed {
+
+	if p.Managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
 	} else {
@@ -120,6 +112,21 @@ func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	}
 }
 
+func (b *GCPBuilder) setSC(p commons.ProviderParams) {
+	b.scName = "keos"
+	b.scProvisioner = "pd.csi.storage.gke.io"
+
+	if p.StorageClass.EncryptionKey != "" {
+		b.scParameters.DiskEncryptionKmsKey = p.StorageClass.EncryptionKey
+	}
+
+	if p.StorageClass.Class == "premium" {
+		b.scParameters.Type = "pd-ssd"
+	} else {
+		b.scParameters.Type = "pd-standard"
+	}
+}
+
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider:     b.capxProvider,
@@ -128,7 +135,9 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		stClassName:      b.stClassName,
+		scName:           b.scName,
+		scParameters:     b.scParameters,
+		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,
 	}
 }
@@ -198,36 +207,20 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return nil, errors.New("Error in project id")
 }
 
-func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var cmd exec.Cmd
 
-	params := b.getParameters(sc)
-	storageClass, err := insertParameters(storageClassGCPTemplate, params)
+	storageClass, err := insertParameters(storageClassGCPTemplate, b.scParameters)
 	if err != nil {
 		return err
 	}
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+		return errors.Wrap(err, "failed to create keosStorageClass")
 	}
+
 	return nil
-
-}
-
-func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKey != "" {
-		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKey
-	}
-	switch class := sc.Class; class {
-	case "standard":
-		return mergeSCParameters(sc.Parameters, standardGCPParameters)
-	case "premium":
-		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
-	default:
-		return mergeSCParameters(sc.Parameters, standardGCPParameters)
-
-	}
 }
 
 func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {

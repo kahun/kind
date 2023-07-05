@@ -99,10 +99,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	providerParams := commons.ProviderParams{
-		Region:      descriptorFile.Region,
-		Managed:     descriptorFile.ControlPlane.Managed,
-		Credentials: credentialsMap,
-		GithubToken: githubToken,
+		Region:       descriptorFile.Region,
+		Managed:      descriptorFile.ControlPlane.Managed,
+		Credentials:  credentialsMap,
+		GithubToken:  githubToken,
+		StorageClass: descriptorFile.StorageClass,
 	}
 
 	providerBuilder := getBuilder(descriptorFile.InfraProvider)
@@ -338,7 +339,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
 		defer ctx.Status.End(false)
 
-		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
+		err = infra.configureStorageClass(n, kubeconfigPath)
 		if err != nil {
 			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
 		}
@@ -599,7 +600,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
 
-	err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
+	err = createKEOSDescriptor(*descriptorFile, provider.scName)
 	if err != nil {
 		return err
 	}

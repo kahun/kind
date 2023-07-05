@@ -48,13 +48,31 @@ const defaultScAnnotation = "storageclass.kubernetes.io/is-default-class"
 //go:embed files/calico-metrics.yaml
 var calicoMetrics string
 
+var scTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			defaultScAnnotation: "true",
+		},
+		Name: "keos",
+	},
+	AllowVolumeExpansion: true,
+	Provisioner:          "",
+	Parameters:           make(map[string]interface{}),
+	VolumeBindingMode:    "WaitForFirstConsumer",
+}
+
 type PBuilder interface {
-	setCapx(managed bool)
+	setCapx(p commons.ProviderParams)
 	setCapxEnvVars(p commons.ProviderParams)
+	setSC(p commons.ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
-	configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error
-	getParameters(sc commons.StorageClass) commons.SCParameters
+	configureStorageClass(n nodes.Node, k string) error
 	getAzs(networks commons.Networks) ([]string, error)
 	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
 	getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error)
@@ -67,7 +85,9 @@ type Provider struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scName           string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 }
 
@@ -117,7 +137,7 @@ func newInfra(b PBuilder) *Infra {
 }
 
 func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
-	i.builder.setCapx(p.Managed)
+	i.builder.setCapx(p)
 	i.builder.setCapxEnvVars(p)
 	return i.builder.getProvider()
 }
@@ -126,8 +146,8 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func (i *Infra) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
-	return i.builder.configureStorageClass(n, k, sc)
+func (i *Infra) configureStorageClass(n nodes.Node, k string) error {
+	return i.builder.configureStorageClass(n, k)
 }
 
 func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
@@ -438,45 +458,6 @@ func getManifest(name string, params interface{}) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
-}
-
-func setStorageClassParameters(storageClass string, params map[string]string, lineToStart string) (string, error) {
-
-	paramIndex := strings.Index(storageClass, lineToStart)
-	if paramIndex == -1 {
-		return storageClass, nil
-	}
-
-	var lines []string
-	for key, value := range params {
-		line := "  " + key + ": " + value
-		lines = append(lines, line)
-	}
-
-	linesToInsert := "\n" + strings.Join(lines, "\n") + "\n"
-	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + linesToInsert + storageClass[paramIndex+len(lineToStart):]
-
-	return newStorageClass, nil
-}
-
-func mergeSCParameters(params1, params2 commons.SCParameters) commons.SCParameters {
-	destValue := reflect.ValueOf(&params1).Elem()
-	srcValue := reflect.ValueOf(&params2).Elem()
-
-	for i := 0; i < srcValue.NumField(); i++ {
-		srcField := srcValue.Field(i)
-		destField := destValue.Field(i)
-
-		if srcField.IsValid() && destField.IsValid() && destField.CanSet() {
-			destFieldValue := destField.Interface()
-
-			if reflect.DeepEqual(destFieldValue, reflect.Zero(destField.Type()).Interface()) {
-				destField.Set(srcField)
-			}
-		}
-	}
-
-	return params1
 }
 
 func insertParameters(storageClass StorageClassDef, params commons.SCParameters) (string, error) {

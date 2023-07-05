@@ -253,10 +253,11 @@ type EFS struct {
 }
 
 type ProviderParams struct {
-	Region      string
-	Managed     bool
-	Credentials map[string]string
-	GithubToken string
+	Region       string
+	Managed      bool
+	Credentials  map[string]string
+	GithubToken  string
+	StorageClass StorageClass
 }
 
 type StorageClass struct {

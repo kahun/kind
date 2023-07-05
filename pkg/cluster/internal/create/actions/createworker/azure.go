@@ -59,14 +59,6 @@ var storageClassAZTemplate = StorageClassDef{
 	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
-var standardAZParameters = commons.SCParameters{
-	SkuName: "StandardSSD_LRS",
-}
-
-var premiumAZParameters = commons.SCParameters{
-	SkuName: "Premium_LRS",
-}
-
 type AzureBuilder struct {
 	capxProvider     string
 	capxVersion      string
@@ -74,7 +66,9 @@ type AzureBuilder struct {
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scName           string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 }
 
@@ -82,17 +76,33 @@ func newAzureBuilder() *AzureBuilder {
 	return &AzureBuilder{}
 }
 
-func (b *AzureBuilder) setCapx(managed bool) {
+func (b *AzureBuilder) setCapx(p commons.ProviderParams) {
 	b.capxProvider = "azure"
 	b.capxVersion = "v1.9.3"
 	b.capxImageVersion = "v1.9.3"
 	b.capxName = "capz"
-	b.stClassName = "keos"
+
 	b.csiNamespace = "kube-system"
-	if managed {
+
+	if p.Managed {
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
 		b.capxTemplate = "azure.tmpl"
+	}
+}
+
+func (b *AzureBuilder) setSC(p commons.ProviderParams) {
+	b.scName = "keos"
+	b.scProvisioner = "disk.csi.azure.com"
+
+	if p.StorageClass.EncryptionKey != "" {
+		b.scParameters.DiskEncryptionSetID = p.StorageClass.EncryptionKey
+	}
+
+	if p.StorageClass.Class == "premium" {
+		b.scParameters.SkuName = "Premium_LRS"
+	} else {
+		b.scParameters.SkuName = "StandardSSD_LRS"
 	}
 }
 
@@ -114,7 +124,9 @@ func (b *AzureBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		stClassName:      b.stClassName,
+		scName:           b.scName,
+		scParameters:     b.scParameters,
+		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,
 	}
 }
@@ -138,10 +150,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
-}
-
-func (b *AzureBuilder) setStorageClassParameters(storageClass string, params map[string]string) (string, error) {
-	return "", nil
 }
 
 func (b *AzureBuilder) getAzs(networks commons.Networks) ([]string, error) {
@@ -244,7 +252,7 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 	return response["refresh_token"].(string), nil
 }
 
-func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var cmd exec.Cmd
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "annotate", "sc", "default", defaultScAnnotation+"-")
@@ -252,8 +260,7 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.
 		return errors.Wrap(err, "failed to unannotate default Azure Storage Classes")
 	}
 
-	params := b.getParameters(sc)
-	storageClass, err := insertParameters(storageClassAZTemplate, params)
+	storageClass, err := insertParameters(storageClassAZTemplate, b.scParameters)
 	if err != nil {
 		return err
 	}
@@ -262,22 +269,8 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create StorageClass")
 	}
+
 	return nil
-
-}
-
-func (b *AzureBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKey != "" {
-		sc.Parameters.DiskEncryptionSetID = sc.EncryptionKey
-	}
-	switch class := sc.Class; class {
-	case "standard":
-		return mergeSCParameters(sc.Parameters, standardAZParameters)
-	case "premium":
-		return mergeSCParameters(sc.Parameters, premiumAZParameters)
-	default:
-		return mergeSCParameters(sc.Parameters, standardAZParameters)
-	}
 }
 
 func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
