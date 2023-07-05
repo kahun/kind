@@ -252,14 +252,6 @@ type EFS struct {
 	Permissions string `yaml:"permissions,omitempty"`
 }
 
-type ProviderParams struct {
-	Region       string
-	Managed      bool
-	Credentials  map[string]string
-	GithubToken  string
-	StorageClass StorageClass
-}
-
 type StorageClass struct {
 	EFS           EFS          `yaml:"efs"`
 	EncryptionKey string       `yaml:"encryptionKey,omitempty"  validate:"omitempty"`

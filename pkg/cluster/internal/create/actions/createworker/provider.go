@@ -21,11 +21,9 @@ import (
 	"embed"
 	"encoding/base64"
 	"reflect"
-	"strconv"
 	"strings"
 	"text/template"
 
-	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -48,28 +46,10 @@ const defaultScAnnotation = "storageclass.kubernetes.io/is-default-class"
 //go:embed files/calico-metrics.yaml
 var calicoMetrics string
 
-var scTemplate = StorageClassDef{
-	APIVersion: "storage.k8s.io/v1",
-	Kind:       "StorageClass",
-	Metadata: struct {
-		Annotations map[string]string `yaml:"annotations,omitempty"`
-		Name        string            `yaml:"name"`
-	}{
-		Annotations: map[string]string{
-			defaultScAnnotation: "true",
-		},
-		Name: "keos",
-	},
-	AllowVolumeExpansion: true,
-	Provisioner:          "",
-	Parameters:           make(map[string]interface{}),
-	VolumeBindingMode:    "WaitForFirstConsumer",
-}
-
 type PBuilder interface {
-	setCapx(p commons.ProviderParams)
-	setCapxEnvVars(p commons.ProviderParams)
-	setSC(p commons.ProviderParams)
+	setCapx(managed bool)
+	setCapxEnvVars(p ProviderParams)
+	setSC(p ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
@@ -102,17 +82,41 @@ type Infra struct {
 	builder PBuilder
 }
 
-type StorageClassDef struct {
+type ProviderParams struct {
+	Region       string
+	Managed      bool
+	Credentials  map[string]string
+	GithubToken  string
+	StorageClass commons.StorageClass
+}
+
+type KeosStorageClass struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 	Metadata   struct {
 		Annotations map[string]string `yaml:"annotations,omitempty"`
 		Name        string            `yaml:"name"`
 	} `yaml:"metadata"`
-	AllowVolumeExpansion bool                   `yaml:"allowVolumeExpansion"`
-	Provisioner          string                 `yaml:"provisioner"`
-	Parameters           map[string]interface{} `yaml:"parameters"`
-	VolumeBindingMode    string                 `yaml:"volumeBindingMode"`
+	AllowVolumeExpansion bool                 `yaml:"allowVolumeExpansion"`
+	Provisioner          string               `yaml:"provisioner"`
+	Parameters           commons.SCParameters `yaml:"parameters"`
+	VolumeBindingMode    string               `yaml:"volumeBindingMode"`
+}
+
+var scTemplate = KeosStorageClass{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			defaultScAnnotation: "true",
+		},
+		Name: "keos",
+	},
+	AllowVolumeExpansion: true,
+	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
 func getBuilder(builderType string) PBuilder {
@@ -136,9 +140,10 @@ func newInfra(b PBuilder) *Infra {
 	}
 }
 
-func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
-	i.builder.setCapx(p)
+func (i *Infra) buildProvider(p ProviderParams) Provider {
+	i.builder.setCapx(p.Managed)
 	i.builder.setCapxEnvVars(p)
+	i.builder.setSC(p)
 	return i.builder.getProvider()
 }
 
@@ -458,48 +463,4 @@ func getManifest(name string, params interface{}) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
-}
-
-func insertParameters(storageClass StorageClassDef, params commons.SCParameters) (string, error) {
-	paramsYAML, err := structToYAML(params)
-	if err != nil {
-		return "", err
-	}
-
-	newMap := map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(paramsYAML), &newMap)
-	if err != nil {
-		return "", err
-	}
-
-	for key, value := range newMap {
-		newKey := strings.ReplaceAll(key, "_", "-")
-		storageClass.Parameters[newKey] = value
-	}
-
-	if storageClass.Provisioner == "ebs.csi.aws.com" {
-		if labels, ok := storageClass.Parameters["labels"].(string); ok && labels != "" {
-			delete(storageClass.Parameters, "labels")
-			for i, label := range strings.Split(labels, ",") {
-				key_prefix := "tagSpecification_"
-				key := key_prefix + strconv.Itoa(i)
-				storageClass.Parameters[key] = label
-			}
-		}
-	}
-
-	resultYAML, err := yaml.Marshal(storageClass)
-	if err != nil {
-		return "", err
-	}
-
-	return string(resultYAML), nil
-}
-
-func structToYAML(data interface{}) (string, error) {
-	yamlBytes, err := yaml.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	return string(yamlBytes), nil
 }

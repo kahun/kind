@@ -30,29 +30,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
-
-var storageClassAWSTemplate = StorageClassDef{
-	APIVersion: "storage.k8s.io/v1",
-	Kind:       "StorageClass",
-	Metadata: struct {
-		Annotations map[string]string `yaml:"annotations,omitempty"`
-		Name        string            `yaml:"name"`
-	}{
-		Annotations: map[string]string{
-			"storageclass.kubernetes.io/is-default-class": "true",
-		},
-		Name: "keos",
-	},
-	AllowVolumeExpansion: true,
-	Provisioner:          "ebs.csi.aws.com",
-	Parameters:           make(map[string]interface{}),
-	VolumeBindingMode:    "WaitForFirstConsumer",
-}
 
 type AWSBuilder struct {
 	capxProvider     string
@@ -71,7 +54,7 @@ func newAWSBuilder() *AWSBuilder {
 	return &AWSBuilder{}
 }
 
-func (b *AWSBuilder) setCapx(p commons.ProviderParams) {
+func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws"
 	b.capxVersion = "v2.1.4"
 	b.capxImageVersion = "2.1.4-0.4.0"
@@ -79,14 +62,14 @@ func (b *AWSBuilder) setCapx(p commons.ProviderParams) {
 
 	b.csiNamespace = "kube-system"
 
-	if p.Managed {
+	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
 	} else {
 		b.capxTemplate = "aws.tmpl"
 	}
 }
 
-func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
+func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
 	awsCredentials := "[default]\naws_access_key_id = " + p.Credentials["AccessKey"] + "\naws_secret_access_key = " + p.Credentials["SecretKey"] + "\nregion = " + p.Region + "\n"
 	b.capxEnvVars = []string{
 		"AWS_REGION=" + p.Region,
@@ -100,7 +83,7 @@ func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	}
 }
 
-func (b *AWSBuilder) setSC(p commons.ProviderParams) {
+func (b *AWSBuilder) setSC(p ProviderParams) {
 	b.scName = "keos"
 	b.scProvisioner = "ebs.csi.aws.com"
 
@@ -320,7 +303,7 @@ func filterPublicSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	}
 }
 
-func getEcrToken(p commons.ProviderParams) (string, error) {
+func getEcrToken(p ProviderParams) (string, error) {
 	customProvider := credentials.NewStaticCredentialsProvider(
 		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
 	)
@@ -350,16 +333,17 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var cmd exec.Cmd
 
-	storageClass, err := insertParameters(storageClassAWSTemplate, b.scParameters)
+	scTemplate.Parameters = b.scParameters
+	scTemplate.Provisioner = b.scProvisioner
+
+	storageClass, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
 
-	storageClass = strings.ReplaceAll(storageClass, "fsType", "csi.storage.k8s.io/fstype")
-
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
+		return errors.Wrap(err, "failed to create keos StorageClass")
 	}
 
 	return nil

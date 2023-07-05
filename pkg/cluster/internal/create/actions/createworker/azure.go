@@ -32,6 +32,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -40,24 +41,6 @@ import (
 
 //go:embed files/azure/azure-storage-classes.yaml
 var azureStorageClasses string
-
-var storageClassAZTemplate = StorageClassDef{
-	APIVersion: "storage.k8s.io/v1",
-	Kind:       "StorageClass",
-	Metadata: struct {
-		Annotations map[string]string `yaml:"annotations,omitempty"`
-		Name        string            `yaml:"name"`
-	}{
-		Annotations: map[string]string{
-			defaultScAnnotation: "true",
-		},
-		Name: "keos",
-	},
-	AllowVolumeExpansion: true,
-	Provisioner:          "disk.csi.azure.com",
-	Parameters:           make(map[string]interface{}),
-	VolumeBindingMode:    "WaitForFirstConsumer",
-}
 
 type AzureBuilder struct {
 	capxProvider     string
@@ -76,7 +59,7 @@ func newAzureBuilder() *AzureBuilder {
 	return &AzureBuilder{}
 }
 
-func (b *AzureBuilder) setCapx(p commons.ProviderParams) {
+func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
 	b.capxVersion = "v1.9.3"
 	b.capxImageVersion = "v1.9.3"
@@ -84,14 +67,14 @@ func (b *AzureBuilder) setCapx(p commons.ProviderParams) {
 
 	b.csiNamespace = "kube-system"
 
-	if p.Managed {
+	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
 		b.capxTemplate = "azure.tmpl"
 	}
 }
 
-func (b *AzureBuilder) setSC(p commons.ProviderParams) {
+func (b *AzureBuilder) setSC(p ProviderParams) {
 	b.scName = "keos"
 	b.scProvisioner = "disk.csi.azure.com"
 
@@ -106,7 +89,7 @@ func (b *AzureBuilder) setSC(p commons.ProviderParams) {
 	}
 }
 
-func (b *AzureBuilder) setCapxEnvVars(p commons.ProviderParams) {
+func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
 		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
 		"EXP_MACHINE_POOL=true",
@@ -224,7 +207,7 @@ func assignUserIdentity(i string, c string, r string, s map[string]string) error
 	return nil
 }
 
-func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
+func getAcrToken(p ProviderParams, acrService string) (string, error) {
 	creds, err := azidentity.NewClientSecretCredential(
 		p.Credentials["TenantID"], p.Credentials["ClientID"], p.Credentials["ClientSecret"], nil,
 	)
@@ -260,14 +243,17 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to unannotate default Azure Storage Classes")
 	}
 
-	storageClass, err := insertParameters(storageClassAZTemplate, b.scParameters)
+	scTemplate.Parameters = b.scParameters
+	scTemplate.Provisioner = b.scProvisioner
+
+	storageClass, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
+		return errors.Wrap(err, "failed to create keos StorageClass")
 	}
 
 	return nil

@@ -98,7 +98,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	providerParams := commons.ProviderParams{
+	providerParams := ProviderParams{
 		Region:       descriptorFile.Region,
 		Managed:      descriptorFile.ControlPlane.Managed,
 		Credentials:  credentialsMap,

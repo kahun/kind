@@ -27,6 +27,7 @@ import (
 
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -55,31 +56,13 @@ func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
 
-var storageClassGCPTemplate = StorageClassDef{
-	APIVersion: "storage.k8s.io/v1",
-	Kind:       "StorageClass",
-	Metadata: struct {
-		Annotations map[string]string `yaml:"annotations,omitempty"`
-		Name        string            `yaml:"name"`
-	}{
-		Annotations: map[string]string{
-			"storageclass.kubernetes.io/is-default-class": "true",
-		},
-		Name: "keos",
-	},
-	AllowVolumeExpansion: true,
-	Provisioner:          "pd.csi.storage.gke.io",
-	Parameters:           make(map[string]interface{}),
-	VolumeBindingMode:    "WaitForFirstConsumer",
-}
-
-func (b *GCPBuilder) setCapx(p commons.ProviderParams) {
+func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
 
-	if p.Managed {
+	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
 	} else {
@@ -88,7 +71,7 @@ func (b *GCPBuilder) setCapx(p commons.ProviderParams) {
 	}
 }
 
-func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
+func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	data := map[string]interface{}{
 		"type":                        "service_account",
 		"project_id":                  p.Credentials["ProjectID"],
@@ -112,7 +95,7 @@ func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	}
 }
 
-func (b *GCPBuilder) setSC(p commons.ProviderParams) {
+func (b *GCPBuilder) setSC(p ProviderParams) {
 	b.scName = "keos"
 	b.scProvisioner = "pd.csi.storage.gke.io"
 
@@ -210,14 +193,17 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var cmd exec.Cmd
 
-	storageClass, err := insertParameters(storageClassGCPTemplate, b.scParameters)
+	scTemplate.Parameters = b.scParameters
+	scTemplate.Provisioner = b.scProvisioner
+
+	storageClass, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create keosStorageClass")
+	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
+		return errors.Wrap(err, "failed to create keos StorageClass")
 	}
 
 	return nil
