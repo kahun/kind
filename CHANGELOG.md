@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0-0.2.1 (upcoming)
+
+* Fix wait conditions for unmanaged clusters
+
 ## 0.17.0-0.2.0 (2023-07-05)
 
 * Add clusterAPI capabilities for AKS
