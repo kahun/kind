@@ -386,8 +386,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
-			// Wait for the worker cluster creation
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ready --timeout=15m --all md"
+			// Wait for all the machine deployments to be ready
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
@@ -395,14 +395,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if !descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.HighlyAvailable {
-			// Wait for all control planes creation
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 10m cluster " + descriptorFile.ClusterID
-			_, err = commons.ExecuteCommand(n, c)
-			if err != nil {
-				return errors.Wrap(err, "failed to create the worker Cluster")
-			}
 			// Wait for all control planes to be ready
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes"
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.readyReplicas}\"=3 --timeout 10m kubeadmcontrolplanes " + descriptorFile.ClusterID + "-control-plane"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
