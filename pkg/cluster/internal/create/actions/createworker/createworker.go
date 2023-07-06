@@ -397,10 +397,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		if !keosCluster.Spec.ControlPlane.Managed && keosCluster.Spec.ControlPlane.HighlyAvailable {
 			// Wait for all control planes creation
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 10m cluster " + keosCluster.Metadata.Name
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.replicas}\"=3 --timeout 10m --all kubeadmcontrolplanes"
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
+
 			// Wait for all control planes to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes"
 			_, err = commons.ExecuteCommand(n, c)
