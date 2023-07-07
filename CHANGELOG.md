@@ -3,6 +3,8 @@
 ## 0.17.0-0.3.0 (Upcoming)
 
 * Add clusterAPI capabilities for AWS VMs
+* Add EKS secrets encryption support
+* Fix wait conditions for unmanaged clusters
 
 ## 0.17.0-0.2.0 (2023-07-03)
 
