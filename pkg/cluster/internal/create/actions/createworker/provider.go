@@ -92,7 +92,7 @@ type ProviderParams struct {
 	StorageClass commons.StorageClass
 }
 
-type KeosStorageClass struct {
+type DefaultStorageClass struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 	Metadata   struct {
@@ -105,7 +105,7 @@ type KeosStorageClass struct {
 	VolumeBindingMode    string               `yaml:"volumeBindingMode"`
 }
 
-var scTemplate = KeosStorageClass{
+var scTemplate = DefaultStorageClass{
 	APIVersion: "storage.k8s.io/v1",
 	Kind:       "StorageClass",
 	Metadata: struct {

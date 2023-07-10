@@ -98,16 +98,22 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 }
 
 func (b *GCPBuilder) setSC(p ProviderParams) {
+	if (p.StorageClass.Parameters != commons.SCParameters{}) {
+		b.scParameters = p.StorageClass.Parameters
+	}
+
 	b.scProvisioner = "pd.csi.storage.gke.io"
+
+	if p.StorageClass.Parameters.Type == "" {
+		if p.StorageClass.Class == "premium" {
+			b.scParameters.Type = "pd-ssd"
+		} else {
+			b.scParameters.Type = "pd-standard"
+		}
+	}
 
 	if p.StorageClass.EncryptionKey != "" {
 		b.scParameters.DiskEncryptionKmsKey = p.StorageClass.EncryptionKey
-	}
-
-	if p.StorageClass.Class == "premium" {
-		b.scParameters.Type = "pd-ssd"
-	} else {
-		b.scParameters.Type = "pd-standard"
 	}
 }
 
@@ -212,13 +218,14 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 	scTemplate.Parameters = b.scParameters
 	scTemplate.Provisioner = b.scProvisioner
 
-	storageClass, err := yaml.Marshal(scTemplate)
+	scBytes, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
+	storageClass := strings.Replace(string(scBytes), "fsType", "csi.storage.k8s.io/fstype", -1)
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create default StorageClass")
 	}
 

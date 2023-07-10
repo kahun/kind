@@ -270,6 +270,10 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 		return err
 	}
 
+	// fmt.Println("\n===== DEBUG 2 =====")
+	// fmt.Println(string(storageClass))
+	// fmt.Println("===== DEBUG 2 =====\n")
+
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
 		return errors.Wrap(err, "failed to create default StorageClass")
