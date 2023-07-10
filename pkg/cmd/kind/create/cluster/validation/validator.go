@@ -92,18 +92,18 @@ func getValidator(provider string, managed bool) (Validator, error) {
 }
 
 func verifyFields(descriptor commons.Spec) error {
+	var supportedFields []string
 	params := descriptor.StorageClass.Parameters
-	supportedFields := []string{}
 	switch descriptor.InfraProvider {
 	case "gcp":
-		supportedFields = []string{"type", "fsType", "provisioned_iops_on_create", "replication_type", "labels"}
-		err := verifyAdditionalFields(params, []string{"Type", "FsType", "ProvisionedIopsOnCreate", "ReplicationType", "Labels"})
+		supportedFields = []string{"type", "fsType", "labels", "provisioned-iops-on-create", "provisioned-throughput-on-create", "replication-type"}
+		err := verifyAdditionalFields(params, []string{"Type", "FsType", "Labels", "ProvisionedIopsOnCreate", "ProvisionedThroughputOnCreate", "ReplicationType"})
 		if err != nil {
 			return errors.New(err.Error() + "Supported fields for " + descriptor.InfraProvider + ": " + strings.Join(supportedFields, ", "))
 		}
 	case "aws":
-		supportedFields = []string{"type", "iopsPerGB", "fsType", "encrypted", "allowAutoIOPSPerGBIncrease", "iops", "throughput", "blockExpress", "blockSize", "labels"}
-		err := verifyAdditionalFields(params, []string{"Type", "IopsPerGB", "FsType", "Encrypted", "AllowAutoIOPSPerGBIncrease", "Iops", "Throughput", "BlockExpress", "BlockSize", "Labels"})
+		supportedFields = []string{"type", "fsType", "labels", "allowAutoIOPSPerGBIncrease", "blockExpress", "blockSize", "iops", "iopsPerGB", "encrypted", "throughput"}
+		err := verifyAdditionalFields(params, []string{"Type", "FsType", "Labels", "AllowAutoIOPSPerGBIncrease", "BlockExpress", "BlockSize", "Iops", "IopsPerGB", "Encrypted", "Throughput"})
 		if err != nil {
 			return errors.New(err.Error() + "Supported fields for " + descriptor.InfraProvider + ": " + strings.Join(supportedFields, ", "))
 		}
