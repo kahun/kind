@@ -7,82 +7,83 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"{{- if .KeosCluster.Spec.Networks.PodsCidrBlock -}} {{ .KeosCluster.Spec.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-    kind: GCPCluster
-    name: "{{ .KeosCluster.Metadata.Name }}"
+      cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
-    kind: KubeadmControlPlane
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
     name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: "{{ .KeosCluster.Metadata.Name }}"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: GCPCluster
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
 metadata:
   name: "{{ .KeosCluster.Metadata.Name }}"
   namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
-  project: {{ .Credentials.ProjectID }}
-  region: "{{ .KeosCluster.Spec.Region }}"
-  {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
-  network:
-    name: {{ .KeosCluster.Spec.Networks.VPCID }}
-    {{- if gt (len .KeosCluster.Spec.Networks.Subnets) 0 }}
-    autoCreateSubnetworks: false
-    subnets:
-    {{- with (index .KeosCluster.Spec.Networks.Subnets 0) }}
-    - name: {{ .SubnetId }}
-      region: "{{ $.KeosCluster.Spec.Region }}"
+  additionalTags:
+    "keos.stratio.com/owner": \"{{ .KeosCluster.Metadata.Name }}\"
+  {{- range .KeosCluster.Spec.ControlPlane.Tags }}
+    {{- range $key, $value := . }}
+    {{ $key }}: \"{{ $value }}\"
     {{- end }}
   {{- end }}
-  {{- else }}
+  region: "{{ .KeosCluster.Spec.Region }}"
   network:
-    name: default
+    cni:
+      cniIngressRules:
+        - description: \"bgp (calico)\"
+          protocol: tcp
+          fromPort: 179
+          toPort: 179
+        - description: \"IP-in-IP (calico)\"
+          protocol: \"4\"
+          fromPort: -1
+          toPort: 65535
+        - description: \"typha (calico)\"
+          protocol: tcp
+          fromPort: 5473
+          toPort: 5473
+  {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
+    vpc:
+      id: {{ .KeosCluster.Spec.Networks.VPCID }}
+    {{- if ne .KeosCluster.Spec.Networks.Subnets nil }}
+    subnets:
+      {{- range .KeosCluster.Spec.Networks.Subnets }}
+      - id: {{ .SubnetId }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 ---
-kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
 metadata:
   name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   replicas: {{- if .KeosCluster.Spec.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
-    metadata:
-      labels:
-        keos.stratio.com/machine-role: "{{ .KeosCluster.Metadata.Name }}-control-plane-node"
     infrastructureRef:
-      kind: GCPMachineTemplate
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AWSMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
-        name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
         kubeletExtraArgs:
-          cloud-provider: gce
+          cloud-provider: aws
     clusterConfiguration:
       apiServer:
-        timeoutForControlPlane: 20m
         extraArgs:
-          cloud-provider: gce
+          cloud-provider: aws
       controllerManager:
         extraArgs:
-          cloud-provider: gce
-          allocate-node-cidrs: \"false\"
-          cloud-config: /etc/kubernetes/gce.conf
-        extraVolumes:
-          - hostPath: /etc/kubernetes/gce.conf
-            mountPath: /etc/kubernetes/gce.conf
-            name: gce-conf
-            pathType: FileOrCreate
-    files:
-      - content: |
-          [Global]
-          multizone=true
-        path: /etc/kubernetes/gce.conf
+          cloud-provider: aws
     {{- if gt (len .DockerRegistries) 0 }}
+    files:
       - content: |
           version = 2
           imports = [\"/etc/containerd/conf.d/*.toml\"]
@@ -117,56 +118,66 @@ spec:
     diskSetup:
       filesystems:
         {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
-        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
-          filesystem: ext4
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          filesystem: xfs
           label: {{ $vol.Label }}
         {{- end }}
       partitions:
         {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
-        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
           layout: true
           overwrite: false
           tableType: gpt
         {{- end }}
     mounts:
       {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
-      - - LABEL={{ $vol.Label }}
+      - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
         - {{ $vol.MountPath }}
       {{- end }}
     {{- end }}
     joinConfiguration:
       nodeRegistration:
-        name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
         kubeletExtraArgs:
-          cloud-provider: gce
+          cloud-provider: aws
   version: "{{ .KeosCluster.Spec.K8SVersion }}"
 ---
-kind: GCPMachineTemplate
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AWSMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 metadata:
   name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
+      {{- if ne .KeosCluster.Spec.ControlPlane.NodeImage "" }}
+      ami:
+        id: {{ .KeosCluster.Spec.ControlPlane.NodeImage }}
+      {{- end }}
       instanceType: "{{ .KeosCluster.Spec.ControlPlane.Size }}"
-      image: "{{ .KeosCluster.Spec.ControlPlane.NodeImage }}"
-      {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
-      rootDeviceSize: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
-      {{- end }}
-      {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
-      rootDeviceType: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
-      {{- end }}
-      {{- if ne .KeosCluster.Spec.Networks.Subnets nil }}
-      subnet: {{ with (index .KeosCluster.Spec.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
-      {{- end }}
+      iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
       {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
-      additionalDisks:
+      nonRootVolumes:
         {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
-        - deviceType: {{ $vol.Type }}
+        - deviceName: {{ $vol.DeviceName }}
           size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
       {{- end }}
+      rootVolume:
+        size: {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
+        type: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Encrypted }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.EncryptionKey }}
+        encryptionKey: {{ .KeosCluster.Spec.ControlPlane.RootVolume.EncryptionKey }}
+        {{- end }}
+      sshKeyName: \"{{ .KeosCluster.Spec.Bastion.SSHKey }}\"
 {{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
@@ -184,15 +195,13 @@ spec:
   clusterName: "{{ $.KeosCluster.Metadata.Name }}"
   replicas: {{ $n.QA }}
   selector:
-    matchLabels:
+    matchLabels: null
   template:
     metadata:
       labels:
         keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
     spec:
       clusterName: "{{ $.KeosCluster.Metadata.Name }}"
-      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
-      failureDomain: "{{ $n.AZ }}"
       bootstrap:
         configRef:
           name: "{{ $node.Name }}-md-{{ $index }}"
@@ -200,35 +209,49 @@ spec:
           kind: KubeadmConfigTemplate
       infrastructureRef:
         name: "{{ $node.Name }}-md-{{ $index }}"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-        kind: GCPMachineTemplate
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+      failureDomain: "{{ $n.AZ }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-kind: GCPMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
-      additionalNetworkTags: ["{{ $node.Name }}-md-{{ $index }}"]
+      {{- if ne $node.NodeImage "" }}
+      ami:
+        id: {{ $node.NodeImage }}
+      {{- end }}
+      iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
-      image: "{{ $node.NodeImage }}"
-      {{- if $node.RootVolume.Size }}
-      rootDeviceSize: {{ $node.RootVolume.Size }}
-      {{- end }}
-      {{- if $node.RootVolume.Type }}
-      rootDeviceType: {{ $node.RootVolume.Type }}
-      {{- end }}
-      {{- if ne $.KeosCluster.Spec.Networks.Subnets nil }}
-      subnet: {{ with (index $.KeosCluster.Spec.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
-      {{- end }}
       {{- if $node.ExtraVolumes }}
-      additionalDisks:
+      nonRootVolumes:
         {{- range $index, $vol := $node.ExtraVolumes }}
-        - deviceType: {{ $vol.Type }}
+        - deviceName: {{ $vol.DeviceName }}
           size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
+      {{- end }}
+      rootVolume:
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if $node.RootVolume.Type }}
+        type: {{ $node.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ $node.RootVolume.Encrypted }}
+        {{- if $node.RootVolume.EncryptionKey }}
+        encryptionKey: {{ $node.RootVolume.EncryptionKey }}
+        {{- end }}
+      sshKeyName: \"{{ $node.SSHKey }}\"
+      {{- if $node.Spot }}
+      spotMarketOptions: {}
       {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -275,33 +298,30 @@ spec:
       diskSetup:
         filesystems:
           {{- range $index, $vol := $node.ExtraVolumes }}
-          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
-            filesystem: ext4
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            filesystem: xfs
             label: {{ $vol.Label }}
           {{- end }}
         partitions:
           {{- range $index, $vol := $node.ExtraVolumes }}
-          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
             layout: true
             overwrite: false
             tableType: gpt
           {{- end }}
       mounts:
         {{- range $index, $vol := $node.ExtraVolumes }}
-        - - LABEL={{ $vol.Label }}
+        - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
           - {{ $vol.MountPath }}
         {{- end }}
       {{- end }}
       joinConfiguration:
         nodeRegistration:
-          name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
+          name: {{`'{{ ds.meta_data.local_hostname }}'`}}
           kubeletExtraArgs:
-            cloud-provider: gce
-            {{- if gt (len $node.Labels) 0 }}
+            cloud-provider: aws
+            {{- if $node.Labels }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
-            {{- end }}
-            {{- if gt (len $node.Taints) 0 }}
-            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
             {{- end }}
 {{- end }}
 {{- end }}

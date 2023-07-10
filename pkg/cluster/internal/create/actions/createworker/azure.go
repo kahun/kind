@@ -46,6 +46,7 @@ type AzureBuilder struct {
 	capxProvider     string
 	capxVersion      string
 	capxImageVersion string
+	capxManaged      bool
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
@@ -67,8 +68,10 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.csiNamespace = "kube-system"
 
 	if managed {
+		b.capxManaged = true
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
+		b.capxManaged = false
 		b.capxTemplate = "azure.tmpl"
 	}
 }
@@ -102,6 +105,7 @@ func (b *AzureBuilder) getProvider() Provider {
 		capxProvider:     b.capxProvider,
 		capxVersion:      b.capxVersion,
 		capxImageVersion: b.capxImageVersion,
+		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
@@ -136,13 +140,13 @@ func (b *AzureBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return []string{"1", "2", "3"}, nil
 }
 
-func installCloudProvider(n nodes.Node, descriptorFile commons.DescriptorFile, k string, clusterName string) error {
+func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
 	var c string
 	var err error
 	var podsCidrBlock string
 
-	if descriptorFile.Networks.PodsCidrBlock != "" {
-		podsCidrBlock = descriptorFile.Networks.PodsCidrBlock
+	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
 	} else {
 		podsCidrBlock = "192.168.0.0/16"
 	}
@@ -233,11 +237,29 @@ func getAcrToken(p ProviderParams, acrService string) (string, error) {
 }
 
 func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
+	var c string
+	var err error
 	var cmd exec.Cmd
 
-	cmd = n.Command("kubectl", "--kubeconfig", k, "annotate", "sc", "default", defaultScAnnotation+"-")
-	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
-		return errors.Wrap(err, "failed to unannotate default Azure Storage Classes")
+	// Remove annotation from default storage class
+	c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+	output, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default storage class")
+	}
+	if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+		c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to remove annotation from default storage class")
+		}
+	}
+
+	if !b.capxManaged {
+		cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+		if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
+			return errors.Wrap(err, "failed to create Azure storage classes")
+		}
 	}
 
 	scTemplate.Parameters = b.scParameters
@@ -250,13 +272,13 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
-		return errors.Wrap(err, "failed to create keos StorageClass")
+		return errors.Wrap(err, "failed to create default StorageClass")
 	}
 
 	return nil
 }
 
-func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterName string) (bool, error) {
 	var resourceGroup string
 	os.Setenv("AZURE_CLIENT_ID", credentialsMap["ClientID"])
 	os.Setenv("AZURE_SECRET_ID", credentialsMap["ClientSecret"])
@@ -279,7 +301,7 @@ func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap m
 		if networks.ResourceGroup != "" {
 			resourceGroup = networks.ResourceGroup
 		} else {
-			resourceGroup = ClusterID
+			resourceGroup = clusterName
 		}
 		for _, subnet := range networks.Subnets {
 			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, subnet.SubnetId)
@@ -306,9 +328,9 @@ func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.Subn
 	}
 }
 
-func (b *AzureBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+func (b *AzureBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
 	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}

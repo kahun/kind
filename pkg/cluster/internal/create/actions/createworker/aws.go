@@ -41,6 +41,7 @@ type AWSBuilder struct {
 	capxProvider     string
 	capxVersion      string
 	capxImageVersion string
+	capxManaged      bool
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
@@ -62,8 +63,10 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.csiNamespace = "kube-system"
 
 	if managed {
+		b.capxManaged = true
 		b.capxTemplate = "aws.eks.tmpl"
 	} else {
+		b.capxManaged = false
 		b.capxTemplate = "aws.tmpl"
 	}
 }
@@ -103,6 +106,7 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxProvider:     b.capxProvider,
 		capxVersion:      b.capxVersion,
 		capxImageVersion: b.capxImageVersion,
+		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
@@ -113,6 +117,17 @@ func (b *AWSBuilder) getProvider() Provider {
 }
 
 func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var err error
+
+	c = "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
+	}
+
 	return nil
 }
 
@@ -206,7 +221,7 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 }
 
-func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterName string) (bool, error) {
 	if len(b.capxEnvVars) == 0 {
 		return false, errors.New("Insufficient credentials.")
 	}
@@ -328,7 +343,23 @@ func getEcrToken(p ProviderParams) (string, error) {
 }
 
 func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
+	var c string
+	var err error
 	var cmd exec.Cmd
+
+	// Remove annotation from default storage class
+	c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+	output, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default storage class")
+	}
+	if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+		c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to remove annotation from default storage class")
+		}
+	}
 
 	scTemplate.Parameters = b.scParameters
 	scTemplate.Provisioner = b.scProvisioner
@@ -340,19 +371,18 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
-		return errors.Wrap(err, "failed to create keos StorageClass")
+		return errors.Wrap(err, "failed to create default StorageClass")
 	}
-
 	return nil
 }
 
-func (b *AWSBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+func (b *AWSBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
 	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
-	pvcSizeOVPath, pvcSizeOVValue, err := b.getPvcSizeOverrideVars(descriptor.StorageClass)
+	pvcSizeOVPath, pvcSizeOVValue, err := b.getPvcSizeOverrideVars(keosCluster.Spec.StorageClass)
 	if err != nil {
 		return nil, err
 	}
@@ -369,8 +399,8 @@ func (b *AWSBuilder) getPvcSizeOverrideVars(sc commons.StorageClass) (string, []
 	return "", []byte(""), nil
 }
 
-func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
-	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
+func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, clusterName string) (string, []byte, error) {
+	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, clusterName)
 	if err != nil {
 		return "", nil, err
 	}

@@ -41,6 +41,7 @@ type GCPBuilder struct {
 	capxProvider     string
 	capxVersion      string
 	capxImageVersion string
+	capxManaged      bool
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
@@ -62,9 +63,11 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxName = "capg"
 
 	if managed {
+		b.capxManaged = true
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
 	} else {
+		b.capxManaged = false
 		b.capxTemplate = "gcp.tmpl"
 		b.csiNamespace = "gce-pd-csi-driver"
 	}
@@ -188,7 +191,23 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
+	var c string
+	var err error
 	var cmd exec.Cmd
+
+	// Remove annotation from default storage class
+	c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+	output, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default storage class")
+	}
+	if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+		c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to remove annotation from default storage class")
+		}
+	}
 
 	scTemplate.Parameters = b.scParameters
 	scTemplate.Provisioner = b.scProvisioner
@@ -200,7 +219,7 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
-		return errors.Wrap(err, "failed to create keos StorageClass")
+		return errors.Wrap(err, "failed to create default StorageClass")
 	}
 
 	return nil
@@ -247,9 +266,9 @@ func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, re
 	}
 }
 
-func (b *GCPBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+func (b *GCPBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
 	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
