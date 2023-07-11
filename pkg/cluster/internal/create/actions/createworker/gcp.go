@@ -226,7 +226,7 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create default StorageClass")
+		return errors.Wrap(err, "failed to create default storage class")
 	}
 
 	return nil
