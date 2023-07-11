@@ -96,7 +96,7 @@ func (b *AWSBuilder) setSC(p ProviderParams) {
 
 	if b.scParameters.Type == "" {
 		if p.StorageClass.Class == "premium" {
-			b.scParameters.Type = "io1"
+			b.scParameters.Type = "io2"
 			b.scParameters.IopsPerGB = "64000"
 		} else {
 			b.scParameters.Type = "gp3"
