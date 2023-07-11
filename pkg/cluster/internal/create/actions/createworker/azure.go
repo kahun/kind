@@ -265,17 +265,14 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 	scTemplate.Parameters = b.scParameters
 	scTemplate.Provisioner = b.scProvisioner
 
-	storageClass, err := yaml.Marshal(scTemplate)
+	scBytes, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
-
-	// fmt.Println("\n===== DEBUG 2 =====")
-	// fmt.Println(string(storageClass))
-	// fmt.Println("===== DEBUG 2 =====\n")
+	storageClass := strings.Replace(string(scBytes), "fsType", "csi.storage.k8s.io/fstype", -1)
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(string(storageClass))).Run(); err != nil {
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create default StorageClass")
 	}
 
