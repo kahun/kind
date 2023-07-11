@@ -247,17 +247,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
-	// fmt.Println("\n===== DEBUG 1 =====")
-	// ctx.Status.Start("Installing StorageClass in workload cluster 💾")
-	// defer ctx.Status.End(false)
-
-	// err = infra.configureStorageClass(n, kubeconfigPath)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
-	// }
-	// ctx.Status.End(true) // End Installing StorageClass in workload cluster
-	// fmt.Println("===== DEBUG 1 =====\n")
-
 	if !a.avoidCreation {
 		if keosCluster.Spec.InfraProvider == "aws" && keosCluster.Spec.Security.AWS.CreateIAM {
 			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")

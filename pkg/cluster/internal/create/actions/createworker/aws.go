@@ -21,6 +21,8 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -376,9 +378,15 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	}
 	storageClass := strings.Replace(string(scBytes), "fsType", "csi.storage.k8s.io/fstype", -1)
 
-	// fmt.Println("\n===== DEBUG 2 =====")
-	// fmt.Println(storageClass)
-	// fmt.Println("===== DEBUG 2 =====\n")
+	if b.scParameters.Labels != "" {
+		var tags string
+		re := regexp.MustCompile(`\s*labels: (.*,?)`)
+		labels := re.FindStringSubmatch(storageClass)[1]
+		for i, label := range strings.Split(labels, ",") {
+			tags += "\n    tagSpecification_" + strconv.Itoa(i+1) + ": \"" + strings.TrimSpace(label) + "\""
+		}
+		storageClass = re.ReplaceAllString(storageClass, tags)
+	}
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
@@ -394,21 +402,18 @@ func (b *AWSBuilder) getOverrideVars(keosCluster commons.KeosCluster, credential
 	if err != nil {
 		return nil, err
 	}
-	pvcSizeOVPath, pvcSizeOVValue, err := b.getPvcSizeOverrideVars(keosCluster.Spec.StorageClass)
-	if err != nil {
-		return nil, err
-	}
+
 	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
-	overrideVars = addOverrideVar(pvcSizeOVPath, pvcSizeOVValue, overrideVars)
+
+	// Add override vars for storage class
+	if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
+		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), overrideVars)
+	}
+	if commons.Contains([]string{"st1", "sc1"}, b.scParameters.Type) {
+		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
+	}
 
 	return overrideVars, nil
-}
-
-func (b *AWSBuilder) getPvcSizeOverrideVars(sc commons.StorageClass) (string, []byte, error) {
-	if (sc.Class == "premium" && sc.Parameters.Type == "") || sc.Parameters.Type == "io2" || sc.Parameters.Type == "io1" {
-		return "storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), nil
-	}
-	return "", []byte(""), nil
 }
 
 func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, clusterName string) (string, []byte, error) {

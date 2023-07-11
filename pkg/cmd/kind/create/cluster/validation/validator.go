@@ -108,8 +108,8 @@ func verifyFields(descriptor commons.Spec) error {
 			return errors.New(err.Error() + "Supported fields for " + descriptor.InfraProvider + ": " + strings.Join(supportedFields, ", "))
 		}
 	case "azure":
-		supportedFields = []string{"provisioner", "fsType", "skuName", "kind", "cachingMode", "diskEncryptionType", "resourceGroup", "tags", "networkAccessPolicy", "publicNetworkAccess", "diskAccessID", "enableBursting", "enablePerformancePlus", "subscriptionID"}
-		err := verifyAdditionalFields(params, []string{"Provisioner", "FsType", "SkuName", "Kind", "CachingMode", "DiskEncryptionType", "ResourceGroup", "Tags", "NetworkAccessPolicy", "PublicNetworkAccess", "DiskAccessID", "EnableBursting", "EnablePerformancePlus", "SubscriptionID"})
+		supportedFields = []string{"fsType", "kind", "cachingMode", "diskAccessID", "diskEncryptionType", "enableBursting", "enablePerformancePlus", "networkAccessPolicy", "provisioner", "publicNetworkAccess", "resourceGroup", "skuName", "subscriptionID", "tags"}
+		err := verifyAdditionalFields(params, []string{"FsType", "Kind", "CachingMode", "DiskAccessID", "DiskEncryptionType", "EnableBursting", "EnablePerformancePlus", "NetworkAccessPolicy", "Provisioner", "PublicNetworkAccess", "ResourceGroup", "SkuName", "SubscriptionID", "Tags"})
 		if err != nil {
 			return errors.New(err.Error() + "Supported fields for " + descriptor.InfraProvider + ": " + strings.Join(supportedFields, ", "))
 		}
