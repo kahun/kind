@@ -513,9 +513,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 					return errors.Wrap(err, "failed to apply allow CAPA as egress GlobalNetworkPolicy")
 				}
 			}
-		}
 
-		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
+			ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
+		}
 
 		if keosCluster.Spec.DeployAutoscaler && !(keosCluster.Spec.InfraProvider == "azure" && keosCluster.Spec.ControlPlane.Managed) {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
@@ -599,12 +599,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err != nil {
 		return err
 	}
-	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	err = override_vars(*keosCluster, credentialsMap, ctx, infra, provider)
 	if err != nil {
 		return err
 	}
+
+	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	return nil
 }
