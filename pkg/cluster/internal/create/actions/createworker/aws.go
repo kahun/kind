@@ -94,7 +94,7 @@ func (b *AWSBuilder) setSC(p ProviderParams) {
 
 	b.scProvisioner = "ebs.csi.aws.com"
 
-	if p.StorageClass.Parameters.Type == "" {
+	if b.scParameters.Type == "" {
 		if p.StorageClass.Class == "premium" {
 			b.scParameters.Type = "io1"
 			b.scParameters.IopsPerGB = "64000"

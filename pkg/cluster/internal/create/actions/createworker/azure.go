@@ -77,16 +77,27 @@ func (b *AzureBuilder) setCapx(managed bool) {
 }
 
 func (b *AzureBuilder) setSC(p ProviderParams) {
-	b.scProvisioner = "disk.csi.azure.com"
+	if (p.StorageClass.Parameters != commons.SCParameters{}) {
+		b.scParameters = p.StorageClass.Parameters
+	}
+
+	if b.scParameters.Provisioner == "" {
+		b.scProvisioner = "disk.csi.azure.com"
+	} else {
+		b.scProvisioner = b.scParameters.Provisioner
+		b.scParameters.Provisioner = ""
+	}
+
+	if b.scParameters.SkuName == "" {
+		if p.StorageClass.Class == "premium" {
+			b.scParameters.SkuName = "Premium_LRS"
+		} else {
+			b.scParameters.SkuName = "StandardSSD_LRS"
+		}
+	}
 
 	if p.StorageClass.EncryptionKey != "" {
 		b.scParameters.DiskEncryptionSetID = p.StorageClass.EncryptionKey
-	}
-
-	if p.StorageClass.Class == "premium" {
-		b.scParameters.SkuName = "Premium_LRS"
-	} else {
-		b.scParameters.SkuName = "StandardSSD_LRS"
 	}
 }
 

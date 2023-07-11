@@ -104,7 +104,7 @@ func (b *GCPBuilder) setSC(p ProviderParams) {
 
 	b.scProvisioner = "pd.csi.storage.gke.io"
 
-	if p.StorageClass.Parameters.Type == "" {
+	if b.scParameters.Type == "" {
 		if p.StorageClass.Class == "premium" {
 			b.scParameters.Type = "pd-ssd"
 		} else {
