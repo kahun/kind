@@ -337,15 +337,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
-		defer ctx.Status.End(false)
-
-		err = infra.configureStorageClass(n, kubeconfigPath)
-		if err != nil {
-			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
-		}
-		ctx.Status.End(true) // End Installing StorageClass in workload cluster
-
 		if provider.capxProvider == "gcp" {
 			// XXX Ref kubernetes/kubernetes#86793 Starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status (in-tree)
 			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
@@ -414,6 +405,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		defer ctx.Status.End(false)
+
+		err = infra.configureStorageClass(n, kubeconfigPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
+		}
+		ctx.Status.End(true) // End Installing StorageClass in workload cluster
 
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
 		defer ctx.Status.End(false)
