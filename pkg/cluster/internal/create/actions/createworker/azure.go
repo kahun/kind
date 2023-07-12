@@ -129,19 +129,14 @@ func (b *AzureBuilder) getProvider() Provider {
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
-	var cmd exec.Cmd
 
+	// Deploy CSI driver
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver " +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
-	}
-
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create Azure Storage Classes")
 	}
 
 	return nil
