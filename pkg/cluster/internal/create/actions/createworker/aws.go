@@ -355,17 +355,19 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var err error
 	var cmd exec.Cmd
 
-	// Remove annotation from default storage class
-	c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
-	output, err := commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to get default storage class")
-	}
-	if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
-		c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
-		_, err = commons.ExecuteCommand(n, c)
+	if b.capxManaged {
+		// Remove annotation from default storage class
+		c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+		output, err := commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to remove annotation from default storage class")
+			return errors.Wrap(err, "failed to get default storage class")
+		}
+		if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+			c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to remove annotation from default storage class")
+			}
 		}
 	}
 
