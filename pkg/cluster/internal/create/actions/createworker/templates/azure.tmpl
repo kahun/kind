@@ -194,7 +194,7 @@ spec:
       {{- if .KeosCluster.Spec.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ .KeosCluster.Spec.Security.NodesIdentity }}
+        - providerID: \"{{ .KeosCluster.Spec.Security.NodesIdentity }}\"
       {{- end }}
       osDisk:
         {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
@@ -269,7 +269,7 @@ spec:
       {{- if $.KeosCluster.Spec.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ $.KeosCluster.Spec.Security.NodesIdentity }}
+        - providerID: \"{{ $.KeosCluster.Spec.Security.NodesIdentity }}\"
       {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}

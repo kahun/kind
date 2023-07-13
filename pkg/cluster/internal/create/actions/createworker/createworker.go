@@ -383,7 +383,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				return errors.Wrap(err, "failed to create the worker Cluster")
+				return errors.Wrap(err, "failed to create the workload machine deployments")
+			}
+		}
+
+		if provider.capxProvider == "azure" && keosCluster.Spec.ControlPlane.Managed {
+			// Wait for all the machine deployments to be ready
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all mp"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the workload machine pools")
 			}
 		}
 
@@ -392,15 +401,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.readyReplicas}\"=3 --timeout 10m kubeadmcontrolplanes " + keosCluster.Metadata.Name + "-control-plane"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				return errors.Wrap(err, "failed to create the worker Cluster")
-			}
-		}
-
-		if provider.capxProvider == "azure" && keosCluster.Spec.ControlPlane.Managed && keosCluster.Spec.Security.NodesIdentity != "" {
-			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(keosCluster.Spec.Security.NodesIdentity, keosCluster.Metadata.Name, keosCluster.Spec.Region, credentialsMap)
-			if err != nil {
-				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
+				return errors.Wrap(err, "failed to create the workload control planes")
 			}
 		}
 

@@ -28,9 +28,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -61,8 +59,8 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.9.3"
-	b.capxImageVersion = "v1.9.3"
+	b.capxVersion = "v1.10.0"
+	b.capxImageVersion = "v1.10.0"
 	b.capxName = "capz"
 
 	b.csiNamespace = "kube-system"
@@ -164,51 +162,6 @@ func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k strin
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
-	}
-
-	return nil
-}
-
-func assignUserIdentity(i string, c string, r string, s map[string]string) error {
-	creds, err := azidentity.NewClientSecretCredential(s["TenantID"], s["ClientID"], s["ClientSecret"], nil)
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-
-	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(s["SubscriptionID"], creds, nil)
-	if err != nil {
-		return err
-	}
-	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
-
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx, c, c,
-		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(r),
-			Identity: &armcontainerservice.ManagedClusterIdentity{
-				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
-				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
-					i: {},
-				},
-			},
-			Properties: &armcontainerservice.ManagedClusterProperties{
-				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-					"kubeletidentity": {
-						ResourceID: to.Ptr(i),
-					},
-				},
-			},
-		},
-		nil,
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = pollerResp.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
 	}
 
 	return nil
