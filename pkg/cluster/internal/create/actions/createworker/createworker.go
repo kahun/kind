@@ -388,7 +388,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if provider.capxProvider == "azure" && keosCluster.Spec.ControlPlane.Managed {
-			// Wait for all the machine deployments to be ready
+			// Wait for all the machine pools to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all mp"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
