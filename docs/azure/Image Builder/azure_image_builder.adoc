@@ -92,13 +92,13 @@ cd image-builder/images/capi/
 [source,shell]
 make deps-azure
 
-. Generar la imágen
-[source,shell]
-make build-azure-sig-ubuntu-2204
-
-** Consultar las imágenes que podemos construir
+. Consultar las imágenes que podemos construir
 [source,shell]
 make help | grep build-azure-sig
+
+. Generar la imágen deseada
+[source,shell]
+make build-azure-sig-ubuntu-2204
 
 == Debug
 
