@@ -2,6 +2,7 @@
 
 ## 0.17.0-0.3.0 (Upcoming)
 
+* Bump cluster-api-provider-azure to v1.10.0
 * Add clusterAPI capabilities for AWS VMs
 * Add EKS secrets encryption support
 * Fix wait conditions for unmanaged clusters
