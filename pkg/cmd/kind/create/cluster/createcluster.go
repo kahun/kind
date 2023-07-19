@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cmd/kind/create/cluster/validation"
+	"sigs.k8s.io/kind/pkg/commons"
 
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -149,18 +149,26 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if err != nil {
 		return err
 	}
+	if flags.DescriptorPath == "" {
+		flags.DescriptorPath = clusterDefaultPath
+	}
 
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
 
-	if flags.DescriptorPath == "" {
-		flags.DescriptorPath = clusterDefaultPath
-	}
-	err = validation.InitValidator(flags.DescriptorPath)
+	keosCluster, err := commons.GetClusterDescriptor(flags.DescriptorPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to parse cluster descriptor")
+	}
+
+	if err = provider.Validate(
+		*keosCluster,
+		secretsDefaultPath,
+		flags.VaultPassword,
+	); err != nil {
+		return errors.Wrap(err, "failed to validate cluster")
 	}
 
 	// handle config flag, we might need to read from stdin
@@ -176,22 +184,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	err = validation.ExecuteSecretsValidations(secretsDefaultPath, flags.VaultPassword)
-	if err != nil {
-		return err
-	}
-
-	err = validation.ExecuteDescriptorValidations()
-	if err != nil {
-		return err
-	}
-
-	err = validation.ExecuteCommonsValidations()
-	if err != nil {
-		return err
-
-	}
-
 	// create the cluster
 	if err = provider.Create(
 		flags.Name,
@@ -199,6 +191,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.DescriptorPath,
 		flags.MoveManagement,
 		flags.AvoidCreation,
+		*keosCluster,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
