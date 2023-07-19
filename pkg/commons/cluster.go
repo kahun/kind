@@ -76,8 +76,9 @@ type Spec struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Security struct {
-		NodesIdentity string `yaml:"nodes_identity"`
-		AWS           struct {
+		ControlPlaneIdentity string `yaml:"control_plane_identity"`
+		NodesIdentity        string `yaml:"nodes_identity"`
+		AWS                  struct {
 			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
 		} `yaml:"aws" validate:"dive"`
 	} `yaml:"security" validate:"dive"`
