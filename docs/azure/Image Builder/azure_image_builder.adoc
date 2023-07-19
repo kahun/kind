@@ -1,5 +1,5 @@
 AZURE IMAGE BUILDER
-=================
+===================
 // Metadata:
 :description: Como crear imagenes propias para el Stratio cloud-provisioner en Azure.
 :keywords: azure, aks, image, builder, stratio, cloud-provisioner
@@ -63,7 +63,7 @@ Para modificar la configuración de la imagen, puede editar el archivo images/ca
 Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia
 deseado.
 
-"builder_instance_type": "t3.medium"
+"builder_instance_type": "Standard_D2as_v4"
 ====
 
 == Construcción de la imagen
