@@ -28,12 +28,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/iancoleman/strcase"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-// TODO: validate provider storage class fields
 // TODO: validate AZs
 
 const (
@@ -43,24 +43,49 @@ const (
 
 var AWSVolumes = []string{"io1", "io2", "gp2", "gp3", "sc1", "st1", "standard", "sbp1", "sbg1"}
 var AWSFSTypes = []string{"xfs", "ext3", "ext4", "ext2"}
-var AWSSCFields = []string{"type", "fsType", "labels", "allowAutoIOPSPerGBIncrease", "blockExpress", "blockSize", "iops", "iopsPerGB", "encrypted", "throughput"}
+var AWSSCFields = []string{"Type", "FsType", "Labels", "AllowAutoIOPSPerGBIncrease", "BlockExpress", "BlockSize", "Iops", "IopsPerGB", "Encrypted", "Throughput"}
 
-func validateAWS(cluster commons.KeosCluster, providerSecrets map[string]string) error {
+var isAWSNodeImage = regexp.MustCompile(`^ami-\w+$`).MatchString
+var AWSNodeImageFormat = "ami-[IMAGE_ID]"
+
+func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	var err error
 
-	cfg, err := getAWSConfig(providerSecrets, cluster.Spec.Region)
+	cfg, err := getAWSConfig(providerSecrets, spec.Region)
 	if err != nil {
 		return err
 	}
 
-	if (cluster.Spec.StorageClass != commons.StorageClass{}) {
-		if err = validateAWSStorageClass(cluster.Spec.StorageClass, cluster.Spec.WorkerNodes); err != nil {
+	if (spec.StorageClass != commons.StorageClass{}) {
+		if err = validateAWSStorageClass(spec.StorageClass, spec.WorkerNodes); err != nil {
 			return errors.Wrap(err, "invalid storage class")
 		}
 	}
 
-	if err = validateAWSNetwork(cluster.Spec, cfg); err != nil {
+	if err = validateAWSNetwork(spec, cfg); err != nil {
 		return errors.Wrap(err, "invalid network")
+	}
+
+	if !spec.ControlPlane.Managed {
+		if spec.ControlPlane.NodeImage != "" {
+			if !isAWSNodeImage(spec.ControlPlane.NodeImage) {
+				return errors.New("incorrect control plane node image. It must have the format " + AWSNodeImageFormat)
+			}
+		}
+		if err = validateAWSVolumes(spec.ControlPlane.RootVolume, spec.ControlPlane.ExtraVolumes); err != nil {
+			return errors.Wrap(err, "invalid control plane volumes")
+		}
+	}
+
+	for _, wn := range spec.WorkerNodes {
+		if wn.NodeImage != "" {
+			if !isAWSNodeImage(wn.NodeImage) {
+				return errors.New("incorrect worker " + wn.Name + " node image. It must have the format " + AWSNodeImageFormat)
+			}
+		}
+		if err = validateAWSVolumes(wn.RootVolume, wn.ExtraVolumes); err != nil {
+			return errors.Wrap(err, "invalid worker node volumes")
+		}
 	}
 
 	return nil
@@ -130,6 +155,14 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 	var iopsValue string
 	var iopsKey string
 
+	// Validate fields
+	fields := getFieldNames(sc.Parameters)
+	for _, f := range fields {
+		if !commons.Contains(AWSSCFields, f) {
+			return errors.New("field " + strcase.ToLowerCamel(f) + " is not supported in storage class")
+		}
+	}
+
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
 		if !isKeyValid(sc.EncryptionKey) {
@@ -182,6 +215,22 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 	if sc.Parameters.Labels != "" {
 		if err = validateLabel(sc.Parameters.Labels); err != nil {
 			return errors.Wrap(err, "invalid labels")
+		}
+	}
+	return nil
+}
+
+func validateAWSVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVolume) error {
+	var err error
+	if err = validateVolumeType(rootVol.Type, AWSVolumes); err != nil {
+		return errors.Wrap(err, "invalid root volume")
+	}
+	for _, v := range extraVols {
+		if v.DeviceName == "" {
+			return errors.New("device_name is required for extra volumes")
+		}
+		if err = validateVolumeType(v.Type, AWSVolumes); err != nil {
+			return errors.Wrap(err, "invalid extra volume")
 		}
 	}
 	return nil

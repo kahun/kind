@@ -31,11 +31,12 @@ import (
 )
 
 type action struct {
-	vaultPassword  string
-	descriptorPath string
-	moveManagement bool
-	avoidCreation  bool
-	keosCluster    commons.KeosCluster
+	vaultPassword      string
+	descriptorPath     string
+	moveManagement     bool
+	avoidCreation      bool
+	keosCluster        commons.KeosCluster
+	clusterCredentials commons.ClusterCredentials
 }
 
 const (
@@ -66,12 +67,14 @@ var denyallEgressIMDSGNetPol string
 var allowCAPAEgressIMDSGNetPol string
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
+func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials) actions.Action {
 	return &action{
-		vaultPassword:  vaultPassword,
-		descriptorPath: descriptorPath,
-		moveManagement: moveManagement,
-		avoidCreation:  avoidCreation,
+		vaultPassword:      vaultPassword,
+		descriptorPath:     descriptorPath,
+		moveManagement:     moveManagement,
+		avoidCreation:      avoidCreation,
+		keosCluster:        keosCluster,
+		clusterCredentials: clusterCredentials,
 	}
 }
 
@@ -86,17 +89,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// Get the secrets
-	credentialsMap, keosRegistry, githubToken, dockerRegistries, err := commons.GetSecrets(a.keosCluster.Spec, a.vaultPassword)
-	if err != nil {
-		return err
-	}
-
 	providerParams := ProviderParams{
 		Region:       a.keosCluster.Spec.Region,
 		Managed:      a.keosCluster.Spec.ControlPlane.Managed,
-		Credentials:  credentialsMap,
-		GithubToken:  githubToken,
+		Credentials:  a.clusterCredentials.ProviderCredentials,
+		GithubToken:  a.clusterCredentials.GithubToken,
 		StorageClass: a.keosCluster.Spec.StorageClass,
 	}
 
@@ -137,8 +134,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			registryUser = "00000000-0000-0000-0000-000000000000"
 			registryPass = acrToken
 		} else {
-			registryUser = keosRegistry["User"]
-			registryPass = keosRegistry["Pass"]
+			registryUser = a.clusterCredentials.KeosRegistryCredentials["User"]
+			registryPass = a.clusterCredentials.KeosRegistryCredentials["Pass"]
 		}
 
 		// Change image in infrastructure-components.yaml
@@ -191,8 +188,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	templateParams := commons.TemplateParams{
 		KeosCluster:      a.keosCluster,
-		Credentials:      credentialsMap,
-		DockerRegistries: dockerRegistries,
+		Credentials:      a.clusterCredentials.ProviderCredentials,
+		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
 	}
 
 	azs, err := infra.getAzs(a.keosCluster.Spec.Networks)
@@ -219,7 +216,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
-	commons.EnsureSecretsFile(a.keosCluster.Spec, a.vaultPassword)
+	commons.EnsureSecretsFile(a.keosCluster.Spec, a.vaultPassword, a.clusterCredentials)
 
 	commons.RewriteDescriptorFile(a.descriptorPath)
 
@@ -335,7 +332,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
 			defer ctx.Status.End(false)
 
-			requiredInternalNginx, err := infra.internalNginx(a.keosCluster.Spec.Networks, credentialsMap, a.keosCluster.Metadata.Name)
+			requiredInternalNginx, err := infra.internalNginx(a.keosCluster.Spec.Networks, a.clusterCredentials.ProviderCredentials, a.keosCluster.Metadata.Name)
 			if err != nil {
 				return err
 			}
@@ -391,7 +388,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		if provider.capxProvider == "azure" && a.keosCluster.Spec.ControlPlane.Managed && a.keosCluster.Spec.Security.NodesIdentity != "" {
 			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(a.keosCluster.Spec.Security.NodesIdentity, a.keosCluster.Metadata.Name, a.keosCluster.Spec.Region, credentialsMap)
+			err := assignUserIdentity(a.keosCluster.Spec.Security.NodesIdentity, a.keosCluster.Metadata.Name, a.keosCluster.Spec.Region, a.clusterCredentials.ProviderCredentials)
 			if err != nil {
 				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
 			}
@@ -594,7 +591,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	err = override_vars(a.keosCluster, credentialsMap, ctx, infra, provider)
+	err = override_vars(a.keosCluster, a.clusterCredentials.ProviderCredentials, ctx, infra, provider)
 	if err != nil {
 		return err
 	}

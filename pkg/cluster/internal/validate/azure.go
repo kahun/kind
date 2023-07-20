@@ -26,12 +26,11 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
+	"github.com/iancoleman/strcase"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
-
-// TODO: validate provider storage class fields
 
 const (
 	AKSMaxNodeNameLength = 9
@@ -39,7 +38,13 @@ const (
 
 var AzureVolumes = []string{"Standard_LRS", "Premium_LRS", "StandardSSD_LRS", "UltraSSD_LRS", "Premium_ZRS", "StandardSSD_ZRS", "PremiumV2_LRS"}
 var AzureFSTypes = []string{"xfs", "ext3", "ext4", "ext2", "btrfs"}
-var AzureSCFields = []string{"fsType", "kind", "cachingMode", "diskAccessID", "diskEncryptionType", "enableBursting", "enablePerformancePlus", "networkAccessPolicy", "provisioner", "publicNetworkAccess", "resourceGroup", "skuName", "subscriptionID", "tags"}
+var AzureSCFields = []string{"FsType", "Kind", "CachingMode", "DiskAccessID", "DiskEncryptionType", "EnableBursting", "EnablePerformancePlus", "NetworkAccessPolicy", "Provisioner", "PublicNetworkAccess", "ResourceGroup", "SkuName", "SubscriptionID", "Tags"}
+
+var isAzureNodeImage = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourceGroups\/[\w\.-]+\/providers\/Microsoft\.Compute\/images\/[\w\.-]+$`).MatchString
+var AzureNodeImageFormat = "/subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.Compute/images/[IMAGE_NAME]"
+
+var isAzureIdentity = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourcegroups\/[\w\.-]+\/providers\/Microsoft\.ManagedIdentity\/userAssignedIdentities\/[\w\.-]+$`).MatchString
+var AzureIdentityFormat = "/subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/userAssignedIdentities/[IDENTITY_NAME]"
 
 var isPremium = regexp.MustCompile(`^(Premium|Ultra).*$`).MatchString
 
@@ -52,8 +57,8 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 	}
 
 	if spec.Security.NodesIdentity != "" {
-		if err = validateAzureIdentity(spec.Security.NodesIdentity); err != nil {
-			return err
+		if !isAzureIdentity(spec.Security.NodesIdentity) {
+			return errors.New("incorrect identity format. It must have the format " + AzureIdentityFormat)
 		}
 	}
 
@@ -67,14 +72,29 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 		if err = validateAKSVersion(spec, creds, providerSecrets["SubscriptionID"]); err != nil {
 			return err
 		}
-		if err = validateAKSNodesName(spec.WorkerNodes); err != nil {
-			return err
+		if err = validateAKSNodes(spec.WorkerNodes); err != nil {
+			return errors.Wrap(err, "invalid worker nodes")
 		}
 	}
 
 	if !spec.ControlPlane.Managed {
-		if err = validateAzureVolumes(spec); err != nil {
-			return err
+		if spec.ControlPlane.NodeImage != "" {
+			if !isAzureNodeImage(spec.ControlPlane.NodeImage) {
+				return errors.New("incorrect control plane node image. It must have the format " + AzureNodeImageFormat)
+			}
+		}
+		if err = validateAzureVolumes(spec.ControlPlane.RootVolume, spec.ControlPlane.ExtraVolumes, spec.ControlPlane.Size); err != nil {
+			return errors.Wrap(err, "invalid control plane volumes")
+		}
+		for _, wn := range spec.WorkerNodes {
+			if wn.NodeImage != "" {
+				if !isAzureNodeImage(wn.NodeImage) {
+					return errors.New("incorrect worker " + wn.Name + " node image. It must have the format " + AzureNodeImageFormat)
+				}
+			}
+			if err = validateAzureVolumes(wn.RootVolume, wn.ExtraVolumes, wn.Size); err != nil {
+				return errors.Wrap(err, "invalid worker node volumes")
+			}
 		}
 	}
 
@@ -89,17 +109,17 @@ func validateAzureCredentials(secrets map[string]string) (*azidentity.ClientSecr
 	return creds, nil
 }
 
-func validateAzureIdentity(identity string) error {
-	var isIdentity = regexp.MustCompile(`^\/subscriptions\/[\w-]+\/resourcegroups\/[\w\.-]+\/providers\/Microsoft\.ManagedIdentity\/userAssignedIdentities\/[\w\.-]+$`).MatchString
-	if !isIdentity(identity) {
-		return errors.New("incorrect identity format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/userAssignedIdentities/[IDENTITY_NAME]")
-	}
-	return nil
-}
-
 func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) error {
 	var err error
-	var isKeyValid = regexp.MustCompile(`^\/subscriptions\/[\w-]+\/resourceGroups\/[\w\.-]+\/providers\/Microsoft\.Compute\/diskEncryptionSets\/[\w\.-]+$`).MatchString
+	var isKeyValid = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourceGroups\/[\w\.-]+\/providers\/Microsoft\.Compute\/diskEncryptionSets\/[\w\.-]+$`).MatchString
+
+	// Validate fields
+	fields := getFieldNames(sc.Parameters)
+	for _, f := range fields {
+		if !commons.Contains(AzureSCFields, f) {
+			return errors.New("field " + strcase.ToLowerCamel(f) + " is not supported in storage class")
+		}
+	}
 
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
@@ -125,7 +145,7 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	if sc.Class == "premium" || isPremium(sc.Parameters.SkuName) {
 		hasPremium := false
 		for _, n := range wn {
-			if isAzurePremiumSize(n.Size) {
+			if hasAzurePremiumStorage(n.Size) {
 				hasPremium = true
 				break
 			}
@@ -172,76 +192,51 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 	return nil
 }
 
-func validateAKSNodesName(workerNodes commons.WorkerNodes) error {
+func validateAKSNodes(workerNodes commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
+	hasNodeSystem := false
 	for _, node := range workerNodes {
 		if !isLetter(node.Name) || len(node.Name) >= AKSMaxNodeNameLength {
 			return errors.New("AKS node names must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
 		}
+		if len(node.Taints) == 0 && !node.Spot {
+			hasNodeSystem = true
+		}
+	}
+	if !hasNodeSystem {
+		return errors.New("at least one worker node must be non-spot and without taints")
 	}
 	return nil
 }
 
-func validateAzureVolumes(spec commons.Spec) error {
+func validateAzureVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVolume, size string) error {
 	var err error
-	if (spec.ControlPlane.RootVolume != commons.RootVolume{}) {
-		// Validate control plane root volume
-		if err = validateVolumeType(spec.ControlPlane.RootVolume.Type, AzureVolumes); err != nil {
-			return errors.Wrap(err, "invalid control plane root volume")
-		}
-		// Validate control plane premium storage
-		if isPremium(spec.ControlPlane.RootVolume.Type) && !isAzurePremiumSize(spec.ControlPlane.Size) {
-			return errors.New("control plane size doesn't support premium storage")
-		}
+	premiumStorage := hasAzurePremiumStorage(size)
+	if err = validateVolumeType(rootVol.Type, AzureVolumes); err != nil {
+		return errors.Wrap(err, "invalid root volume type")
 	}
-	// Validate control plane extra volumes
-	if err = validateAzureExtraVolumes(spec.ControlPlane.ExtraVolumes, spec.ControlPlane.Size); err != nil {
-		return errors.Wrap(err, "invalid control plane extra volumes")
+	if isPremium(rootVol.Type) && !premiumStorage {
+		return errors.New("root_volume type doesn't support premium storage")
 	}
-	for _, wn := range spec.WorkerNodes {
-		if (wn.RootVolume != commons.RootVolume{}) {
-			// Validate worker node root volume
-			if err = validateVolumeType(wn.RootVolume.Type, AzureVolumes); err != nil {
-				return errors.Wrap(err, "invalid worker node "+wn.Name+" root volume")
-			}
-			// Validate worker node premium storage
-			if isPremium(wn.RootVolume.Type) && !isAzurePremiumSize(wn.Size) {
-				return errors.New("worker node " + wn.Name + " size doesn't support premium storage")
-			}
-		}
-		// Validate worker node extra volumes
-		if err = validateAzureExtraVolumes(wn.ExtraVolumes, wn.Size); err != nil {
-			return errors.Wrap(err, "invalid worker node "+wn.Name+" extra volumes")
-		}
-	}
-	return nil
-}
-
-func validateAzureExtraVolumes(extraVolumes []commons.ExtraVolume, s string) error {
-	var err error
-	for i, v := range extraVolumes {
-		// Validate extra volume name
+	for i, v := range extraVols {
 		if v.Name == "" {
-			return errors.New("name cannot be empty")
+			return errors.New("extra_volumes name cannot be empty")
 		}
-		// Validate extra volume unique name
-		for _, v2 := range extraVolumes[i+1:] {
+		for _, v2 := range extraVols[i+1:] {
 			if v.Name == v2.Name {
-				return errors.New("name is duplicated")
+				return errors.New("extra_volumes name is duplicated")
 			}
 		}
-		// Validate extra volume type
 		if err = validateVolumeType(v.Type, AzureVolumes); err != nil {
-			return err
+			return errors.Wrap(err, "invalid extra volume type")
 		}
-		// Validate extra volume premium storage
-		if isPremium(v.Type) && !strings.Contains(strings.ToLower(strings.ReplaceAll(s, "Standard_", "")), "s") {
-			return errors.New("size doesn't support premium storage")
+		if isPremium(v.Type) && !premiumStorage {
+			return errors.New("root_volume type doesn't support premium storage")
 		}
 	}
 	return nil
 }
 
-func isAzurePremiumSize(s string) bool {
+func hasAzurePremiumStorage(s string) bool {
 	return strings.Contains(strings.ToLower(strings.ReplaceAll(s, "Standard_", "")), "s")
 }

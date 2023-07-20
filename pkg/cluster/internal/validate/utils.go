@@ -45,7 +45,6 @@ func validateStruct(s interface{}) (err error) {
 		if !isSet {
 			err = errors.New(fmt.Sprintf("%v%s in not set; ", err, fieldName))
 		}
-
 	}
 
 	return err
@@ -57,4 +56,19 @@ func convertToMapStringString(m map[string]interface{}) map[string]string {
 		m2[k] = v.(string)
 	}
 	return m2
+}
+
+func getFieldNames(s interface{}) []string {
+	var fieldNames []string
+	structType := reflect.TypeOf(s)
+	structVal := reflect.ValueOf(s)
+	fieldNum := structType.NumField()
+	for i := 0; i < fieldNum; i++ {
+		field := structVal.Field(i)
+		isSet := field.IsValid() && !field.IsZero()
+		if isSet {
+			fieldNames = append(fieldNames, structType.Field(i).Name)
+		}
+	}
+	return fieldNames
 }

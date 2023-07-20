@@ -177,6 +177,23 @@ type ExtraVolume struct {
 	MountPath     string `yaml:"mount_path" validate:"required"`
 }
 
+type ClusterCredentials struct {
+	ProviderCredentials         map[string]string
+	KeosRegistryCredentials     map[string]string
+	DockerRegistriesCredentials []map[string]interface{}
+	GithubToken                 string
+}
+
+type ClusterParams struct {
+	Name               string
+	VaultPassword      string
+	DescriptorPath     string
+	MoveManagement     bool
+	AvoidCreation      bool
+	KeosCluster        KeosCluster
+	ClusterCredentials ClusterCredentials
+}
+
 type Credentials struct {
 	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=AZURE GCP"`
 	AZURE            AzureCredentials            `yaml:"azure" validate:"excluded_with=AWS GCP"`

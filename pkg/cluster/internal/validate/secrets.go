@@ -19,6 +19,7 @@ package validate
 import (
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/fatih/structs"
@@ -27,36 +28,43 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-func validateSecrets(opts ClusterOptions) (map[string]string, error) {
+func validateCredentials(params ValidateParams) (commons.ClusterCredentials, error) {
 	var secrets commons.Secrets
+	var creds commons.ClusterCredentials
 
 	// Get secrets file if exists
-	_, err := os.Stat(opts.SecretsPath)
+	_, err := os.Stat(params.SecretsPath)
 	if err == nil {
-		secretsFile, err := commons.GetSecretsFile(opts.SecretsPath, opts.VaultPassword)
+		secretsFile, err := commons.GetSecretsFile(params.SecretsPath, params.VaultPassword)
 		if err != nil {
-			return nil, err
+			return commons.ClusterCredentials{}, err
 		}
 		secrets = secretsFile.Secrets
 	}
 
-	providerSecrets, err := validateProviderCredentials(secrets, opts)
+	creds.ProviderCredentials, err = validateProviderCredentials(secrets, params)
 	if err != nil {
-		return nil, err
+		return commons.ClusterCredentials{}, err
 	}
 
-	if err := validateRegistryCredentials(secrets, opts.KeosCluster.Spec); err != nil {
-		return nil, err
+	creds.KeosRegistryCredentials, creds.DockerRegistriesCredentials, err = validateRegistryCredentials(secrets, params.KeosCluster.Spec)
+	if err != nil {
+		return commons.ClusterCredentials{}, err
 	}
 
-	return providerSecrets, nil
+	creds.GithubToken, err = validateGithubToken(secrets, params.KeosCluster.Spec)
+	if err != nil {
+		return commons.ClusterCredentials{}, err
+	}
+
+	return creds, nil
 }
 
-func validateProviderCredentials(secrets interface{}, opts ClusterOptions) (map[string]string, error) {
-	infraProvider := opts.KeosCluster.Spec.InfraProvider
+func validateProviderCredentials(secrets interface{}, params ValidateParams) (map[string]string, error) {
+	infraProvider := params.KeosCluster.Spec.InfraProvider
 	credentialsProvider, err := reflections.GetField(secrets, strings.ToUpper(infraProvider))
 	if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
-		credentialsProvider, err = reflections.GetField(opts.KeosCluster.Spec.Credentials, strings.ToUpper(infraProvider))
+		credentialsProvider, err = reflections.GetField(params.KeosCluster.Spec.Credentials, strings.ToUpper(infraProvider))
 		if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
 			return nil, errors.New("there is not " + infraProvider + " credentials in descriptor or secrets file")
 		}
@@ -73,16 +81,15 @@ func validateProviderCredentials(secrets interface{}, opts ClusterOptions) (map[
 	return resultCreds, nil
 }
 
-func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) error {
+func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) (map[string]string, []map[string]interface{}, error) {
 	var dockerRegistries []commons.DockerRegistryCredentials
-	var secretsFileExists bool
+	var resultKeosRegistry map[string]string
+	var resultDockerRegistries = []map[string]interface{}{}
 
 	if len(secrets.DockerRegistries) > 0 {
 		dockerRegistries = secrets.DockerRegistries
-		secretsFileExists = true
 	} else {
 		dockerRegistries = spec.Credentials.DockerRegistries
-		secretsFileExists = false
 	}
 
 	keosCount := 0
@@ -90,7 +97,7 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) err
 		// Check if there are more than one docker_registry with the same URL
 		for j, dockerRegistry2 := range spec.DockerRegistries {
 			if i != j && dockerRegistry.URL == dockerRegistry2.URL {
-				return errors.New("there is more than one docker_registry with the same URL: " + dockerRegistry.URL)
+				return nil, nil, errors.New("there is more than one docker_registry with the same URL: " + dockerRegistry.URL)
 			}
 		}
 		if dockerRegistry.AuthRequired {
@@ -99,7 +106,7 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) err
 				// Check if there are more than one credential for the same registry
 				for k, dockerRegistryCredential2 := range dockerRegistries {
 					if l != k && dockerRegistryCredential.URL == dockerRegistryCredential2.URL {
-						return errors.New("there is more than one credential for the registry: " + dockerRegistry.URL)
+						return nil, nil, errors.New("there is more than one credential for the registry: " + dockerRegistry.URL)
 					}
 				}
 				// Check if there are valid credentials for the registry
@@ -107,29 +114,47 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) err
 					existCredentials = true
 					err := validateStruct(dockerRegistryCredential)
 					if err != nil {
-						return errors.Wrap(err, "there aren't valid credentials for the registry: "+dockerRegistry.URL)
+						return nil, nil, errors.Wrap(err, "there aren't valid credentials for the registry: "+dockerRegistry.URL)
+					}
+					registryMap := structs.Map(dockerRegistryCredential)
+					resultDockerRegistries = append(resultDockerRegistries, commons.ConvertMapKeysToSnakeCase(registryMap))
+					if dockerRegistry.KeosRegistry {
+						resultKeosRegistry = convertToMapStringString(registryMap)
 					}
 				}
 			}
 
 			if !existCredentials {
-				return errors.New("there aren't valid credentials for the registry: " + dockerRegistry.URL)
+				return nil, nil, errors.New("there aren't valid credentials for the registry: " + dockerRegistry.URL)
 			}
 
 			if dockerRegistry.KeosRegistry {
 				// Check if there are more than one docker_registry defined as keos_registry
 				keosCount++
 				if keosCount > 1 {
-					return errors.New("there are more than one docker_registry defined as keos_registry")
-				}
-				// Check if there are credentials for the external registry
-				if secretsFileExists {
-					if secrets.ExternalRegistry.User == "" || secrets.ExternalRegistry.Pass == "" {
-						return errors.New("there aren't credentials for the external registry: " + dockerRegistry.URL)
-					}
+					return nil, nil, errors.New("there are more than one docker_registry defined as keos_registry")
 				}
 			}
 		}
 	}
-	return nil
+	return resultKeosRegistry, resultDockerRegistries, nil
+}
+
+func validateGithubToken(secrets commons.Secrets, spec commons.Spec) (string, error) {
+	var githubToken string
+	var isGithubToken = regexp.MustCompile(`^(github_pat_|ghp_)\w+$`).MatchString
+
+	if secrets.GithubToken != "" {
+		githubToken = secrets.GithubToken
+	} else if spec.Credentials.GithubToken != "" {
+		githubToken = spec.Credentials.GithubToken
+	} else {
+		return "", nil
+	}
+
+	if isGithubToken(githubToken) {
+		return githubToken, nil
+	} else {
+		return "", errors.New("github_token is not valid")
+	}
 }

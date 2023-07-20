@@ -20,37 +20,36 @@ import (
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
-// TODO: return providerSecrets
-
-type ClusterOptions struct {
+type ValidateParams struct {
 	KeosCluster   commons.KeosCluster
 	SecretsPath   string
 	VaultPassword string
 }
 
-func Cluster(opts *ClusterOptions) error {
+func Cluster(params *ValidateParams) (commons.ClusterCredentials, error) {
 	var err error
+	var creds commons.ClusterCredentials
 
-	providerSecrets, err := validateSecrets(*opts)
+	creds, err = validateCredentials(*params)
 	if err != nil {
-		return err
+		return commons.ClusterCredentials{}, err
 	}
 
-	if err := validateCommon(opts.KeosCluster.Spec); err != nil {
-		return err
+	if err := validateCommon(params.KeosCluster.Spec); err != nil {
+		return commons.ClusterCredentials{}, err
 	}
 
-	switch opts.KeosCluster.Spec.InfraProvider {
+	switch params.KeosCluster.Spec.InfraProvider {
 	case "aws":
-		err = validateAWS(opts.KeosCluster, providerSecrets)
+		err = validateAWS(params.KeosCluster.Spec, creds.ProviderCredentials)
 	case "gcp":
-		err = validateGCP(opts.KeosCluster.Spec)
+		err = validateGCP(params.KeosCluster.Spec)
 	case "azure":
-		err = validateAzure(opts.KeosCluster.Spec, providerSecrets)
+		err = validateAzure(params.KeosCluster.Spec, creds.ProviderCredentials)
 	}
 	if err != nil {
-		return err
+		return commons.ClusterCredentials{}, err
 	}
 
-	return nil
+	return creds, nil
 }

@@ -58,11 +58,12 @@ type ClusterOptions struct {
 	NameOverride string // overrides config.Name
 
 	// Stratio
-	VaultPassword  string
-	DescriptorPath string
-	MoveManagement bool
-	AvoidCreation  bool
-	KeosCluster    commons.KeosCluster
+	VaultPassword      string
+	DescriptorPath     string
+	MoveManagement     bool
+	AvoidCreation      bool
+	KeosCluster        commons.KeosCluster
+	ClusterCredentials commons.ClusterCredentials
 
 	// Force local container delete before creating the cluster if it already exists
 	ForceDelete bool
@@ -150,7 +151,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			createworker.NewAction(opts.VaultPassword, opts.DescriptorPath, opts.MoveManagement, opts.AvoidCreation), // create worker k8s cluster
+			createworker.NewAction(opts.VaultPassword, opts.DescriptorPath, opts.MoveManagement, opts.AvoidCreation, opts.KeosCluster, opts.ClusterCredentials), // create worker k8s cluster
 		)
 	}
 

@@ -153,22 +153,40 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.DescriptorPath = clusterDefaultPath
 	}
 
-	provider := cluster.NewProvider(
-		cluster.ProviderWithLogger(logger),
-		runtime.GetDefault(logger),
-	)
+	if flags.VaultPassword == "" {
+		flags.VaultPassword, err = setPassword()
+		if err != nil {
+			return err
+		}
+	}
 
 	keosCluster, err := commons.GetClusterDescriptor(flags.DescriptorPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	if err = provider.Validate(
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
+	)
+
+	clusterCredentials, err := provider.Validate(
 		*keosCluster,
 		secretsDefaultPath,
 		flags.VaultPassword,
-	); err != nil {
+	)
+	if err != nil {
 		return errors.Wrap(err, "failed to validate cluster")
+	}
+
+	clusterParams := commons.ClusterParams{
+		Name:               flags.Name,
+		VaultPassword:      flags.VaultPassword,
+		DescriptorPath:     flags.DescriptorPath,
+		MoveManagement:     flags.MoveManagement,
+		AvoidCreation:      flags.AvoidCreation,
+		KeosCluster:        *keosCluster,
+		ClusterCredentials: clusterCredentials,
 	}
 
 	// handle config flag, we might need to read from stdin
@@ -177,21 +195,9 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 
-	if flags.VaultPassword == "" {
-		flags.VaultPassword, err = setPassword()
-		if err != nil {
-			return err
-		}
-	}
-
 	// create the cluster
 	if err = provider.Create(
-		flags.Name,
-		flags.VaultPassword,
-		flags.DescriptorPath,
-		flags.MoveManagement,
-		flags.AvoidCreation,
-		*keosCluster,
+		clusterParams,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),

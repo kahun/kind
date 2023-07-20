@@ -171,15 +171,16 @@ func ProviderWithPodman() ProviderOption {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (p *Provider) Create(name string, vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool, keosCluster commons.KeosCluster, options ...CreateOption) error {
+func (p *Provider) Create(params commons.ClusterParams, options ...CreateOption) error {
 	// apply options
 	opts := &internalcreate.ClusterOptions{
-		NameOverride:   name,
-		VaultPassword:  vaultPassword,
-		DescriptorPath: descriptorPath,
-		MoveManagement: moveManagement,
-		AvoidCreation:  avoidCreation,
-		KeosCluster:    keosCluster,
+		NameOverride:       params.Name,
+		VaultPassword:      params.VaultPassword,
+		DescriptorPath:     params.DescriptorPath,
+		MoveManagement:     params.MoveManagement,
+		AvoidCreation:      params.AvoidCreation,
+		KeosCluster:        params.KeosCluster,
+		ClusterCredentials: params.ClusterCredentials,
 	}
 	for _, o := range options {
 		if err := o.apply(opts); err != nil {
@@ -253,11 +254,11 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	return p.provider.CollectLogs(dir, n)
 }
 
-func (p *Provider) Validate(keosCluster commons.KeosCluster, secretsPath string, vaultPassword string) error {
-	opts := &internalvalidate.ClusterOptions{
+func (p *Provider) Validate(keosCluster commons.KeosCluster, secretsPath string, vaultPassword string) (commons.ClusterCredentials, error) {
+	params := &internalvalidate.ValidateParams{
 		KeosCluster:   keosCluster,
 		SecretsPath:   secretsPath,
 		VaultPassword: vaultPassword,
 	}
-	return internalvalidate.Cluster(opts)
+	return internalvalidate.Cluster(params)
 }

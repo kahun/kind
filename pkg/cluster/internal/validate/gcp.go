@@ -22,15 +22,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-// TODO: validate provider storage class fields
-
 var GCPVolumes = []string{"pd-balanced", "pd-ssd", "pd-standard", "pd-extreme"}
 var GCPFSTypes = []string{"xfs", "ext3", "ext4", "ext2"}
-var GCPSCFields = []string{"type", "fsType", "labels", "provisioned-iops-on-create", "provisioned-throughput-on-create", "replication-type"}
+var GCPSCFields = []string{"Type", "FsType", "Labels", "ProvisionedIopsOnCreate", "ProvisionedThroughputOnCreate", "ReplicationType"}
+
+var isGCPNodeImage = regexp.MustCompile(`^projects/[\w-]+/global/images/[\w-]+$`).MatchString
+var GCPNodeImageFormat = "projects/[PROJECT_ID]/global/images/[IMAGE_NAME]"
 
 func validateGCP(spec commons.Spec) error {
 	var err error
@@ -42,11 +44,20 @@ func validateGCP(spec commons.Spec) error {
 	}
 
 	if !spec.ControlPlane.Managed {
-		if err = validateGCPNodeImage(spec); err != nil {
-			return errors.Wrap(err, "invalid node image")
+		if spec.ControlPlane.NodeImage == "" || !isGCPNodeImage(spec.ControlPlane.NodeImage) {
+			return errors.New("incorrect control plane node image. It must be present and have the format " + GCPNodeImageFormat)
 		}
-		if err = validateGCPVolumes(spec); err != nil {
-			return err
+		if err = validateGCPVolumes(spec.ControlPlane.RootVolume, spec.ControlPlane.ExtraVolumes); err != nil {
+			return errors.Wrap(err, "invalid control plane volumes")
+		}
+	}
+
+	for _, wn := range spec.WorkerNodes {
+		if wn.NodeImage == "" || !isGCPNodeImage(wn.NodeImage) {
+			return errors.New("incorrect worker " + wn.Name + " node image. It must be present and have the format " + GCPNodeImageFormat)
+		}
+		if err = validateGCPVolumes(wn.RootVolume, wn.ExtraVolumes); err != nil {
+			return errors.Wrap(err, "invalid worker node volumes")
 		}
 	}
 
@@ -57,6 +68,14 @@ func validateGCPStorageClass(spec commons.Spec) error {
 	var err error
 	var isKeyValid = regexp.MustCompile(`^projects/[a-zA-Z0-9-]+/locations/[a-zA-Z0-9-]+/keyRings/[a-zA-Z0-9-]+/cryptoKeys/[a-zA-Z0-9-]+$`).MatchString
 	var sc = spec.StorageClass
+
+	// Validate fields
+	fields := getFieldNames(sc.Parameters)
+	for _, f := range fields {
+		if !commons.Contains(GCPSCFields, f) {
+			return errors.New("field " + strcase.ToLowerCamel(f) + " is not supported in storage class")
+		}
+	}
 
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
@@ -107,55 +126,14 @@ func validateGCPStorageClass(spec commons.Spec) error {
 	return nil
 }
 
-func validateGCPNodeImage(spec commons.Spec) error {
-	var isImageValid = regexp.MustCompile(`^projects/[\w-]+/global/images/[\w-]+$`).MatchString
-	var format = "projects/[PROJECT_ID]/global/images/[IMAGE_NAME]"
-	// Validate control plane node_image
-	if spec.ControlPlane.NodeImage == "" || !isImageValid(spec.ControlPlane.NodeImage) {
-		return errors.New("incorrect control plane node_image. It must exist & have the format " + format)
-	}
-	// Validate workers nodes node_image
-	for _, wn := range spec.WorkerNodes {
-		if wn.NodeImage == "" || !isImageValid(wn.NodeImage) {
-			return errors.New("incorrect worker node " + wn.Name + " node_image. It must exist & have the format " + format)
-		}
-	}
-	return nil
-}
-
-func validateGCPVolumes(spec commons.Spec) error {
+func validateGCPVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVolume) error {
 	var err error
-	if (spec.ControlPlane.RootVolume != commons.RootVolume{}) {
-		// Validate control plane root volume type
-		if err = validateVolumeType(spec.ControlPlane.RootVolume.Type, GCPVolumes); err != nil {
-			return errors.Wrap(err, "invalid control plane root volume")
-		}
+	if err = validateVolumeType(rootVol.Type, GCPVolumes); err != nil {
+		return errors.Wrap(err, "invalid root volume")
 	}
-	// Validate control plane extra volumes
-	if err = validateGCPExtraVolumes(spec.ControlPlane.ExtraVolumes); err != nil {
-		return errors.Wrap(err, "invalid control plane extra volumes")
-	}
-	for _, wn := range spec.WorkerNodes {
-		if (wn.RootVolume != commons.RootVolume{}) {
-			// Validate worker node root volume type
-			if err = validateVolumeType(wn.RootVolume.Type, GCPVolumes); err != nil {
-				return errors.Wrap(err, "invalid worker node "+wn.Name+" root volume")
-			}
-		}
-		// Validate worker node extra volumes
-		if err = validateGCPExtraVolumes(wn.ExtraVolumes); err != nil {
-			return errors.Wrap(err, "invalid worker node "+wn.Name+" extra volumes")
-		}
-	}
-	return nil
-}
-
-func validateGCPExtraVolumes(extraVolumes []commons.ExtraVolume) error {
-	var err error
-	for _, v := range extraVolumes {
-		// Validate extra volume type
+	for _, v := range extraVols {
 		if err = validateVolumeType(v.Type, GCPVolumes); err != nil {
-			return err
+			return errors.Wrap(err, "invalid extra volume")
 		}
 	}
 	return nil
