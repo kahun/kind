@@ -184,16 +184,6 @@ type ClusterCredentials struct {
 	GithubToken                 string
 }
 
-type ClusterParams struct {
-	Name               string
-	VaultPassword      string
-	DescriptorPath     string
-	MoveManagement     bool
-	AvoidCreation      bool
-	KeosCluster        KeosCluster
-	ClusterCredentials ClusterCredentials
-}
-
 type Credentials struct {
 	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=AZURE GCP"`
 	AZURE            AzureCredentials            `yaml:"azure" validate:"excluded_with=AWS GCP"`
@@ -283,9 +273,9 @@ type StorageClass struct {
 
 type SCParameters struct {
 	// Common
-	Type   string `yaml:"type,omitempty" validate:"omitempty"`
-	FsType string `yaml:"fsType,omitempty" validate:"omitempty"`
-	Labels string `yaml:"labels,omitempty" validate:"omitempty"`
+	Type   string `yaml:"type,omitempty""`
+	FsType string `yaml:"fsType,omitempty"`
+	Labels string `yaml:"labels,omitempty"`
 
 	// AWS
 	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"`

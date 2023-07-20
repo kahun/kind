@@ -179,16 +179,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return errors.Wrap(err, "failed to validate cluster")
 	}
 
-	clusterParams := commons.ClusterParams{
-		Name:               flags.Name,
-		VaultPassword:      flags.VaultPassword,
-		DescriptorPath:     flags.DescriptorPath,
-		MoveManagement:     flags.MoveManagement,
-		AvoidCreation:      flags.AvoidCreation,
-		KeosCluster:        *keosCluster,
-		ClusterCredentials: clusterCredentials,
-	}
-
 	// handle config flag, we might need to read from stdin
 	withConfig, err := configOption(flags.Config, streams.In)
 	if err != nil {
@@ -197,7 +187,13 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 
 	// create the cluster
 	if err = provider.Create(
-		clusterParams,
+		flags.Name,
+		flags.VaultPassword,
+		flags.DescriptorPath,
+		flags.MoveManagement,
+		flags.AvoidCreation,
+		*keosCluster,
+		clusterCredentials,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),

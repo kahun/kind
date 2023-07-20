@@ -171,16 +171,15 @@ func ProviderWithPodman() ProviderOption {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (p *Provider) Create(params commons.ClusterParams, options ...CreateOption) error {
-	// apply options
+func (p *Provider) Create(name string, vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, options ...CreateOption) error { // apply options
 	opts := &internalcreate.ClusterOptions{
-		NameOverride:       params.Name,
-		VaultPassword:      params.VaultPassword,
-		DescriptorPath:     params.DescriptorPath,
-		MoveManagement:     params.MoveManagement,
-		AvoidCreation:      params.AvoidCreation,
-		KeosCluster:        params.KeosCluster,
-		ClusterCredentials: params.ClusterCredentials,
+		NameOverride:       name,
+		VaultPassword:      vaultPassword,
+		DescriptorPath:     descriptorPath,
+		MoveManagement:     moveManagement,
+		AvoidCreation:      avoidCreation,
+		KeosCluster:        keosCluster,
+		ClusterCredentials: clusterCredentials,
 	}
 	for _, o := range options {
 		if err := o.apply(opts); err != nil {
