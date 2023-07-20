@@ -39,8 +39,8 @@ type Resource struct {
 type KeosCluster struct {
 	APIVersion string   `yaml:"apiVersion" validate:"required"`
 	Kind       string   `yaml:"kind" validate:"required"`
-	Metadata   Metadata `yaml:"metadata" validate:"required,dive"`
-	Spec       Spec     `yaml:"spec" validate:"required,dive"`
+	Metadata   Metadata `yaml:"metadata" validate:"required"`
+	Spec       Spec     `yaml:"spec" validate:"required"`
 }
 
 type Metadata struct {
@@ -71,7 +71,7 @@ type Spec struct {
 		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
 	} `yaml:"dns"`
 
-	DockerRegistries []DockerRegistry `yaml:"docker_registries"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"required,dive"`
 
 	ExternalDomain string `yaml:"external_domain" validate:"hostname"`
 
@@ -97,18 +97,18 @@ type Spec struct {
 		Tags            []map[string]string `yaml:"tags"`
 		AWS             AWSCP               `yaml:"aws"`
 		Azure           AzureCP             `yaml:"azure"`
-		ExtraVolumes    []ExtraVolume       `yaml:"extra_volumes"`
+		ExtraVolumes    []ExtraVolume       `yaml:"extra_volumes" validate:"dive"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
 	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
 	PodsCidrBlock string    `yaml:"pods_cidr"`
-	PodsSubnets   []Subnets `yaml:"pods_subnets"`
-	Subnets       []Subnets `yaml:"subnets"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets" validate:"dive"`
+	Subnets       []Subnets `yaml:"subnets" validate:"dive"`
 	ResourceGroup string    `yaml:"resource_group"`
 }
 
@@ -148,7 +148,7 @@ type WorkerNodes []struct {
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
 	RootVolume       RootVolume        `yaml:"root_volume"`
-	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes"`
+	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes" validate:"dive"`
 }
 
 // Bastion represents the bastion VM
@@ -160,9 +160,9 @@ type Bastion struct {
 }
 
 type RootVolume struct {
-	Size          int    `yaml:"size" validate:"numeric"`
+	Size          int    `yaml:"size"`
 	Type          string `yaml:"type"`
-	Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+	Encrypted     bool   `yaml:"encrypted"`
 	EncryptionKey string `yaml:"encryption_key"`
 }
 
