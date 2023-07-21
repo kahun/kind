@@ -26,15 +26,12 @@ import (
 
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/iancoleman/strcase"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
-
-// TODO: validate AZs
 
 const (
 	cidrSizeMax = 65536
@@ -51,7 +48,7 @@ var AWSNodeImageFormat = "ami-[IMAGE_ID]"
 func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	var err error
 
-	cfg, err := getAWSConfig(providerSecrets, spec.Region)
+	cfg, err := commons.AWSGetConfig(providerSecrets, spec.Region)
 	if err != nil {
 		return err
 	}
@@ -89,21 +86,6 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	}
 
 	return nil
-}
-
-func getAWSConfig(secrets map[string]string, region string) (aws.Config, error) {
-	customProvider := credentials.NewStaticCredentialsProvider(
-		secrets["AccessKey"], secrets["SecretKey"], "",
-	)
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithCredentialsProvider(customProvider),
-		config.WithRegion(region),
-	)
-	if err != nil {
-		return aws.Config{}, err
-	}
-	return cfg, nil
 }
 
 func validateAWSNetwork(spec commons.Spec, cfg aws.Config) error {
@@ -237,93 +219,36 @@ func validateAWSVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVol
 }
 
 func validateAWSAZs(spec commons.Spec, cfg aws.Config) error {
-	// svc := ec2.NewFromConfig(cfg)
-	// ctx := context.TODO()
-	// 	if spec.Networks.Subnets != nil {
-	// 		privateAZs := []string{}
-	// 		for _, subnet := range spec.Networks.Subnets {
-	// 			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
-	// 			fmt.Println(privateSubnetID)
-	// 			if len(privateSubnetID) > 0 {
-	// 				sid := &ec2.DescribeSubnetsInput{
-	// 					SubnetIds: []string{subnet.SubnetId},
-	// 				}
-	// 				ds, err := svc.DescribeSubnets(ctx, sid)
-	// 				if err != nil {
-	// 					return err
-	// 				}
-	// 				for _, describeSubnet := range ds.Subnets {
-	// 					if !slices.Contains(privateAZs, *describeSubnet.AvailabilityZone) {
-	// 						privateAZs = append(privateAZs, *describeSubnet.AvailabilityZone)
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 		if len(privateAZs) < 3 {
-	// 			return errors.New("Insufficient Availability Zones in region " + spec.Region + ". Please add at least 3 private subnets in different Availability Zones")
-	// 		}
-	// 		for _, node := range spec.WorkerNodes {
-	// 			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
-	// 				if !slices.Contains(privateAZs, node.AZ) {
-	// 					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the AZs associated to the defined subnets in descriptor")
-	// 				}
-	// 			}
-	// 		}
-	// 	} else {
-	// 		result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		if len(result.AvailabilityZones) < 3 {
-	// 			return errors.New("Insufficient Availability Zones in region " + spec.Region + ". Must have at least 3")
-	// 		}
-	// 		azs := make([]string, 3)
-	// 		for i, az := range result.AvailabilityZones {
-	// 			if i == 3 {
-	// 				break
-	// 			}
-	// 			azs[i] = *az.ZoneName
-	// 		}
-	// 		for _, node := range spec.WorkerNodes {
-	// 			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
-	// 				if !slices.Contains(azs, node.AZ) {
-	// 					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the first three AZs in region " + spec.Region)
-	// 				}
-	// 			}
-	// 		}
-	// 	}
+	var err error
+	var azs []string
+
+	svc := ec2.NewFromConfig(cfg)
+	ctx := context.TODO()
+	if len(spec.Networks.Subnets) > 0 {
+		azs, err = commons.AWSGetPrivateAZs(ctx, svc, spec.Networks.Subnets)
+		if err != nil {
+			return err
+		}
+		if len(azs) < 3 {
+			return errors.New("insufficient Availability Zones in region " + spec.Region + ". Please add at least 3 private subnets in different Availability Zones")
+		}
+	} else {
+		azs, err = commons.AWSGetAZs(ctx, svc)
+		if err != nil {
+			return err
+		}
+		if len(azs) < 3 {
+			return errors.New("insufficient Availability Zones in region " + spec.Region + ". Must have at least 3")
+		}
+	}
+
+	for _, node := range spec.WorkerNodes {
+		if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
+			if !slices.Contains(azs, node.AZ) {
+				return errors.New("worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the AZs associated to the defined subnets in descriptor")
+			}
+		}
+	}
+
 	return nil
 }
-
-// func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
-// 	keyname := "association.subnet-id"
-// 	filters := make([]*ec2.Filter, 0)
-// 	filter := ec2.Filter{
-// 		Name: &keyname, Values: []*string{subnetID}}
-// 	filters = append(filters, &filter)
-
-// 	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
-// 	drto, err := svc.DescribeRouteTables(drti)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	var isPublic bool
-// 	for _, associatedRouteTable := range drto.RouteTables {
-// 		for i := range associatedRouteTable.Routes {
-// 			route := associatedRouteTable.Routes[i]
-
-// 			if route.DestinationCidrBlock != nil &&
-// 				route.GatewayId != nil &&
-// 				*route.DestinationCidrBlock == "0.0.0.0/0" &&
-// 				strings.Contains(*route.GatewayId, "igw") {
-// 				isPublic = true
-// 			}
-// 		}
-// 	}
-// 	if !isPublic {
-// 		return *subnetID, nil
-// 	} else {
-// 		return "", nil
-// 	}
-// }

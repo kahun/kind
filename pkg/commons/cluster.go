@@ -273,7 +273,7 @@ type StorageClass struct {
 
 type SCParameters struct {
 	// Common
-	Type   string `yaml:"type,omitempty""`
+	Type   string `yaml:"type,omitempty"`
 	FsType string `yaml:"fsType,omitempty"`
 	Labels string `yaml:"labels,omitempty"`
 

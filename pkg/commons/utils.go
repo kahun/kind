@@ -18,16 +18,23 @@ package commons
 
 import (
 	"bytes"
+	"context"
 	"unicode"
 
 	"os"
 	"strings"
 
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	vault "github.com/sosedoff/ansible-vault-go"
 )
 
@@ -257,4 +264,90 @@ func Contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func AWSGetConfig(secrets map[string]string, region string) (aws.Config, error) {
+	customProvider := credentials.NewStaticCredentialsProvider(
+		secrets["AccessKey"], secrets["SecretKey"], "",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithCredentialsProvider(customProvider),
+		config.WithRegion(region),
+	)
+	if err != nil {
+		return aws.Config{}, err
+	}
+	return cfg, nil
+}
+
+func AWSIsPrivateSubnet(ctx context.Context, svc *ec2.Client, subnetID *string) (bool, error) {
+	keyname := "association.subnet-id"
+	drtInput := &ec2.DescribeRouteTablesInput{
+		Filters: []types.Filter{
+			{
+				Name:   &keyname,
+				Values: []string{*subnetID},
+			},
+		},
+	}
+	rt, err := svc.DescribeRouteTables(ctx, drtInput)
+	if err != nil {
+		return false, err
+	}
+
+	for _, associatedRouteTable := range rt.RouteTables {
+		for i := range associatedRouteTable.Routes {
+			route := associatedRouteTable.Routes[i]
+			// Check if route is public
+			if route.DestinationCidrBlock != nil &&
+				route.GatewayId != nil &&
+				*route.DestinationCidrBlock == "0.0.0.0/0" &&
+				strings.Contains(*route.GatewayId, "igw") {
+				return false, nil // Public subnet
+			}
+		}
+	}
+
+	return true, nil
+}
+
+func AWSGetPrivateAZs(ctx context.Context, svc *ec2.Client, subnets []Subnets) ([]string, error) {
+	var azs []string
+	for _, s := range subnets {
+		isPrivate, err := AWSIsPrivateSubnet(ctx, svc, &s.SubnetId)
+		if err != nil {
+			return nil, nil
+		}
+		if isPrivate {
+			sid := &ec2.DescribeSubnetsInput{
+				SubnetIds: []string{s.SubnetId},
+			}
+			ds, err := svc.DescribeSubnets(ctx, sid)
+			if err != nil {
+				return nil, nil
+			}
+			for _, describeSubnet := range ds.Subnets {
+				if !slices.Contains(azs, *describeSubnet.AvailabilityZone) {
+					azs = append(azs, *describeSubnet.AvailabilityZone)
+				}
+			}
+		}
+	}
+	return azs, nil
+}
+
+func AWSGetAZs(ctx context.Context, svc *ec2.Client) ([]string, error) {
+	var azs []string
+	result, err := svc.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
+	if err != nil {
+		return nil, err
+	}
+	for i, az := range result.AvailabilityZones {
+		if i == 3 {
+			break
+		}
+		azs = append(azs, *az.ZoneName)
+	}
+	return azs, nil
 }
