@@ -113,9 +113,9 @@ type Networks struct {
 }
 
 type Subnets struct {
-	SubnetId  string `yaml:"subnet_id"`
+	SubnetId  string `yaml:"subnet_id" validate:"required"`
 	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
-	Role      string `yaml:"role" validate:"oneof='control-plane' 'node'"`
+	Role      string `yaml:"role" validate:"omitempty,oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
