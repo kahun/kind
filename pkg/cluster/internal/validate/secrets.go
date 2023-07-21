@@ -127,15 +127,17 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) (ma
 			if !existCredentials {
 				return nil, nil, errors.New("there aren't valid credentials for the registry: " + dockerRegistry.URL)
 			}
-
-			if dockerRegistry.KeosRegistry {
-				// Check if there are more than one docker_registry defined as keos_registry
-				keosCount++
-				if keosCount > 1 {
-					return nil, nil, errors.New("there are more than one docker_registry defined as keos_registry")
-				}
+		}
+		if dockerRegistry.KeosRegistry {
+			// Check if there are more than one docker_registry defined as keos_registry
+			keosCount++
+			if keosCount > 1 {
+				return nil, nil, errors.New("there are more than one docker_registry defined as keos_registry")
 			}
 		}
+	}
+	if keosCount == 0 {
+		return nil, nil, errors.New("there isn't any docker_registry defined as keos_registry")
 	}
 	return resultKeosRegistry, resultDockerRegistries, nil
 }
