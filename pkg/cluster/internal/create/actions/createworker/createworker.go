@@ -52,7 +52,7 @@ var PathsToBackupLocally = []string{
 	"/kind/manifests",
 }
 
-//go:embed files/all/allow-all-egress_netpol.yaml
+//go:embed files/common/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
 
 //go:embed files/gcp/rbac-loadbalancing.yaml
@@ -100,6 +100,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	providerBuilder := getBuilder(a.keosCluster.Spec.InfraProvider)
 	infra := newInfra(providerBuilder)
 	provider := infra.buildProvider(providerParams)
+
+	awsEKSEnabled := a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed
+	azureAKSEnabled := a.keosCluster.Spec.InfraProvider == "azure" && a.keosCluster.Spec.ControlPlane.Managed
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
@@ -353,7 +356,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
-		if provider.capxProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed {
+		if awsEKSEnabled {
 			c = "kubectl -n capa-system rollout restart deployment capa-controller-manager"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
@@ -379,7 +382,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
-		if provider.capxProvider == "azure" && a.keosCluster.Spec.ControlPlane.Managed && a.keosCluster.Spec.Security.NodesIdentity != "" {
+		if azureAKSEnabled && a.keosCluster.Spec.Security.NodesIdentity != "" {
 			// Update AKS cluster with the user kubelet identity until the provider supports it
 			err := assignUserIdentity(a.keosCluster.Spec.Security.NodesIdentity, a.keosCluster.Metadata.Name, a.keosCluster.Spec.Region, a.clusterCredentials.ProviderCredentials)
 			if err != nil {
@@ -387,6 +390,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
+		// Wait for metrics-server deployment to be ready
+		if azureAKSEnabled {
+			c = "kubectl --kubeconfig " + kubeconfigPath + " rollout status deploy metrics-server -n kube-system --timeout=5m"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
+		}
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
 		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
@@ -394,7 +405,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		err = infra.configureStorageClass(n, kubeconfigPath)
 		if err != nil {
-			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
+			return errors.Wrap(err, "failed to configure StorageClass in workload cluster")
 		}
 		ctx.Status.End(true) // End Installing StorageClass in workload cluster
 
@@ -500,7 +511,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 		}
 
-		if a.keosCluster.Spec.DeployAutoscaler && !(a.keosCluster.Spec.InfraProvider == "azure" && a.keosCluster.Spec.ControlPlane.Managed) {
+		if a.keosCluster.Spec.DeployAutoscaler && !azureAKSEnabled {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 
@@ -519,6 +530,19 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			ctx.Status.End(true)
+		}
+
+		// Apply custom CoreDNS configuration
+		if a.keosCluster.Spec.Dns.Forwarders != nil && len(a.keosCluster.Spec.Dns.Forwarders) > 0 && !awsEKSEnabled {
+			ctx.Status.Start("Customizing CoreDNS configuration 🪡")
+			defer ctx.Status.End(false)
+
+			err = customCoreDNS(n, kubeconfigPath, a.keosCluster)
+			if err != nil {
+				return errors.Wrap(err, "failed to customized CoreDNS configuration")
+			}
+
+			ctx.Status.End(true) // End Customizing CoreDNS configuration
 		}
 
 		// Create cloud-provisioner Objects backup
