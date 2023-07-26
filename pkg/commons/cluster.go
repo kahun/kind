@@ -74,7 +74,7 @@ type Spec struct {
 
 	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"required,dive"`
 
-	ExternalDomain string `yaml:"external_domain" validate:"hostname"`
+	ExternalDomain string `yaml:"external_domain" validate:"fqdn"`
 
 	Security struct {
 		NodesIdentity string `yaml:"nodes_identity"`
