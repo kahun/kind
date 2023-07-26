@@ -50,8 +50,6 @@ type GCPBuilder struct {
 	scParameters     commons.SCParameters
 	scProvisioner    string
 	csiNamespace     string
-	dataCreds        map[string]interface{}
-	region           string
 }
 
 func newGCPBuilder() *GCPBuilder {
@@ -88,8 +86,6 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.Credentials["ClientEmail"]),
 	}
-	b.dataCreds = data
-	b.region = p.Region
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
@@ -163,39 +159,29 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 }
 
 func (b *GCPBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	if len(b.dataCreds) == 0 {
-		return nil, errors.New("Insufficient credentials.")
-	}
+	var azs []string
+	var ctx = context.Background()
 
-	ctx := context.Background()
-	jsonDataCreds, _ := json.Marshal(b.dataCreds)
-	creds := option.WithCredentialsJSON(jsonDataCreds)
-	computeService, err := compute.NewService(ctx, creds)
+	secrets, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
+	cfg := option.WithCredentialsJSON(secrets)
+	computeService, err := compute.NewService(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	project := b.dataCreds["project_id"]
-	if project_id, ok := project.(string); ok {
-		zones, err := computeService.Zones.List(project_id).Filter("name=" + b.region + "*").Do()
-		if err != nil {
-			return nil, err
-		}
-		if len(zones.Items) < 3 {
-			return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
-		}
-		azs := make([]string, 3)
-		for i, zone := range zones.Items {
-			if i == 3 {
-				break
-			}
-			azs[i] = zone.Name
-		}
-
-		return azs, nil
+	zones, err := computeService.Zones.List(p.Credentials["project_id"]).Filter("name=" + p.Region + "*").Do()
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, errors.New("Error in project id")
+	if len(zones.Items) < 3 {
+		return nil, errors.New("insufficient availability aones in this region. Must have at least 3")
+	}
+	for i, zone := range zones.Items {
+		if i == 3 {
+			break
+		}
+		azs = append(azs, zone.Name)
+	}
+	return azs, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
@@ -237,24 +223,17 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 }
 
 func (b *GCPBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
-	if len(b.dataCreds) == 0 {
-		return false, errors.New("Insufficient credentials.")
-	}
+	var ctx = context.Background()
 
-	ctx := context.Background()
-	jsonDataCreds, _ := json.Marshal(b.dataCreds)
-	creds := option.WithCredentialsJSON(jsonDataCreds)
-	computeService, err := compute.NewService(ctx, creds)
+	secrets, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
+	cfg := option.WithCredentialsJSON(secrets)
+	computeService, err := compute.NewService(ctx, cfg)
 	if err != nil {
 		return false, err
 	}
-
-	project := b.dataCreds["project_id"].(string)
-	region := b.region
-
-	if networks.Subnets != nil {
-		for _, subnet := range networks.Subnets {
-			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, project, region, subnet.SubnetId)
+	if len(networks.Subnets) > 0 {
+		for _, s := range networks.Subnets {
+			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, p.Credentials["project_id"], p.Region, s.SubnetId)
 			if len(publicSubnetID) > 0 {
 				return false, nil
 			}
