@@ -143,15 +143,10 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	}
 	// Validate size support premium storage
 	if sc.Class == "premium" || isPremium(sc.Parameters.SkuName) {
-		hasPremium := false
 		for _, n := range wn {
-			if hasAzurePremiumStorage(n.Size) {
-				hasPremium = true
-				break
+			if !hasAzurePremiumStorage(n.Size) {
+				return errors.New("premium storage is not supported in " + n.Name + " worker node")
 			}
-		}
-		if !hasPremium {
-			return errors.New("premium storage is not supported in any workers nodes")
 		}
 	}
 	// Validate cachingMode
