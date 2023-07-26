@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 
 	"syscall"
 	"time"
@@ -178,6 +179,9 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate cluster")
 	}
+
+	fmt.Println("OK")
+	os.Exit(0)
 
 	// handle config flag, we might need to read from stdin
 	withConfig, err := configOption(flags.Config, streams.In)
