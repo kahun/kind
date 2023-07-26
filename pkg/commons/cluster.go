@@ -141,7 +141,7 @@ type WorkerNodes []struct {
 	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
 	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string            `yaml:"az"`
+	AZ               string            `yaml:"az" validate:"required_if=ZoneDistribution unbalanced"`
 	SSHKey           string            `yaml:"ssh_key"`
 	Spot             bool              `yaml:"spot" validate:"boolean"`
 	Labels           map[string]string `yaml:"labels"`
