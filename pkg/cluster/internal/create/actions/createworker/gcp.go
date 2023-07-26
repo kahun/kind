@@ -60,8 +60,8 @@ func newGCPBuilder() *GCPBuilder {
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.3.1"
-	b.capxImageVersion = "v1.3.1"
+	b.capxVersion = "v1.4.0"
+	b.capxImageVersion = "v1.4.0"
 	b.capxName = "capg"
 
 	if managed {
@@ -205,7 +205,7 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	if b.capxManaged {
 		// Remove annotation from default storage class
-		c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+		c = "kubectl --kubeconfig " + k + ` get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'`
 		output, err := commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to get default storage class")
