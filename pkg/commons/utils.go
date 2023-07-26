@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -266,7 +267,7 @@ func Contains(s []string, str string) bool {
 	return false
 }
 
-func AWSGetConfig(secrets map[string]string, region string) (aws.Config, error) {
+func AWSGetConfig(ctx context.Context, secrets map[string]string, region string) (aws.Config, error) {
 	customProvider := credentials.NewStaticCredentialsProvider(
 		secrets["AccessKey"], secrets["SecretKey"], "",
 	)
@@ -350,4 +351,14 @@ func AWSGetAZs(ctx context.Context, svc *ec2.Client) ([]string, error) {
 		azs = append(azs, *az.ZoneName)
 	}
 	return azs, nil
+}
+
+func AzureGetConfig(secrets map[string]string) (*azidentity.ClientSecretCredential, error) {
+	cfg, err := azidentity.NewClientSecretCredential(
+		secrets["TenantID"], secrets["ClientID"], secrets["ClientSecret"], nil,
+	)
+	if err != nil {
+		return &azidentity.ClientSecretCredential{}, err
+	}
+	return cfg, nil
 }

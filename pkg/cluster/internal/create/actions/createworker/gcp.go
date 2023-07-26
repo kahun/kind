@@ -162,7 +162,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
+func (b *GCPBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
 	if len(b.dataCreds) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -236,7 +236,7 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+func (b *GCPBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
 	if len(b.dataCreds) == 0 {
 		return false, errors.New("Insufficient credentials.")
 	}
@@ -277,26 +277,15 @@ func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, re
 	}
 }
 
-func (b *GCPBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
+func (b *GCPBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+	var overrideVars map[string][]byte
+
+	requiredInternalNginx, err := b.internalNginx(p, networks)
 	if err != nil {
 		return nil, err
 	}
-	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
-
-	return overrideVars, nil
-}
-
-func (b *GCPBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
-	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
-	if err != nil {
-		return "", nil, err
-	}
-
 	if requiredInternalNginx {
-		return "ingress-nginx.yaml", gcpInternalIngress, nil
+		overrideVars = addOverrideVar("ingress-nginx.yaml", gcpInternalIngress, overrideVars)
 	}
-
-	return "", []byte(""), nil
+	return overrideVars, nil
 }
