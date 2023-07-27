@@ -18,6 +18,7 @@ package validate
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -40,6 +41,12 @@ func validateGCP(spec commons.Spec) error {
 	if (spec.StorageClass != commons.StorageClass{}) {
 		if err = validateGCPStorageClass(spec); err != nil {
 			return errors.Wrap(err, "invalid storage class")
+		}
+	}
+
+	if !reflect.ValueOf(spec.Networks).IsZero() {
+		if err = validateGCPNetwork(spec.Networks); err != nil {
+			return errors.Wrap(err, "invalid network")
 		}
 	}
 
@@ -121,6 +128,21 @@ func validateGCPStorageClass(spec commons.Spec) error {
 	if sc.Parameters.Labels != "" {
 		if err = validateLabel(sc.Parameters.Labels); err != nil {
 			return errors.Wrap(err, "invalid labels")
+		}
+	}
+	return nil
+}
+
+func validateGCPNetwork(network commons.Networks) error {
+	if network.VPCID == "" {
+		return errors.New("vpc_id is required")
+	}
+	if len(network.Subnets) > 0 {
+		if len(network.Subnets) > 1 {
+			return errors.New("only one subnet is supported")
+		}
+		if network.Subnets[0].SubnetId == "" {
+			return errors.New("subnet_id is required")
 		}
 	}
 	return nil
