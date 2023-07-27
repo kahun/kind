@@ -168,7 +168,7 @@ func (b *GCPBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]stri
 	if err != nil {
 		return nil, err
 	}
-	zones, err := computeService.Zones.List(p.Credentials["project_id"]).Filter("name=" + p.Region + "*").Do()
+	zones, err := computeService.Zones.List(p.Credentials["ProjectID"]).Filter("name=" + p.Region + "*").Do()
 	if err != nil {
 		return nil, err
 	}
