@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -65,6 +66,11 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 	if (spec.StorageClass != commons.StorageClass{}) {
 		if err = validateAzureStorageClass(spec.StorageClass, spec.WorkerNodes); err != nil {
 			return errors.Wrap(err, "invalid storage class")
+		}
+	}
+	if !reflect.ValueOf(spec.Networks).IsZero() {
+		if err = validateAzureNetwork(spec); err != nil {
+			return errors.Wrap(err, "invalid network")
 		}
 	}
 
@@ -162,6 +168,31 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	if sc.Parameters.Tags != "" {
 		if err = validateLabel(sc.Parameters.Tags); err != nil {
 			return errors.Wrap(err, "invalid tags")
+		}
+	}
+	return nil
+}
+
+func validateAzureNetwork(spec commons.Spec) error {
+	if spec.Networks.VPCID == "" {
+		return errors.New("vpc_id is required")
+	}
+	if spec.Networks.VPCCidrBlock == "" {
+		return errors.New("vpc_cidr is required")
+	}
+	if len(spec.Networks.Subnets) > 0 {
+		for _, s := range spec.Networks.Subnets {
+			if s.SubnetId == "" {
+				return errors.New("subnet_id is required")
+			}
+			if s.CidrBlock == "" {
+				return errors.New("cidr is required")
+			}
+			if !spec.ControlPlane.Managed {
+				if s.Role == "" {
+					return errors.New("role is required")
+				}
+			}
 		}
 	}
 	return nil

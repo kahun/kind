@@ -114,7 +114,7 @@ type Networks struct {
 }
 
 type Subnets struct {
-	SubnetId  string `yaml:"subnet_id" validate:"required"`
+	SubnetId  string `yaml:"subnet_id"`
 	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
 	Role      string `yaml:"role" validate:"omitempty,oneof='control-plane' 'node'"`
 }

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -58,9 +59,10 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 			return errors.Wrap(err, "invalid storage class")
 		}
 	}
-
-	if err = validateAWSNetwork(spec, cfg); err != nil {
-		return errors.Wrap(err, "invalid network")
+	if !reflect.ValueOf(spec.Networks).IsZero() {
+		if err = validateAWSNetwork(spec, cfg); err != nil {
+			return errors.Wrap(err, "invalid network")
+		}
 	}
 
 	if !spec.ControlPlane.Managed {
@@ -90,13 +92,23 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 
 func validateAWSNetwork(spec commons.Spec, cfg aws.Config) error {
 	var err error
+	if spec.Networks.VPCID == "" {
+		return errors.New("vpc_id is required")
+	}
 	if spec.Networks.PodsCidrBlock != "" {
 		if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
 			return err
 		}
 	}
-	if err = validateAWSAZs(spec, cfg); err != nil {
-		return err
+	if len(spec.Networks.Subnets) > 0 {
+		for _, s := range spec.Networks.Subnets {
+			if s.SubnetId == "" {
+				return errors.New("subnet_id is required")
+			}
+		}
+		if err = validateAWSAZs(spec, cfg); err != nil {
+			return err
+		}
 	}
 	return nil
 }
