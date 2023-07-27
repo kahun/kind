@@ -233,7 +233,7 @@ func (b *GCPBuilder) internalNginx(p ProviderParams, networks commons.Networks) 
 	}
 	if len(networks.Subnets) > 0 {
 		for _, s := range networks.Subnets {
-			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, p.Credentials["project_id"], p.Region, s.SubnetId)
+			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, p.Credentials["ProjectID"], p.Region, s.SubnetId)
 			if len(publicSubnetID) > 0 {
 				return false, nil
 			}
@@ -248,7 +248,6 @@ func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, re
 	if err != nil {
 		return "", err
 	}
-
 	if subnet.PrivateIpGoogleAccess {
 		return "", nil
 	} else {
