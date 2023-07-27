@@ -177,7 +177,6 @@ func RewriteDescriptorFile(descriptorPath string) error {
 	}
 
 	return nil
-
 }
 
 func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword string) error {
@@ -272,7 +271,7 @@ func AWSGetConfig(ctx context.Context, secrets map[string]string, region string)
 		secrets["AccessKey"], secrets["SecretKey"], "",
 	)
 	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
+		ctx,
 		config.WithCredentialsProvider(customProvider),
 		config.WithRegion(region),
 	)
