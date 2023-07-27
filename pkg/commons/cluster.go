@@ -107,7 +107,7 @@ type Spec struct {
 type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
 	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock string    `yaml:"pods_cidr"`
+	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
 	PodsSubnets   []Subnets `yaml:"pods_subnets" validate:"dive"`
 	Subnets       []Subnets `yaml:"subnets" validate:"dive"`
 	ResourceGroup string    `yaml:"resource_group"`
