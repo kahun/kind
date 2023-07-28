@@ -177,25 +177,19 @@ func validateAzureNetwork(spec commons.Spec) error {
 	if spec.Networks.VPCID == "" {
 		return errors.New("vpc_id is required")
 	}
-	if spec.ControlPlane.Managed {
-		if spec.Networks.VPCCidrBlock == "" {
-			return errors.New("vpc_cidr is required")
-		}
+	if spec.ControlPlane.Managed && spec.Networks.VPCCidrBlock == "" {
+		return errors.New("vpc_cidr is required")
 	}
 	if len(spec.Networks.Subnets) > 0 {
 		for _, s := range spec.Networks.Subnets {
 			if s.SubnetId == "" {
 				return errors.New("subnet_id is required")
 			}
-			if spec.ControlPlane.Managed {
-				if s.CidrBlock == "" {
-					return errors.New("cidr is required")
-				}
+			if spec.ControlPlane.Managed && s.CidrBlock == "" {
+				return errors.New("cidr is required")
 			}
-			if !spec.ControlPlane.Managed {
-				if s.Role == "" {
-					return errors.New("role is required")
-				}
+			if !spec.ControlPlane.Managed && s.Role == "" {
+				return errors.New("role is required")
 			}
 		}
 	}
