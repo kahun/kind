@@ -99,22 +99,22 @@ type Spec struct {
 
 type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
-	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	PodsSubnets   []Subnets `yaml:"pods_subnets" validate:"dive"`
-	Subnets       []Subnets `yaml:"subnets" validate:"dive"`
-	ResourceGroup string    `yaml:"resource_group"`
+	VPCCidrBlock  string    `yaml:"vpc_cidr,omitempty" validate:"omitempty,cidrv4"`
+	PodsCidrBlock string    `yaml:"pods_cidr,omitempty" validate:"omitempty,cidrv4"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets,omitempty" validate:"dive"`
+	Subnets       []Subnets `yaml:"subnets,omitempty" validate:"dive"`
+	ResourceGroup string    `yaml:"resource_group,omitempty"`
 }
 
 type Subnets struct {
 	SubnetId  string `yaml:"subnet_id"`
-	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
-	Role      string `yaml:"role" validate:"omitempty,oneof='control-plane' 'node'"`
+	CidrBlock string `yaml:"cidr,omitempty" validate:"omitempty,cidrv4"`
+	Role      string `yaml:"role,omitempty" validate:"omitempty,oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
-	AssociateOIDCProvider bool   `yaml:"associate_oidc_provider" validate:"boolean"`
-	EncryptionKey         string `yaml:"encryption_key"`
+	AssociateOIDCProvider bool   `yaml:"associate_oidc_provider,omitempty" validate:"boolean"`
+	EncryptionKey         string `yaml:"encryption_key,omitempty"`
 	Logging               struct {
 		ApiServer         bool `yaml:"api_server" validate:"boolean"`
 		Audit             bool `yaml:"audit" validate:"boolean"`
