@@ -256,6 +256,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Clean keos cluster file
 	keosCluster := a.keosCluster
+	keosCluster.Spec.Credentials = commons.Credentials{}
 	keosCluster.Spec.Keos = struct {
 		Flavour string `yaml:"flavour,omitempty"`
 		Version string `yaml:"version,omitempty"`
