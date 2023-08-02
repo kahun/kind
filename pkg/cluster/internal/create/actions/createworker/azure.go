@@ -132,6 +132,14 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
 
+	c = "helm install azurefile-csi-driver /stratio/helm/azurefile-csi-driver " +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Azure File CSI driver Helm Chart")
+	}
+
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create Azure Storage Classes")
