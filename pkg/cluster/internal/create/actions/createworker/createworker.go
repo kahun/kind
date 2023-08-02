@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -39,12 +40,22 @@ type action struct {
 	clusterCredentials commons.ClusterCredentials
 }
 
+type keosRegistry struct {
+	url          string
+	user         string
+	pass         string
+	registryType string
+}
+
 const (
 	kubeconfigPath          = "/kind/worker-cluster.kubeconfig"
 	workKubeconfigPath      = ".kube/config"
 	CAPILocalRepository     = "/root/.cluster-api/local-repository"
 	cloudProviderBackupPath = "/kind/backup/objects"
 	localBackupPath         = "backup"
+	manifestsPath           = "/kind/manifests"
+
+	keosClusterVersion = "0.1.0-SNAPSHOT"
 )
 
 var PathsToBackupLocally = []string{
@@ -82,6 +93,7 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 func (a *action) Execute(ctx *actions.ActionContext) error {
 	var c string
 	var err error
+	var keosRegistry keosRegistry
 
 	// Get the target node
 	n, err := ctx.GetNode()
@@ -107,39 +119,45 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
 
+	for _, registry := range a.keosCluster.Spec.DockerRegistries {
+		if registry.KeosRegistry {
+			keosRegistry.url = registry.URL
+			keosRegistry.registryType = registry.Type
+			continue
+		}
+	}
+
+	if keosRegistry.registryType == "ecr" {
+		ecrToken, err := getEcrToken(providerParams)
+		if err != nil {
+			return errors.Wrap(err, "failed to get ECR auth token")
+		}
+		keosRegistry.user = "AWS"
+		keosRegistry.pass = ecrToken
+	} else if keosRegistry.registryType == "acr" {
+		acrService := strings.Split(keosRegistry.url, "/")[0]
+		acrToken, err := getAcrToken(providerParams, acrService)
+		if err != nil {
+			return errors.Wrap(err, "failed to get ACR auth token")
+		}
+		keosRegistry.user = "00000000-0000-0000-0000-000000000000"
+		keosRegistry.pass = acrToken
+	} else {
+		keosRegistry.user = a.clusterCredentials.KeosRegistryCredentials["User"]
+		keosRegistry.pass = a.clusterCredentials.KeosRegistryCredentials["Pass"]
+	}
+
+	// Create docker-registry secret for keos cluster
+	c = "kubectl -n kube-system create secret docker-registry regcred" +
+		" --docker-server=" + keosRegistry.url +
+		" --docker-username=" + keosRegistry.user +
+		" --docker-password=" + keosRegistry.pass
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create docker-registry secret")
+	}
+
 	if provider.capxVersion != provider.capxImageVersion {
-		var registryUrl string
-		var registryType string
-		var registryUser string
-		var registryPass string
-
-		for _, registry := range a.keosCluster.Spec.DockerRegistries {
-			if registry.KeosRegistry {
-				registryUrl = registry.URL
-				registryType = registry.Type
-				continue
-			}
-		}
-
-		if registryType == "ecr" {
-			ecrToken, err := getEcrToken(providerParams)
-			if err != nil {
-				return errors.Wrap(err, "failed to get ECR auth token")
-			}
-			registryUser = "AWS"
-			registryPass = ecrToken
-		} else if registryType == "acr" {
-			acrService := strings.Split(registryUrl, "/")[0]
-			acrToken, err := getAcrToken(providerParams, acrService)
-			if err != nil {
-				return errors.Wrap(err, "failed to get ACR auth token")
-			}
-			registryUser = "00000000-0000-0000-0000-000000000000"
-			registryPass = acrToken
-		} else {
-			registryUser = a.clusterCredentials.KeosRegistryCredentials["User"]
-			registryPass = a.clusterCredentials.KeosRegistryCredentials["Pass"]
-		}
 
 		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
 
@@ -150,11 +168,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
 		}
 
-		// Create docker-registry secret
+		// Create docker-registry secret in provider-system namespace
 		c = "kubectl create secret docker-registry regcred" +
-			" --docker-server=" + registryUrl +
-			" --docker-username=" + registryUser +
-			" --docker-password=" + registryPass +
+			" --docker-server=" + keosRegistry.url +
+			" --docker-username=" + keosRegistry.user +
+			" --docker-password=" + keosRegistry.pass +
 			" --namespace=" + provider.capxName + "-system"
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
@@ -200,7 +218,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Create the cluster manifests file in the container
-	descriptorPath := "/kind/manifests/cluster_" + a.keosCluster.Metadata.Name + ".yaml"
+	descriptorPath := manifestsPath + "/cluster_" + a.keosCluster.Metadata.Name + ".yaml"
 	c = "echo \"" + descriptorData + "\" > " + descriptorPath
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
@@ -232,6 +250,52 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
+
+	ctx.Status.Start("Installing keos cluster operator 👨‍💻")
+	defer ctx.Status.End(false)
+
+	// Clean keos cluster file
+	keosCluster := a.keosCluster
+	keosCluster.Spec.Keos = struct {
+		Flavour string `yaml:"flavour,omitempty"`
+		Version string `yaml:"version,omitempty"`
+	}{}
+
+	keosClusterYAML, err := yaml.Marshal(keosCluster)
+	if err != nil {
+		return err
+	}
+	c = "echo '" + string(keosClusterYAML) + "' > " + manifestsPath + "/keoscluster.yaml"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to write the keoscluster file")
+	}
+
+	var clusterOperatorValues = `---
+app:
+  imagePullSecrets:
+    enabled: true
+    name: regcred
+  containers:
+    controllerManager:
+      image:
+        registry: ` + keosRegistry.url + `
+        repository: stratio/cluster-operator
+        tag: ` + keosClusterVersion
+
+	c = "echo '" + clusterOperatorValues + "' > " + manifestsPath + "/cluster-operator-values.yaml"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed create cluster-operator values file")
+	}
+
+	c = "helm install cluster-operator /stratio/helm/cluster-operator --values " + manifestsPath + "/cluster-operator-values.yaml"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy cluster-operator chart")
+	}
+
+	defer ctx.Status.End(true) // End installing keos cluster operator
 
 	if !a.avoidCreation {
 		if a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.Security.AWS.CreateIAM {
