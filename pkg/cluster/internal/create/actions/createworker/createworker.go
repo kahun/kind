@@ -297,6 +297,13 @@ app:
 		return errors.Wrap(err, "failed to deploy cluster-operator chart")
 	}
 
+	// Wait for keoscluster-controller-manager deployment
+	c = "kubectl -n kube-system rollout status deploy/keoscluster-controller-manager --timeout=3m"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create the worker Cluster")
+	}
+
 	defer ctx.Status.End(true) // End installing keos cluster operator
 
 	if !a.avoidCreation {
