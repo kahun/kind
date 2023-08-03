@@ -315,7 +315,7 @@ app:
 		defer ctx.Status.End(false)
 
 		// Apply cluster manifests
-		c = "kubectl apply -n " + capiClustersNamespace + " -f " + descriptorPath
+		c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply manifests")
