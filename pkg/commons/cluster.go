@@ -368,6 +368,9 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, error) {
 			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
 		}{}
 	}
+	if keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed {
+		keosCluster.Spec.ControlPlane.AWS = AWSCP{}
+	}
 
 	keosCluster.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
 
