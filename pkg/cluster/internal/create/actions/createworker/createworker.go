@@ -23,6 +23,7 @@ import (
 	_ "embed"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -327,6 +328,8 @@ app:
 		if err != nil {
 			return errors.Wrap(err, "failed to apply manifests")
 		}
+
+		time.Sleep(10 * time.Second)
 
 		// Wait for the control plane initialization
 		c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneInitialized --timeout=25m cluster " + a.keosCluster.Metadata.Name
