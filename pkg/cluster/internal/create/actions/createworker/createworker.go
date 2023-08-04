@@ -274,25 +274,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to write the keoscluster file")
 	}
 
-	var clusterOperatorValues = `---
-app:
-  imagePullSecrets:
-    enabled: true
-    name: regcred
-  containers:
-    controllerManager:
-      image:
-        registry: ` + keosRegistry.url + `
-        repository: stratio/cluster-operator
-        tag: ` + keosClusterVersion
-
-	c = "echo '" + clusterOperatorValues + "' > " + manifestsPath + "/cluster-operator-values.yaml"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed create cluster-operator values file")
-	}
-
-	c = "helm install cluster-operator /stratio/helm/cluster-operator --values " + manifestsPath + "/cluster-operator-values.yaml"
+	c = "helm install cluster-operator /stratio/helm/cluster-operator" +
+		" --namespace kube-system" +
+		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
+		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
+		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
+		" --set app.imagePullSecrets.enabled=true" +
+		" --set app.imagePullSecrets.name=regcred"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster-operator chart")
@@ -302,7 +290,7 @@ app:
 	c = "kubectl -n kube-system rollout status deploy/keoscluster-controller-manager --timeout=3m"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to create the worker Cluster")
+		return errors.Wrap(err, "failed to wait for keoscluster-controller-manager deployment")
 	}
 
 	defer ctx.Status.End(true) // End installing keos cluster operator
@@ -336,7 +324,7 @@ app:
 		c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneInitialized --timeout=25m cluster " + a.keosCluster.Metadata.Name
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to create the worker Cluster")
+			return errors.Wrap(err, "failed to create the workload cluster")
 		}
 
 		ctx.Status.End(true) // End Creating the workload cluster
@@ -672,9 +660,47 @@ app:
 				return errors.Wrap(err, "failed to pivot management role to worker cluster")
 			}
 
-			ctx.Status.End(true)
-		}
+			ctx.Status.End(true) // End Moving the management role
 
+			ctx.Status.Start("Moving the cluster-operator 🗝️")
+
+			// Deploy cluster-operator chart in workload cluster
+			c = "helm install cluster-operator /stratio/helm/cluster-operator" +
+				" --kubeconfig " + kubeconfigPath +
+				" --namespace kube-system" +
+				" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
+				" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
+				" --set app.containers.controllerManager.image.tag=" + keosClusterVersion
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to deploy cluster-operator chart in workload cluster")
+			}
+
+			// Wait for keoscluster-controller-manager deployment
+			c = "kubectl --kubekubeconfig " + kubeconfigPath + " -n kube-system rollout status deploy/keoscluster-controller-manager --timeout=3m"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to wait for keoscluster-controller-manager deployment in workload cluster")
+			}
+
+			time.Sleep(10 * time.Second)
+
+			//
+			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o yaml | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to move keoscluster to workload cluster")
+			}
+
+			// Delete keoscluster in management cluster
+			c = "kubectl -n " + capiClustersNamespace + " delete keoscluster " + a.keosCluster.Metadata.Name
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to delete keoscluster in management cluster")
+			}
+
+			ctx.Status.End(true) // End Moving the cluster-operator
+		}
 	}
 
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
