@@ -72,7 +72,7 @@ spec:
           cloud-provider: gce
           allocate-node-cidrs: \"false\"
           cloud-config: /etc/kubernetes/gce.conf
-          bind-address: 0.0.0.0
+          bind-address: \"0.0.0.0\"
         extraVolumes:
           - hostPath: /etc/kubernetes/gce.conf
             mountPath: /etc/kubernetes/gce.conf
@@ -80,7 +80,7 @@ spec:
             pathType: FileOrCreate
       scheduler:
         extraArgs:
-          bind-address: 0.0.0.0
+          bind-address: \"0.0.0.0\"
       etcd:
         local:
           extraArgs:
