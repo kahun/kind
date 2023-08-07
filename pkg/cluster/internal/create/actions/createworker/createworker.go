@@ -279,8 +279,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
 		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
-		" --set app.imagePullSecrets.enabled=true" +
-		" --set app.imagePullSecrets.name=regcred"
+		" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
+		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster-operator chart")
