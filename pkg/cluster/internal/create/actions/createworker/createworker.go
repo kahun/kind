@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"os"
 	"strings"
 	"time"
@@ -95,6 +96,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	var c string
 	var err error
 	var keosRegistry keosRegistry
+	var jsonDockerRegistriesCredentials []byte
 
 	// Get the target node
 	n, err := ctx.GetNode()
@@ -202,19 +204,21 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	capiClustersNamespace := "cluster-" + a.keosCluster.Metadata.Name
 
-	templateParams := commons.TemplateParams{
-		KeosCluster:      a.keosCluster,
-		Credentials:      a.clusterCredentials.ProviderCredentials,
-		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
-	}
-
 	azs, err := infra.getAzs(providerParams, a.keosCluster.Spec.Networks)
 	if err != nil {
 		return errors.Wrap(err, "failed to get AZs")
 	}
 
+	templateParams := commons.TemplateParams{
+		KeosCluster:      a.keosCluster,
+		Credentials:      a.clusterCredentials.ProviderCredentials,
+		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
+		AZs:              azs,
+		Flavor:           provider.capxTemplate,
+	}
+
 	// Generate the cluster manifest
-	descriptorData, err := GetClusterManifest(provider.capxTemplate, templateParams, azs)
+	descriptorData, err := GetClusterManifest(templateParams)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -253,7 +257,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
-	ctx.Status.Start("Installing keos cluster operator 👨‍💻")
+	ctx.Status.Start("Installing keos cluster operator 💻")
 	defer ctx.Status.End(false)
 
 	// Clean keos cluster file
@@ -274,6 +278,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to write the keoscluster file")
 	}
 
+	// Create the docker registries credentials secret for keoscluster-controller-manager
+	if a.clusterCredentials.DockerRegistriesCredentials != nil {
+		jsonDockerRegistriesCredentials, err := json.Marshal(a.clusterCredentials.DockerRegistriesCredentials)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal docker registries credentials")
+		}
+		c = "kubectl -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + string(jsonDockerRegistriesCredentials) + "'"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to create keoscluster-registries secret")
+		}
+	}
+
+	// Deploy keoscluster-controller-manager chart
 	c = "helm install cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
@@ -283,7 +301,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy cluster-operator chart")
+		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
 	}
 
 	// Wait for keoscluster-controller-manager deployment
@@ -663,6 +681,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Moving the management role
 
 			ctx.Status.Start("Moving the cluster-operator 🗝️")
+
+			// Create the docker registries credentials secret for keoscluster-controller-manager
+			if a.clusterCredentials.DockerRegistriesCredentials != nil {
+				c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + string(jsonDockerRegistriesCredentials) + "'"
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to create keoscluster-registries secret")
+				}
+			}
 
 			// Deploy cluster-operator chart in workload cluster
 			c = "helm install cluster-operator /stratio/helm/cluster-operator" +
