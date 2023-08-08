@@ -205,7 +205,7 @@ spec:
         filesystems:
           {{- range $index, $vol := $node.ExtraVolumes }}
           - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
-            filesystem: xfs
+            filesystem: ext4
             label: {{ $vol.Label }}
           {{- end }}
         partitions:
