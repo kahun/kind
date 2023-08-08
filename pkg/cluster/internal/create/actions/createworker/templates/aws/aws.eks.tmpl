@@ -155,7 +155,7 @@ spec:
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
       rootVolume:
-        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{- else }} 30 {{- end }}
         {{- if $node.RootVolume.Type }}
         type: {{ $node.RootVolume.Type }}
         {{- end }}
