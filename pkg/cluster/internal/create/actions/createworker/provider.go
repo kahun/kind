@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
+	"io/ioutil"
 	"path/filepath"
 
 	"reflect"
@@ -34,6 +35,12 @@ import (
 
 //go:embed templates/*/*
 var ctel embed.FS
+
+//go:embed files/*/deny-all-egress-imds_gnetpol.yaml
+var denyAllEgressIMDSgnpFiles embed.FS
+
+//go:embed files/*/allow-egress-imds_gnetpol.yaml
+var allowEgressIMDSgnpFiles embed.FS
 
 const (
 	CAPICoreProvider         = "cluster-api:v1.4.3"
@@ -57,9 +64,9 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
-	getAzs(networks commons.Networks) ([]string, error)
-	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
-	getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error)
+	getAzs(p ProviderParams, networks commons.Networks) ([]string, error)
+	internalNginx(p ProviderParams, networks commons.Networks) (bool, error)
+	getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error)
 }
 
 type Provider struct {
@@ -87,6 +94,7 @@ type Infra struct {
 }
 
 type ProviderParams struct {
+	ClusterName  string
 	Region       string
 	Managed      bool
 	Credentials  map[string]string
@@ -159,28 +167,46 @@ func (i *Infra) configureStorageClass(n nodes.Node, k string) error {
 	return i.builder.configureStorageClass(n, k)
 }
 
-func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
-	requiredIntenalNginx, err := i.builder.internalNginx(networks, credentialsMap, ClusterID)
-	if err != nil {
-		return false, err
-	}
-	return requiredIntenalNginx, nil
+func (i *Infra) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
+	return i.builder.internalNginx(p, networks)
 }
 
-func (i *Infra) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars, err := i.builder.getOverrideVars(keosCluster, credentialsMap)
-	if err != nil {
-		return nil, err
-	}
-	return overrideVars, nil
+func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+	return i.builder.getOverrideVars(p, networks)
 }
 
-func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
-	azs, err := i.builder.getAzs(networks)
+func (i *Infra) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
+	return i.builder.getAzs(p, networks)
+}
+
+func (p *Provider) getDenyAllEgressIMDSGNetPol() (string, error) {
+	denyAllEgressIMDSGNetPolLocalPath := "files/" + p.capxProvider + "/deny-all-egress-imds_gnetpol.yaml"
+	denyAllEgressIMDSgnpFile, err := denyAllEgressIMDSgnpFiles.Open(denyAllEgressIMDSGNetPolLocalPath)
 	if err != nil {
-		return nil, err
+		return "", errors.Wrap(err, "error opening the deny all egress IMDS file")
 	}
-	return azs, nil
+	defer denyAllEgressIMDSgnpFile.Close()
+	denyAllEgressIMDSgnpContent, err := ioutil.ReadAll(denyAllEgressIMDSgnpFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(denyAllEgressIMDSgnpContent), nil
+}
+
+func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
+	allowEgressIMDSGNetPolLocalPath := "files/" + p.capxProvider + "/allow-egress-imds_gnetpol.yaml"
+	allowEgressIMDSgnpFile, err := allowEgressIMDSgnpFiles.Open(allowEgressIMDSGNetPolLocalPath)
+	if err != nil {
+		return "", errors.Wrap(err, "error opening the allow egress IMDS file")
+	}
+	defer allowEgressIMDSgnpFile.Close()
+	allowEgressIMDSgnpContent, err := ioutil.ReadAll(allowEgressIMDSgnpFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(allowEgressIMDSgnpContent), nil
 }
 
 func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allowCommonEgressNetPolPath string) error {
@@ -443,7 +469,7 @@ func resto(n int, i int, azs int) int {
 	return r
 }
 
-func GetClusterManifest(flavor string, params commons.TemplateParams, azs []string) (string, error) {
+func GetClusterManifest(params commons.TemplateParams) (string, error) {
 	funcMap := template.FuncMap{
 		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
@@ -454,14 +480,14 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 				if az != "" {
 					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					for i, a := range azs {
+					for i, a := range params.AZs {
 						if zd == "unbalanced" {
-							q = qa/len(azs) + resto(qa, i, len(azs))
-							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
-							mn = minsize/len(azs) + resto(minsize, i, len(azs))
+							q = qa/len(params.AZs) + resto(qa, i, len(params.AZs))
+							mx = maxsize/len(params.AZs) + resto(maxsize, i, len(params.AZs))
+							mn = minsize/len(params.AZs) + resto(minsize, i, len(params.AZs))
 							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 						} else {
-							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
+							ch <- Node{AZ: a, QA: qa / len(params.AZs), MaxSize: maxsize / len(params.AZs), MinSize: minsize / len(params.AZs)}
 						}
 					}
 				}
@@ -488,7 +514,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"sub":   func(a, b int) int { return a - b },
 		"split": strings.Split,
 	}
-	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, flavor)
+	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, params.Flavor)
 
 	var tpl bytes.Buffer
 	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, templatePath)
@@ -496,7 +522,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		return "", err
 	}
 
-	err = t.ExecuteTemplate(&tpl, flavor, params)
+	err = t.ExecuteTemplate(&tpl, params.Flavor, params)
 	if err != nil {
 		return "", err
 	}

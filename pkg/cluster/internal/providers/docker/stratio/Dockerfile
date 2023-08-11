@@ -12,6 +12,7 @@ ENV HELM=v3.11.3
 # Helm charts
 ENV AWS_EBS_CSI_DRIVER_CHART=v2.20.0
 ENV AZUREDISK_CSI_DRIVER_CHART=v1.27.1
+ENV AZUREFILE_CSI_DRIVER_CHART=v1.27.1
 ENV CLOUD_PROVIDER_AZURE_CHART=v1.27.1
 ENV CLUSTER_AUTOSCALER_CHART=9.29.1
 ENV TIGERA_OPERATOR_CHART=v3.25.1
@@ -20,7 +21,11 @@ ENV TIGERA_OPERATOR_CHART=v3.25.1
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.2.0
 ENV CAPG=v1.4.0
-ENV CAPZ=v1.9.3
+ENV CAPZ=v1.10.0
+
+# Cluster-operator helm chart
+ENV NEXUS_STRATIO_REPO=helm-all
+ENV CLUSTER_OPERATOR_VERSION=0.1.0-SNAPSHOT
 
 # Install vim
 RUN apt-get update && apt-get install -y \
@@ -33,6 +38,7 @@ RUN echo 'alias k="kubectl"' >> ~/.bash_aliases \
     && echo 'alias capa-logs="kubectl -n capa-system logs -f deploy/capa-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias capg-logs="kubectl -n capg-system logs -f deploy/capg-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias capz-logs="kubectl -n capz-system logs -f deploy/capz-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias kc-logs="kubectl -n kube-system logs -f deploy/keoscluster-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias kw="kubectl --kubeconfig /kind/worker-cluster.kubeconfig"' >> ~/.bash_aliases
 
 # Download clusterctl
@@ -53,6 +59,7 @@ RUN curl -L https://get.helm.sh/helm-${HELM}-linux-amd64.tar.gz -o /root/helm.ta
 RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull aws-ebs-csi-driver --version ${AWS_EBS_CSI_DRIVER_CHART} --repo https://kubernetes-sigs.github.io/aws-ebs-csi-driver --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull azuredisk-csi-driver --version ${AZUREDISK_CSI_DRIVER_CHART} --repo https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts --untar --untardir /stratio/helm && break; done \
+  && for i in $(seq 1 3); do timeout 5 helm pull azurefile-csi-driver --version ${AZUREFILE_CSI_DRIVER_CHART} --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull cloud-provider-azure --version ${CLOUD_PROVIDER_AZURE_CHART} --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER_CHART} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull tigera-operator --version ${TIGERA_OPERATOR_CHART} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm && break; done
@@ -69,3 +76,7 @@ RUN for i in metadata.yaml infrastructure-components.yaml; do \
       curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/${i} -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/${i} -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/${i}; done
+
+# Download cluster-operator artifacts
+RUN curl -L http://qa.int.stratio.com/repository/${NEXUS_STRATIO_REPO}/cluster-operator-${CLUSTER_OPERATOR_VERSION}.tgz -o /stratio/helm/cluster-operator.tgz \
+  && tar -xf /stratio/helm/cluster-operator.tgz -C /stratio/helm

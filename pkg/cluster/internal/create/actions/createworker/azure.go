@@ -19,16 +19,15 @@ package createworker
 import (
 	"context"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"gopkg.in/yaml.v3"
@@ -63,17 +62,14 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.9.3"
-	b.capxImageVersion = "v1.9.3"
+	b.capxVersion = "v1.10.0"
+	b.capxImageVersion = "v1.10.0"
 	b.capxName = "capz"
-
+	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-
 	if managed {
-		b.capxManaged = true
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
-		b.capxManaged = false
 		b.capxTemplate = "azure.tmpl"
 	}
 }
@@ -106,6 +102,10 @@ func (b *AzureBuilder) setSC(p ProviderParams) {
 func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
 		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
+		"AZURE_SUBSCRIPTION_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["SubscriptionID"])),
+		"AZURE_TENANT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["TenantID"])),
+		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
+		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
 		"EXP_MACHINE_POOL=true",
 	}
 	if p.GithubToken != "" {
@@ -132,7 +132,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 
-	// Deploy CSI driver
+	// Deploy disk CSI driver
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver " +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
@@ -141,10 +141,19 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
 
+	// Deploy file CSI driver
+	c = "helm install azurefile-csi-driver /stratio/helm/azurefile-csi-driver " +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Azure File CSI driver Helm Chart")
+	}
+
 	return nil
 }
 
-func (b *AzureBuilder) getAzs(networks commons.Networks) ([]string, error) {
+func (b *AzureBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
 	return []string{"1", "2", "3"}, nil
 }
 
@@ -171,23 +180,22 @@ func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k strin
 	return nil
 }
 
-func assignUserIdentity(i string, c string, r string, s map[string]string) error {
-	creds, err := azidentity.NewClientSecretCredential(s["TenantID"], s["ClientID"], s["ClientSecret"], nil)
+func assignUserIdentity(p ProviderParams, i string) error {
+	var ctx = context.Background()
+
+	cfg, err := commons.AzureGetConfig(p.Credentials)
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
-
-	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(s["SubscriptionID"], creds, nil)
+	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(p.Credentials["SubscriptionID"], cfg, nil)
 	if err != nil {
 		return err
 	}
 	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
-
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx, c, c,
+		ctx, p.ClusterName, p.ClusterName,
 		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(r),
+			Location: to.Ptr(p.Region),
 			Identity: &armcontainerservice.ManagedClusterIdentity{
 				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
 				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
@@ -217,15 +225,13 @@ func assignUserIdentity(i string, c string, r string, s map[string]string) error
 }
 
 func getAcrToken(p ProviderParams, acrService string) (string, error) {
-	creds, err := azidentity.NewClientSecretCredential(
-		p.Credentials["TenantID"], p.Credentials["ClientID"], p.Credentials["ClientSecret"], nil,
-	)
+	var ctx = context.Background()
+
+	cfg, err := commons.AzureGetConfig(p.Credentials)
 	if err != nil {
 		return "", err
 	}
-	ctx := context.Background()
-
-	aadToken, err := creds.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
+	aadToken, err := cfg.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
 	if err != nil {
 		return "", err
 	}
@@ -291,40 +297,33 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterName string) (bool, error) {
+func (b *AzureBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
 	var resourceGroup string
-	os.Setenv("AZURE_CLIENT_ID", credentialsMap["ClientID"])
-	os.Setenv("AZURE_SECRET_ID", credentialsMap["ClientSecret"])
-	os.Setenv("AZURE_TENANT_ID", credentialsMap["TenantID"])
+	var ctx = context.Background()
 
-	creds, err := azidentity.NewDefaultAzureCredential(nil)
+	cfg, err := commons.AzureGetConfig(p.Credentials)
 	if err != nil {
 		return false, err
 	}
-	ctx := context.Background()
-
-	networkClientFactory, err := armnetwork.NewClientFactory(credentialsMap["SubscriptionID"], creds, nil)
+	networkClientFactory, err := armnetwork.NewClientFactory(p.Credentials["SubscriptionID"], cfg, nil)
 	if err != nil {
 		return false, err
 	}
-
 	subnetsClient := networkClientFactory.NewSubnetsClient()
-
-	if networks.Subnets != nil {
+	if len(networks.Subnets) > 0 {
 		if networks.ResourceGroup != "" {
 			resourceGroup = networks.ResourceGroup
 		} else {
-			resourceGroup = clusterName
+			resourceGroup = p.ClusterName
 		}
-		for _, subnet := range networks.Subnets {
-			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, subnet.SubnetId)
+		for _, s := range networks.Subnets {
+			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, s.SubnetId)
 			if len(publicSubnetID) > 0 {
 				return false, nil
 			}
 		}
 		return true, nil
 	}
-
 	return false, nil
 }
 
@@ -341,25 +340,15 @@ func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.Subn
 	}
 }
 
-func (b *AzureBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
+func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+	var overrideVars map[string][]byte
+
+	requiredInternalNginx, err := b.internalNginx(p, networks)
 	if err != nil {
 		return nil, err
 	}
-	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
-	return overrideVars, nil
-}
-
-func (b *AzureBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
-	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
-	if err != nil {
-		return "", nil, err
-	}
-
 	if requiredInternalNginx {
-		return "ingress-nginx.yaml", azureInternalIngress, nil
+		overrideVars = addOverrideVar("ingress-nginx.yaml", azureInternalIngress, overrideVars)
 	}
-
-	return "", []byte(""), nil
+	return overrideVars, nil
 }
