@@ -122,10 +122,9 @@ type DefaultStorageClass struct {
 }
 
 type helmRepository struct {
-	url          string
-	user         string
-	pass         string
-	authRequired bool
+	url  string
+	user string
+	pass string
 }
 
 var scTemplate = DefaultStorageClass{
@@ -265,9 +264,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	if keosCluster.Spec.HelmRepository.AuthRequired {
 		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
 		helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
-
-		c = "helm repo add stratio-helm-repo " + helmRepository.url +
-			" --username " + helmRepository.user + " --password " + helmRepository.pass
+		c = "helm repo add stratio-helm-repo " + helmRepository.url + " --username " + helmRepository.user + " --password " + helmRepository.pass
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to add and authenticate to helm repo: "+helmRepository.url)
