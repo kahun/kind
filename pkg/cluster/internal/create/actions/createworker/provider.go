@@ -51,6 +51,9 @@ const (
 	CAPIControlPlaneProvider = "kubeadm:v1.4.3"
 
 	scName = "keos"
+
+	keosClusterChart = "0.1.0-SNAPSHOT"
+	keosClusterImage = "0.1.0-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -257,17 +260,9 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		}
 	}
 
-	helmRepository.url = keosCluster.Spec.HelmRepository.URL
-	helmRepository.authRequired = keosCluster.Spec.HelmRepository.AuthRequired
-	clusterOperatorHelmVersion := "0.1.0-SNAPSHOT"
-
-	if helmRepository.authRequired {
-		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
-		helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
-	}
-
 	// Add helm repo
-	if helmRepository.authRequired {
+	helmRepository.url = keosCluster.Spec.HelmRepository.URL
+	if keosCluster.Spec.HelmRepository.AuthRequired {
 		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
 		helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
 
@@ -281,20 +276,13 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		c = "helm repo add stratio-helm-repo " + helmRepository.url
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to authenticate to helm repo: "+helmRepository.url)
+			return errors.Wrap(err, "failed to add helm repo: "+helmRepository.url)
 		}
-	}
-
-	// Update helm repo
-	c = "helm repo update"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to update helm repo: "+helmRepository.url)
 	}
 
 	// Pull cluster operator helm chart
 	c = "helm pull cluster-operator --repo " + helmRepository.url +
-		" --version " + clusterOperatorHelmVersion +
+		" --version " + keosClusterChart +
 		" --untar --untardir /stratio/helm"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
@@ -306,7 +294,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		" --namespace kube-system" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
+		" --set app.containers.controllerManager.image.tag=" + keosClusterImage +
 		" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
 		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
 	_, err = commons.ExecuteCommand(n, c)

@@ -54,8 +54,6 @@ const (
 	cloudProviderBackupPath = "/kind/backup/objects"
 	localBackupPath         = "backup"
 	manifestsPath           = "/kind/manifests"
-
-	keosClusterVersion = "0.1.0-SNAPSHOT"
 )
 
 var PathsToBackupLocally = []string{
@@ -652,7 +650,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				" --namespace kube-system" +
 				" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 				" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-				" --set app.containers.controllerManager.image.tag=" + keosClusterVersion
+				" --set app.containers.controllerManager.image.tag=" + keosClusterImage
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy cluster-operator chart in workload cluster")
