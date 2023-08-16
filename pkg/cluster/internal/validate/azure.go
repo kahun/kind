@@ -97,7 +97,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage != "" {
 			if !isAzureNodeImage(spec.ControlPlane.NodeImage) {
-				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + GCPNodeImageFormat)
+				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AzureNodeImageFormat)
 			}
 		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AzureVolumes); err != nil {
@@ -119,7 +119,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 		for _, wn := range spec.WorkerNodes {
 			if wn.NodeImage != "" {
 				if !isAzureNodeImage(wn.NodeImage) {
-					return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + GCPNodeImageFormat)
+					return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AzureNodeImageFormat)
 				}
 			}
 			if err := validateVolumeType(wn.RootVolume.Type, AzureVolumes); err != nil {

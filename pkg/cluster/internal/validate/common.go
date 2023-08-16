@@ -176,7 +176,7 @@ func validateVolumes(spec commons.Spec) error {
 
 func validateVolumeType(t string, supportedTypes []string) error {
 	if t != "" && !commons.Contains(supportedTypes, t) {
-		return errors.New("unsupported type: " + t + ". Supported types: " + fmt.Sprint(strings.Join(supportedTypes, ", ")))
+		return errors.New(t + ", supported types: " + fmt.Sprint(strings.Join(supportedTypes, ", ")))
 	}
 	return nil
 }

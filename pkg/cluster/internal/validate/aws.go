@@ -76,7 +76,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage != "" {
 			if !isAWSNodeImage(spec.ControlPlane.NodeImage) {
-				return errors.New("spec.control_plane: Invalid value: \"node_image\": it must have the format " + AWSNodeImageFormat)
+				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AWSVolumes); err != nil {
@@ -102,7 +102,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	for _, wn := range spec.WorkerNodes {
 		if wn.NodeImage != "" {
 			if !isAWSNodeImage(wn.NodeImage) {
-				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": it must have the format " + AWSNodeImageFormat)
+				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
 		if err := validateVolumeType(wn.RootVolume.Type, AWSVolumes); err != nil {
