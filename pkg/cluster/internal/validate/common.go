@@ -36,9 +36,6 @@ func validateCommon(spec commons.Spec) error {
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
-	if err = validateDockerRegistries(spec.DockerRegistries); err != nil {
-		return err
-	}
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.Size == "" {
 			return errors.New("spec.control_plane: Required value: \"size\"")
@@ -57,33 +54,6 @@ func validateK8SVersion(v string) error {
 	var isVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}$`).MatchString
 	if !isVersion(v) {
 		return errors.New("spec: Invalid value: \"k8s_version\": must have the format 'v1.24.2'")
-	}
-	return nil
-}
-
-func validateDockerRegistries(dockerRegistries []commons.DockerRegistry) error {
-	keosCount := 0
-	for i, dockerRegistry := range dockerRegistries {
-		if dockerRegistry.URL == "" {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Required value: \"url\"")
-		}
-		// Check if there are more than one docker_registry with the same URL
-		for j, dockerRegistry2 := range dockerRegistries {
-			if i != j && dockerRegistry.URL == dockerRegistry2.URL {
-				return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"url\": is duplicated")
-			}
-		}
-		if dockerRegistry.KeosRegistry {
-			// Check if there are more than one docker_registry defined as keos_registry
-			keosCount++
-			if keosCount > 1 {
-				return errors.New("spec.docker_registries: Invalid value: \"keos_registry\": there are more than one docker_registry defined as keos_registry")
-			}
-		}
-	}
-	// Check if there are at least one docker_registry defined as keos_registry
-	if keosCount == 0 {
-		return errors.New("spec.docker_registries: Invalid value: \"keos_registry\": there are no docker_registry defined as keos_registry")
 	}
 	return nil
 }
