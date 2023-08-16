@@ -32,11 +32,23 @@ const (
 )
 
 func validateCommon(spec commons.Spec) error {
-	if err := validateK8SVersion(spec.K8SVersion); err != nil {
+	var err error
+	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
-	if err := validateWorkers(spec.WorkerNodes); err != nil {
-		return errors.Wrap(err, "worker_nodes validation failed")
+	if err = validateDockerRegistries(spec.DockerRegistries); err != nil {
+		return err
+	}
+	if !spec.ControlPlane.Managed {
+		if spec.ControlPlane.Size == "" {
+			return errors.New("spec.control_plane: Required value: \"size\"")
+		}
+	}
+	if err = validateWorkers(spec.WorkerNodes); err != nil {
+		return err
+	}
+	if err = validateVolumes(spec); err != nil {
+		return err
 	}
 	return nil
 }
@@ -44,7 +56,34 @@ func validateCommon(spec commons.Spec) error {
 func validateK8SVersion(v string) error {
 	var isVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}$`).MatchString
 	if !isVersion(v) {
-		return errors.New("incorrect format. Must have the format 'v1.24.2'")
+		return errors.New("spec: Invalid value: \"k8s_version\": must have the format 'v1.24.2'")
+	}
+	return nil
+}
+
+func validateDockerRegistries(dockerRegistries []commons.DockerRegistry) error {
+	keosCount := 0
+	for i, dockerRegistry := range dockerRegistries {
+		if dockerRegistry.URL == "" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Required value: \"url\"")
+		}
+		// Check if there are more than one docker_registry with the same URL
+		for j, dockerRegistry2 := range dockerRegistries {
+			if i != j && dockerRegistry.URL == dockerRegistry2.URL {
+				return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"url\": is duplicated")
+			}
+		}
+		if dockerRegistry.KeosRegistry {
+			// Check if there are more than one docker_registry defined as keos_registry
+			keosCount++
+			if keosCount > 1 {
+				return errors.New("spec.docker_registries: Invalid value: \"keos_registry\": there are more than one docker_registry defined as keos_registry")
+			}
+		}
+	}
+	// Check if there are at least one docker_registry defined as keos_registry
+	if keosCount == 0 {
+		return errors.New("spec.docker_registries: Invalid value: \"keos_registry\": there are no docker_registry defined as keos_registry")
 	}
 	return nil
 }
@@ -138,6 +177,52 @@ func validateWorkersType(wns commons.WorkerNodes) error {
 	}
 	if !hasNodeSystem {
 		return errors.New("at least one worker node must be non spot and without taints")
+	}
+	return nil
+}
+
+func validateVolumes(spec commons.Spec) error {
+	if !spec.ControlPlane.Managed {
+		for i, ev := range spec.ControlPlane.ExtraVolumes {
+			if ev.Size == 0 {
+				return errors.New("spec.control_plane.root_volume: Required value: \"size\"")
+			}
+			if ev.Label == "" {
+				return errors.New("spec.control_plane.root_volume: Required value: \"label\"")
+			}
+			if ev.MountPath == "" {
+				return errors.New("spec.control_plane.root_volume: Required value: \"mount_path\"")
+			}
+			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {
+				if ev.Label == ev2.Label {
+					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
+				}
+				if ev.MountPath == ev2.MountPath {
+					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"mount_path\": is duplicated")
+				}
+			}
+		}
+	}
+	for _, wn := range spec.WorkerNodes {
+		for i, ev := range wn.ExtraVolumes {
+			if ev.Size == 0 {
+				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"size\"")
+			}
+			if ev.Label == "" {
+				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"label\"")
+			}
+			if ev.MountPath == "" {
+				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"mount_path\"")
+			}
+			for _, ev2 := range wn.ExtraVolumes[i+1:] {
+				if ev.Label == ev2.Label {
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
+				}
+				if ev.MountPath == ev2.MountPath {
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"mount_path\": is duplicated")
+				}
+			}
+		}
 	}
 	return nil
 }
