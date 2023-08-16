@@ -36,11 +36,6 @@ func validateCommon(spec commons.Spec) error {
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
-	if !spec.ControlPlane.Managed {
-		if spec.ControlPlane.Size == "" {
-			return errors.New("spec.control_plane: Required value: \"size\"")
-		}
-	}
 	if err = validateWorkers(spec.WorkerNodes); err != nil {
 		return err
 	}
