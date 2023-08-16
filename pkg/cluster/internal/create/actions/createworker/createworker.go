@@ -639,7 +639,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
 			}
 
-			//
+			// Move keoscluster to workload cluster
 			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o yaml | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
