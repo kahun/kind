@@ -154,15 +154,6 @@ func validateWorkersType(wns commons.WorkerNodes) error {
 func validateVolumes(spec commons.Spec) error {
 	if !spec.ControlPlane.Managed {
 		for i, ev := range spec.ControlPlane.ExtraVolumes {
-			if ev.Size == 0 {
-				return errors.New("spec.control_plane.root_volume: Required value: \"size\"")
-			}
-			if ev.Label == "" {
-				return errors.New("spec.control_plane.root_volume: Required value: \"label\"")
-			}
-			if ev.MountPath == "" {
-				return errors.New("spec.control_plane.root_volume: Required value: \"mount_path\"")
-			}
 			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {
 				if ev.Label == ev2.Label {
 					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
@@ -175,15 +166,6 @@ func validateVolumes(spec commons.Spec) error {
 	}
 	for _, wn := range spec.WorkerNodes {
 		for i, ev := range wn.ExtraVolumes {
-			if ev.Size == 0 {
-				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"size\"")
-			}
-			if ev.Label == "" {
-				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"label\"")
-			}
-			if ev.MountPath == "" {
-				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"mount_path\"")
-			}
 			for _, ev2 := range wn.ExtraVolumes[i+1:] {
 				if ev.Label == ev2.Label {
 					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
