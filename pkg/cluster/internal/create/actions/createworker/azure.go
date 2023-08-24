@@ -62,8 +62,8 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.10.0"
-	b.capxImageVersion = "v1.10.0"
+	b.capxVersion = "v1.10.2"
+	b.capxImageVersion = "v1.10.2"
 	b.capxName = "capz"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
@@ -106,7 +106,9 @@ func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 		"AZURE_TENANT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["TenantID"])),
 		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
 		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
-		"EXP_MACHINE_POOL=true",
+	}
+	if p.Managed {
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")
 	}
 	if p.GithubToken != "" {
 		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
