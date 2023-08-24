@@ -182,7 +182,9 @@ func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k strin
 	return nil
 }
 
-func assignUserIdentity(p ProviderParams, i string) error {
+func assignUserIdentity(p ProviderParams, security commons.Security) error {
+	var managedCluster armcontainerservice.ManagedCluster
+	var kubeletidentity *armcontainerservice.ManagedClusterProperties
 	var ctx = context.Background()
 
 	cfg, err := commons.AzureGetConfig(p.Credentials)
@@ -193,36 +195,34 @@ func assignUserIdentity(p ProviderParams, i string) error {
 	if err != nil {
 		return err
 	}
-	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx, p.ClusterName, p.ClusterName,
-		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(p.Region),
-			Identity: &armcontainerservice.ManagedClusterIdentity{
-				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
-				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
-					i: {},
-				},
-			},
-			Properties: &armcontainerservice.ManagedClusterProperties{
-				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-					"kubeletidentity": {
-						ResourceID: to.Ptr(i),
-					},
-				},
+	managedCluster = armcontainerservice.ManagedCluster{
+		Location: to.Ptr(p.Region),
+		Identity: &armcontainerservice.ManagedClusterIdentity{
+			Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
+			UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
+				security.ControlPlaneIdentity: {},
 			},
 		},
-		nil,
-	)
+	}
+	if security.NodesIdentity != "" {
+		kubeletidentity = &armcontainerservice.ManagedClusterProperties{
+			IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
+				"kubeletidentity": {
+					ResourceID: to.Ptr(security.NodesIdentity),
+				},
+			},
+		}
+		managedCluster.Properties = kubeletidentity
+	}
+	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
+	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(ctx, p.ClusterName, p.ClusterName, managedCluster, nil)
 	if err != nil {
 		return err
 	}
-
 	_, err = pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
