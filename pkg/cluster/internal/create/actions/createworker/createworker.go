@@ -552,7 +552,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if a.keosCluster.Spec.DeployAutoscaler && !azureAKSEnabled {
-			ctx.Status.Start("Adding cluster-autoescaler 🗚")
+			ctx.Status.Start("Installing cluster-autoescaler in workload cluster 🗚")
 			defer ctx.Status.End(false)
 
 			c = "helm install cluster-autoscaler /stratio/helm/cluster-autoscaler" +
@@ -566,13 +566,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+				return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
 			}
 
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Adding cluster operator 🗚")
+		ctx.Status.Start("Installing keos cluster operator in worload cluster 💻")
 		defer ctx.Status.End(false)
 
 		err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath)
