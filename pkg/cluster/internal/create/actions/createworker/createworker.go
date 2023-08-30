@@ -572,7 +572,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Installing keos cluster operator in worload cluster 💻")
+		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
 		defer ctx.Status.End(false)
 
 		err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath)
