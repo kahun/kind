@@ -134,8 +134,6 @@ func (b *AzureBuilder) getProvider() Provider {
 }
 
 func (b *AzureBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
-	var c string
-	var err error
 	var podsCidrBlock string
 
 	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
@@ -143,16 +141,14 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, keosCluster commons.Ke
 	} else {
 		podsCidrBlock = "192.168.0.0/16"
 	}
-
-	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
+	c := "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
 		" --kubeconfig " + k +
 		" --set infra.clusterName=" + clusterName +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
-	_, err = commons.ExecuteCommand(n, c)
+	_, err := commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
 	}
-
 	return nil
 }
 

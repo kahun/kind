@@ -119,11 +119,11 @@ func (b *AWSBuilder) getProvider() Provider {
 }
 
 func (b *AWSBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
-	c := "helm install aws-cloud-controller-manager /stratio/helm/cloud-provider-azure" +
+	c := "helm install aws-cloud-controller-manager /stratio/helm/aws-cloud-controller-manager" +
 		" --kubeconfig " + k
 	_, err := commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy cloud-provider-aws Helm Chart")
+		return errors.Wrap(err, "failed to deploy aws-cloud-controller-manager Helm Chart")
 	}
 	return nil
 }
