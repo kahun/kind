@@ -135,7 +135,6 @@ func (b *AzureBuilder) getProvider() Provider {
 
 func (b *AzureBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
 	var podsCidrBlock string
-
 	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
 		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
 	} else {
@@ -143,6 +142,7 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, keosCluster commons.Ke
 	}
 	c := "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
 		" --kubeconfig " + k +
+		" --namespace kube-system" +
 		" --set infra.clusterName=" + clusterName +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
 	_, err := commons.ExecuteCommand(n, c)
