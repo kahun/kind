@@ -327,7 +327,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = infra.installCloudProvider(n, a.keosCluster, kubeconfigPath, a.keosCluster.Metadata.Name)
+				err = infra.installCloudProvider(n, kubeconfigPath, a.keosCluster)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}

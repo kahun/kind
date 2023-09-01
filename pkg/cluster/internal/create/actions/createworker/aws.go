@@ -118,9 +118,20 @@ func (b *AWSBuilder) getProvider() Provider {
 	}
 }
 
-func (b *AWSBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+func (b *AWSBuilder) installCloudProvider(n nodes.Node, k string, keosCluster commons.KeosCluster) error {
+	var podsCidrBlock string
+	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
+	} else {
+		podsCidrBlock = "192.168.0.0/16"
+	}
 	c := "helm install aws-cloud-controller-manager /stratio/helm/aws-cloud-controller-manager" +
-		" --kubeconfig " + k
+		" --kubeconfig " + k +
+		" --namespace kube-system" +
+		" --set args[0]=\"--v=2\"" +
+		" --set args[1]=\"--cloud-provider=aws\"" +
+		" --set args[2]=\"--cluster-cidr=" + podsCidrBlock + "\"" +
+		" --set args[3]=\"--cluster-name=" + keosCluster.Metadata.Name + "\""
 	_, err := commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy aws-cloud-controller-manager Helm Chart")

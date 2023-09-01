@@ -127,7 +127,7 @@ func (b *GCPBuilder) getProvider() Provider {
 	}
 }
 
-func (b *GCPBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+func (b *GCPBuilder) installCloudProvider(n nodes.Node, k string, keosCluster commons.KeosCluster) error {
 	return nil
 }
 
