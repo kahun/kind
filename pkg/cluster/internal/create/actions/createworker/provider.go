@@ -66,6 +66,7 @@ type PBuilder interface {
 	setCapx(managed bool)
 	setCapxEnvVars(p ProviderParams)
 	setSC(p ProviderParams)
+	installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
@@ -168,6 +169,10 @@ func (i *Infra) buildProvider(p ProviderParams) Provider {
 	i.builder.setCapxEnvVars(p)
 	i.builder.setSC(p)
 	return i.builder.getProvider()
+}
+
+func (i *Infra) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+	return i.builder.installCloudProvider(n, keosCluster, k, clusterName)
 }
 
 func (i *Infra) installCSI(n nodes.Node, k string) error {

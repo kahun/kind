@@ -127,6 +127,10 @@ func (b *GCPBuilder) getProvider() Provider {
 	}
 }
 
+func (b *GCPBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+	return nil
+}
+
 func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error

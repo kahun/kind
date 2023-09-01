@@ -118,6 +118,27 @@ func (b *AWSBuilder) getProvider() Provider {
 	}
 }
 
+func (b *AWSBuilder) installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+	var c string
+	var err error
+	var podsCidrBlock string
+
+	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
+	} else {
+		podsCidrBlock = "192.168.0.0/16"
+	}
+
+	c = "helm install aws-cloud-controller-manager /stratio/helm/cloud-provider-azure" +
+		" --kubeconfig " + k
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy cloud-provider-aws Helm Chart")
+	}
+
+	return nil
+}
+
 func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
