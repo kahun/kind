@@ -32,6 +32,7 @@ AZURE IMAGE BUILDER
 Image Builder se puede utilizar para crear imágenes destinadas a su uso con proveedores de CAPI de Kubernetes. Cada proveedor tiene su propio formato de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
 
 == Prerequisitos
+
 === Prerequisitos Globales
 Packer y Ansible se utilizan para construir estas imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
 
@@ -47,24 +48,25 @@ Para modificar la configuración de la imagen, puede editar el archivo images/ca
 
 [TIP]
 ====
-.Modificar las versiones de Kubernetes
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/config/kubernetes.json[Version de  Kubernetes]::
+📂 https://kubernetes.io/releases/[Version de Kubernetes]::
 [%autowidth]
+Hay que editar el fichero _images/capi/packer/config/kubernetes.json_
 |===
-| *kubernetes_deb_version* | 1.24.10-00 | Version de kubernetes para Debian
-| *kubernetes_rpm_version* | 1.24.10-0 | Versión de kubernetes para RPM
-| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen
-| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen
+| *crictl_version* | 1.26.1 | Version de las critools
+| *kubernetes_deb_version* | 1.26.8-00 | Version de kubernetes para Debian
+| *kubernetes_rpm_version* | 1.26.8-0 | Versión de kubernetes para RPM
+| *kubernetes_semver* | 1.26.8 | Versión semántica de Kubernetes que se instalará en la imagen
+| *kubernetes_series* | 1.26 | Versión de la serie de Kubernetes que se instalará en la imagen
 |===
 
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]::
+📂 https://github.com/kubernetes-sigs/cri-tools/tags[Version de las critools]::
 [%autowidth]
-.Cambiar el tipo de instancia de la imagen
-Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia
-deseado.
-
-"builder_instance_type": "Standard_D2as_v4"
-====
+|===
+| *crictl version* | *kubernetes version*
+| 1.26.1 | 1.24, 1.25, 1.26
+| 1.27.1 | 1.27
+| 1.28.0 | 1.28
+|===
 
 == Construcción de la imagen
 
