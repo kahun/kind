@@ -14,7 +14,7 @@ AZURE IMAGE BUILDER
 :icon-set: fa
 // Definimos el directorio de imagenes
 :imagesdir: ../images
-// // Refs:
+// Refs:
 :url-project: https://asciidoctor.org
 :url-docs: {url-project}/docs
 :url-issues:  https://github.com/asciidoctor/asciidoctor
@@ -35,7 +35,7 @@ Image Builder se puede utilizar para crear imágenes destinadas a su uso con pro
 
 == Prerequisitos
 
-=== Prerequisitos Globales
+=== Globales
 Packer y Ansible se utilizan para construir estas imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
 
 Versión del empaquetador >= 1.6.0
@@ -59,12 +59,13 @@ Los parámetros de configuración se pueden encontrar en la documentación de Pa
 
 [TIP]
 ====
-📂 Version de Kubernetes
+📂 *Version de Kubernetes*
 [%autowidth]
 
 Hay que editar el fichero _images/capi/packer/config/kubernetes.json_
 [%hardbreaks]
 🔗 https://kubernetes.io/releases/[Kubernetes releases]
+
 |===
 | *crictl_version* | 1.26.1 | Version de las critools
 | *kubernetes_deb_version* | 1.26.8-00 | Version de kubernetes para Debian
@@ -73,7 +74,7 @@ Hay que editar el fichero _images/capi/packer/config/kubernetes.json_
 | *kubernetes_series* | 1.26 | Versión de la serie de Kubernetes que se instalará en la imagen
 |===
 
-📂 Version de las critools
+📂 *Version de las critools*
 [%autowidth]
 La versión de las critools tiene que ir pareja con la versión de kubernetes que estemos usando.
 [%hardbreaks]
@@ -86,7 +87,7 @@ La versión de las critools tiene que ir pareja con la versión de kubernetes qu
 | 1.28.0 | 1.28
 |===
 
-📂 Parámetros del kernel
+📂 *Parámetros del kernel*
 [%autowidth]
 Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la tarea con el nombre '_Set and persist kernel params_' para añadir vm.max_map_count con valor 262144
 
@@ -161,5 +162,5 @@ make build-azure-sig-ubuntu-2204
 == Debug
 
 Podemos debugear el proceso de creación de la imagen con la variable de entorno PACKER_LOG
-[source,shell]
+[source,console]
 export PACKER_LOG=1
