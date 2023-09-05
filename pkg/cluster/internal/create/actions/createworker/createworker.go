@@ -270,8 +270,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(false)
 
 		// Apply cluster manifests
-		//c = "kubectl apply -n " + capiClustersNamespace + " -f " + descriptorPath
-		c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
+		c = "kubectl apply -n " + capiClustersNamespace + " -f " + descriptorPath
+		//c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply manifests")
@@ -414,11 +414,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if azureAKSEnabled {
-			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(providerParams, a.keosCluster.Spec.Security)
-			if err != nil {
-				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
-			}
+			// // Update AKS cluster with the user kubelet identity until the provider supports it
+			// err := assignUserIdentity(providerParams, a.keosCluster.Spec.Security)
+			// if err != nil {
+			// 	return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
+			// }
 
 			// Wait for metrics-server deployment to be ready
 			c = "kubectl --kubeconfig " + kubeconfigPath + " rollout status deploy metrics-server -n kube-system --timeout=5m"
