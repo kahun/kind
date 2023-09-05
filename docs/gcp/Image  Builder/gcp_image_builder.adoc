@@ -190,6 +190,7 @@ cd images/capi/
 . Instalar las dependencias necesarias para crear la imagen
 [source,console]
 make deps-gce
+
 image:https://user-images.githubusercontent.com/112587171/233297601-f3f2dc5e-0888-429c-ae6a-24e259260240.png[alt="Make deps GCP",width=800]
 
 . Consultar las imágenes que podemos construir
@@ -200,7 +201,6 @@ make help | grep build-gce
 [source,console]
 make build-gce-ubuntu-2204
 
-:imagesdir: ../images
 image:https://user-images.githubusercontent.com/112587171/233297883-5029b10e-912d-42b7-b7ef-c941993c98c6.png[alt="Make build GCP",width=800]
 
 image:https://user-images.githubusercontent.com/112587171/233298080-c50f610c-85e6-445e-8ed5-77cdc66fad26.png[alt="Make build GCP",width=800]
