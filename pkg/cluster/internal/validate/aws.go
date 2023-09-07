@@ -234,7 +234,7 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 		iopsValue = sc.Parameters.IopsPerGB
 		iopsKey = "iopsPerGB"
 	}
-	if iopsValue != "" && (sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type)) {
+	if iopsValue != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
 		return errors.New(iopsKey + " only can be specified for " + fmt.Sprint(strings.Join(typesSupportedForIOPS, ", ")) + " types")
 	}
 	if iopsValue != "" {
