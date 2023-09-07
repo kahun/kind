@@ -41,7 +41,7 @@ const (
 
 var AWSVolumes = []string{"io1", "io2", "gp2", "gp3", "sc1", "st1", "standard", "sbp1", "sbg1"}
 var AWSFSTypes = []string{"xfs", "ext3", "ext4", "ext2"}
-var AWSSCFields = []string{"Type", "FsType", "Labels", "AllowAutoIOPSPerGBIncrease", "BlockExpress", "BlockSize", "Iops", "IopsPerGB", "Encrypted", "Throughput"}
+var AWSSCFields = []string{"Type", "FsType", "Labels", "AllowAutoIOPSPerGBIncrease", "BlockExpress", "BlockSize", "Iops", "IopsPerGB", "Encrypted", "KmsKeyId", "Throughput"}
 
 var isAWSNodeImage = regexp.MustCompile(`^ami-\w+$`).MatchString
 var AWSNodeImageFormat = "ami-[IMAGE_ID]"
@@ -195,11 +195,21 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 			return errors.New("field " + strcase.ToLowerCamel(f) + " is not supported in storage class")
 		}
 	}
-
+	// Validate class
+	if sc.Class != "" && sc.Parameters.Type != "" {
+		return errors.New("\"class\": cannot be set when \"parameters.type\" is set")
+	}
+	// Validate type
+	if sc.Parameters.Type != "" && !commons.Contains(AWSVolumes, sc.Parameters.Type) {
+		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(AWSVolumes, ", ")))
+	}
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
 		if !isKeyValid(sc.EncryptionKey) {
 			return errors.New("\"encryptionKey\": it must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
+		}
+		if sc.Parameters.KmsKeyId != "" {
+			return errors.New("\"encryptionKey\": cannot be set when \"parameters.kmsKeyId\" is set")
 		}
 	}
 	// Validate diskEncryptionSetID format
@@ -207,10 +217,9 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 		if !isKeyValid(sc.Parameters.KmsKeyId) {
 			return errors.New("\"kmsKeyId\": it must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
 		}
-	}
-	// Validate type
-	if sc.Parameters.Type != "" && !commons.Contains(AWSVolumes, sc.Parameters.Type) {
-		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(AWSVolumes, ", ")))
+		if sc.Parameters.Encrypted != "true" {
+			return errors.New("\"kmsKeyId\": cannot be set when \"parameters.encrypted\" is not set to true")
+		}
 	}
 	// Validate fsType
 	if sc.Parameters.FsType != "" && !commons.Contains(AWSFSTypes, sc.Parameters.FsType) {
@@ -225,7 +234,7 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 		iopsValue = sc.Parameters.IopsPerGB
 		iopsKey = "iopsPerGB"
 	}
-	if iopsValue != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+	if iopsValue != "" && (sc.Class != "premium" || (sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type))) {
 		return errors.New(iopsKey + " only can be specified for " + fmt.Sprint(strings.Join(typesSupportedForIOPS, ", ")) + " types")
 	}
 	if iopsValue != "" {

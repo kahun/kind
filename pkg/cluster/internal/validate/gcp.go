@@ -30,7 +30,7 @@ import (
 
 var GCPVolumes = []string{"pd-balanced", "pd-ssd", "pd-standard", "pd-extreme"}
 var GCPFSTypes = []string{"xfs", "ext3", "ext4", "ext2"}
-var GCPSCFields = []string{"Type", "FsType", "Labels", "ProvisionedIopsOnCreate", "ProvisionedThroughputOnCreate", "ReplicationType"}
+var GCPSCFields = []string{"Type", "FsType", "Labels", "DiskEncryptionKmsKey", "ProvisionedIopsOnCreate", "ProvisionedThroughputOnCreate", "ReplicationType"}
 
 var isGCPNodeImage = regexp.MustCompile(`^projects/[\w-]+/global/images/[\w-]+$`).MatchString
 var GCPNodeImageFormat = "projects/[PROJECT_ID]/global/images/[IMAGE_NAME]"
@@ -99,11 +99,17 @@ func validateGCPStorageClass(spec commons.Spec) error {
 			return errors.New("\"" + strcase.ToLowerCamel(f) + "\": is not supported in storage class")
 		}
 	}
-
+	// Validate class
+	if sc.Class != "" && sc.Parameters.Type != "" {
+		return errors.New("\"class\": cannot be set when \"parameters.type\" is set")
+	}
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
 		if !isKeyValid(sc.EncryptionKey) {
 			return errors.New("\"encryptionKey\": it must have the format projects/[PROJECT_ID]/locations/[REGION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]")
+		}
+		if sc.Parameters.DiskEncryptionKmsKey != "" {
+			return errors.New("\"encryptionKey\": cannot be set when \"parameters.disk-encryption-kms-key\" is set")
 		}
 	}
 	// Validate disk-encryption-kms-key format
