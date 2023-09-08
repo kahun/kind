@@ -102,6 +102,10 @@ func validateGCPStorageClass(spec commons.Spec) error {
 	if sc.Class != "" && sc.Parameters != (commons.SCParameters{}) {
 		return errors.New("\"class\": cannot be set when \"parameters\" is set")
 	}
+	// Validate type
+	if sc.Parameters.Type != "" && !commons.Contains(GCPVolumes, sc.Parameters.Type) {
+		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(GCPVolumes, ", ")))
+	}
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
 		if sc.Parameters != (commons.SCParameters{}) {
@@ -116,10 +120,6 @@ func validateGCPStorageClass(spec commons.Spec) error {
 		if !isKeyValid(sc.Parameters.DiskEncryptionKmsKey) {
 			return errors.New("\"disk-encryption-kms-key\": it must have the format projects/[PROJECT_ID]/locations/[REGION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]")
 		}
-	}
-	// Validate type
-	if sc.Parameters.Type != "" && !commons.Contains(GCPVolumes, sc.Parameters.Type) {
-		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(GCPVolumes, ", ")))
 	}
 	// Validate fsType
 	if sc.Parameters.FsType != "" && !commons.Contains(GCPFSTypes, sc.Parameters.FsType) {

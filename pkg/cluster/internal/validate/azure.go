@@ -174,7 +174,7 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	}
 	// Validate type
 	if sc.Parameters.SkuName != "" && !commons.Contains(AzureVolumes, sc.Parameters.SkuName) {
-		return errors.New("unsupported skuname: " + sc.Parameters.SkuName)
+		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(AzureVolumes, ", ")))
 	}
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
