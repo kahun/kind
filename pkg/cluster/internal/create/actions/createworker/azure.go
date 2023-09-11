@@ -318,9 +318,9 @@ func (b *AzureBuilder) internalNginx(p ProviderParams, networks commons.Networks
 			resourceGroup = p.ClusterName
 		}
 		for _, s := range networks.Subnets {
-			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, s.SubnetId)
-			if len(publicSubnetID) > 0 {
-				return false, nil
+			publicSubnetID, err := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, s.SubnetId)
+			if err != nil || len(publicSubnetID) > 0 {
+				return false, err
 			}
 		}
 		return true, nil
@@ -342,7 +342,7 @@ func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.Subn
 }
 
 func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
-	var overrideVars map[string][]byte
+	var overrideVars = make(map[string][]byte)
 
 	requiredInternalNginx, err := b.internalNginx(p, networks)
 	if err != nil {
