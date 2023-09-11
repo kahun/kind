@@ -596,8 +596,7 @@ func GetClusterManifest(params commons.TemplateParams) (string, error) {
 				var mx int
 				var mn int
 				if az != "" {
-					if zd == "unbalanced" {
-						ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
+					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
 					for i, a := range params.ProviderAZs {
 						if zd == "unbalanced" {
