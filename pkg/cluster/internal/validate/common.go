@@ -112,7 +112,7 @@ func validateWorkersQuantity(workerNodes commons.WorkerNodes) error {
 		if wn.AZ != "" && wn.ZoneDistribution != "" {
 			return errors.New("az and zone_distribution cannot be used at the same time")
 		}
-		if wn.ZoneDistribution == "balanced" || wn.ZoneDistribution == "" {
+		if wn.ZoneDistribution == "balanced" || (wn.ZoneDistribution == "" && wn.AZ == "") {
 			if wn.Quantity < 3 {
 				return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when zone_distribution is balanced (default)")
 			}
