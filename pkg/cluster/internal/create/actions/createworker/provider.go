@@ -234,6 +234,9 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		// Clean keoscluster file
 		keosCluster.Spec.Credentials = commons.Credentials{}
 		keosCluster.Spec.StorageClass = commons.StorageClass{}
+		keosCluster.Spec.Security.AWS = struct {
+			CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
+		}{}
 		if keosCluster.Spec.InfraProvider != "azure" || (keosCluster.Spec.InfraProvider == "azure" && !keosCluster.Spec.ControlPlane.Managed) {
 			keosCluster.Spec.ControlPlane.Azure = commons.AzureCP{}
 		}
@@ -243,9 +246,6 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		if keosCluster.Spec.ControlPlane.Managed {
 			keosCluster.Spec.ControlPlane.HighlyAvailable = false
 		}
-		keosCluster.Spec.Security.AWS = struct {
-			CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
-		}{}
 		keosCluster.Spec.Keos = struct {
 			Flavour string `yaml:"flavour,omitempty"`
 			Version string `yaml:"version,omitempty"`
