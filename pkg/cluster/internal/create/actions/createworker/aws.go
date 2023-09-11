@@ -318,13 +318,11 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
 	}
 	// Add override vars for storage class
-	if b.scParameters.Type != "" {
-		if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
-			overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), overrideVars)
-		}
-		if commons.Contains([]string{"st1", "sc1"}, b.scParameters.Type) {
-			overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
-		}
+	if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
+		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), overrideVars)
+	}
+	if commons.Contains([]string{"st1", "sc1"}, b.scParameters.Type) {
+		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
 	}
 	return overrideVars, nil
 }
