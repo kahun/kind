@@ -20,6 +20,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -307,7 +308,7 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 }
 
 func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
-	var overrideVars map[string][]byte
+	var overrideVars = make(map[string][]byte)
 
 	// Add override vars internal nginx
 	requiredInternalNginx, err := b.internalNginx(p, networks)
@@ -317,14 +318,15 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 	if requiredInternalNginx {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
 	}
-
 	// Add override vars for storage class
-	if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
-		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), overrideVars)
+	if b.scParameters.Type != "" {
+		if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
+			fmt.Println(b.scParameters.Type)
+			overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 4Gi"), overrideVars)
+		}
+		if commons.Contains([]string{"st1", "sc1"}, b.scParameters.Type) {
+			overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
+		}
 	}
-	if commons.Contains([]string{"st1", "sc1"}, b.scParameters.Type) {
-		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
-	}
-
 	return overrideVars, nil
 }
