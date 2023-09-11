@@ -51,8 +51,8 @@ const (
 
 	scName = "keos"
 
-	keosClusterChart = "0.1.0-520a6e3"
-	keosClusterImage = "0.1.0-520a6e3"
+	keosClusterChart = "0.1.0-PR79-SNAPSHOT"
+	keosClusterImage = "0.1.0-PR79-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -234,6 +234,15 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		// Clean keoscluster file
 		keosCluster.Spec.Credentials = commons.Credentials{}
 		keosCluster.Spec.StorageClass = commons.StorageClass{}
+		if keosCluster.Spec.InfraProvider != "azure" || (keosCluster.Spec.InfraProvider == "azure" && !keosCluster.Spec.ControlPlane.Managed) {
+			keosCluster.Spec.ControlPlane.Azure = commons.AzureCP{}
+		}
+		if keosCluster.Spec.InfraProvider != "aws" || (keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed) {
+			keosCluster.Spec.ControlPlane.AWS = commons.AWSCP{}
+		}
+		if keosCluster.Spec.ControlPlane.Managed {
+			keosCluster.Spec.ControlPlane.HighlyAvailable = false
+		}
 		keosCluster.Spec.Security.AWS = struct {
 			CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
 		}{}
