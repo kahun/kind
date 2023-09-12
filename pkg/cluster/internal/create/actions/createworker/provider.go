@@ -237,6 +237,16 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		keosCluster.Spec.Security.AWS = struct {
 			CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
 		}{}
+		if keosCluster.Spec.InfraProvider != "azure" || (keosCluster.Spec.InfraProvider == "azure" && !keosCluster.Spec.ControlPlane.Managed) {
+			keosCluster.Spec.ControlPlane.Azure = commons.AzureCP{}
+		}
+		if keosCluster.Spec.InfraProvider != "aws" || (keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed) {
+			keosCluster.Spec.ControlPlane.AWS = commons.AWSCP{}
+		}
+		if keosCluster.Spec.ControlPlane.Managed {
+			// Setting the parameter to false, hides it from the KeosCluster object
+			keosCluster.Spec.ControlPlane.HighlyAvailable = false
+		}
 		keosCluster.Spec.Keos = struct {
 			Flavour string `yaml:"flavour,omitempty"`
 			Version string `yaml:"version,omitempty"`
