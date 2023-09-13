@@ -57,17 +57,31 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 			return errors.Wrap(err, "spec.storageclass: Invalid value")
 		}
 	}
+
 	if !reflect.ValueOf(spec.Networks).IsZero() {
 		if err = validateAzureNetwork(spec.Networks, spec.ControlPlane.Managed); err != nil {
 			return errors.Wrap(err, "spec.networks: Invalid value")
 		}
 	}
-	if !isAzureIdentity(spec.Security.ControlPlaneIdentity) {
-		return errors.New("spec.security: Invalid value: \"control_plane_identity\": is required and have the format " + AzureIdentityFormat)
+
+	if spec.Security == (commons.Security{}) && spec.ControlPlane.Managed {
+		return errors.New("spec.security: Required values: \"control_plane_identity\" and \"nodes_identity\" in AKS")
 	}
-	if spec.Security.NodesIdentity != "" {
-		if !isAzureIdentity(spec.Security.NodesIdentity) {
-			return errors.New("spec.security: Invalid value: \"nodes_identity\": it must have the format " + AzureIdentityFormat)
+
+	if spec.Security != (commons.Security{}) {
+		if spec.Security.ControlPlaneIdentity != "" {
+			if !isAzureIdentity(spec.Security.ControlPlaneIdentity) {
+				return errors.New("spec.security: Invalid value: \"control_plane_identity\": it must have the format " + AzureIdentityFormat)
+			}
+		} else if spec.ControlPlane.Managed {
+			return errors.New("spec.security: Required value: \"control_plane_identity\" in AKS")
+		}
+		if spec.Security.NodesIdentity != "" {
+			if !isAzureIdentity(spec.Security.NodesIdentity) {
+				return errors.New("spec.security: Invalid value: \"nodes_identity\": it must have the format " + AzureIdentityFormat)
+			}
+		} else if spec.ControlPlane.Managed {
+			return errors.New("spec.security: Required value: \"nodes_identity\" in AKS")
 		}
 	}
 
