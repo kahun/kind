@@ -42,7 +42,6 @@ type AWSBuilder struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -60,11 +59,6 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxName = "capa"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-	if managed {
-		b.capxTemplate = "aws.eks.tmpl"
-	} else {
-		b.capxTemplate = "aws.tmpl"
-	}
 }
 
 func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
@@ -110,7 +104,6 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxImageVersion: b.capxImageVersion,
 		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
-		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,

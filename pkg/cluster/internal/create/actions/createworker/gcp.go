@@ -45,7 +45,6 @@ type GCPBuilder struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -62,13 +61,7 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxImageVersion = "v1.4.0"
 	b.capxName = "capg"
 	b.capxManaged = managed
-	if managed {
-		b.capxTemplate = "gcp.gke.tmpl"
-		b.csiNamespace = ""
-	} else {
-		b.capxTemplate = "gcp.tmpl"
-		b.csiNamespace = "kube-system"
-	}
+	b.csiNamespace = "kube-system"
 }
 
 func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
@@ -119,7 +112,6 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxVersion:      b.capxVersion,
 		capxImageVersion: b.capxImageVersion,
 		capxName:         b.capxName,
-		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
