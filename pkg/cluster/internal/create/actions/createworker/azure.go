@@ -173,10 +173,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AzureBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	return []string{"1", "2", "3"}, nil
-}
-
 func assignUserIdentity(p ProviderParams, security commons.Security) error {
 	var managedCluster armcontainerservice.ManagedCluster
 	var kubeletidentity *armcontainerservice.ManagedClusterProperties

@@ -69,7 +69,6 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
-	getAzs(p ProviderParams, networks commons.Networks) ([]string, error)
 	internalNginx(p ProviderParams, networks commons.Networks) (bool, error)
 	getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error)
 }

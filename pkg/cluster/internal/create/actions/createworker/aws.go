@@ -181,30 +181,6 @@ spec:
 	return nil
 }
 
-func (b *AWSBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	var err error
-	var azs []string
-	var ctx = context.TODO()
-
-	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
-	if err != nil {
-		return nil, err
-	}
-	svc := ec2.NewFromConfig(cfg)
-	if len(networks.Subnets) > 0 {
-		azs, err = commons.AWSGetPrivateAZs(ctx, svc, networks.Subnets)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		azs, err = commons.AWSGetAZs(ctx, svc)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return azs, nil
-}
-
 func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
 	var err error
 	var ctx = context.TODO()

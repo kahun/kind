@@ -145,32 +145,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *GCPBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	var azs []string
-	var ctx = context.Background()
-
-	secrets, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
-	cfg := option.WithCredentialsJSON(secrets)
-	computeService, err := compute.NewService(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	zones, err := computeService.Zones.List(p.Credentials["ProjectID"]).Filter("name=" + p.Region + "*").Do()
-	if err != nil {
-		return nil, err
-	}
-	if len(zones.Items) < 3 {
-		return nil, errors.New("insufficient availability aones in this region. Must have at least 3")
-	}
-	for i, zone := range zones.Items {
-		if i == 3 {
-			break
-		}
-		azs = append(azs, zone.Name)
-	}
-	return azs, nil
-}
-
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
 	var c string
 	var err error
