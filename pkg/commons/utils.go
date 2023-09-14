@@ -19,6 +19,7 @@ package commons
 import (
 	"bytes"
 	"context"
+	"time"
 	"unicode"
 
 	"os"
@@ -239,6 +240,14 @@ func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, 
 		return "", err
 	}
 	if strings.Contains(raw.String(), "Error:") {
+		if strings.Contains(command, "kubeconfig") && strings.Contains(raw.String(), "timeout") {
+			time.Sleep(5 * time.Second)
+			if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
+				return "", err
+			} else if !strings.Contains(raw.String(), "Error:") {
+				return raw.String(), nil
+			}
+		}
 		return "", errors.New(raw.String())
 	}
 	return raw.String(), nil
