@@ -240,7 +240,7 @@ func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, 
 		return "", err
 	}
 	if strings.Contains(raw.String(), "Error:") {
-		if strings.Contains(command, "kubeconfig") && strings.Contains(raw.String(), "timeout") {
+		if strings.Contains(command, "--kubeconfig") && strings.Contains(raw.String(), "timeout") {
 			time.Sleep(5 * time.Second)
 			if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
 				return "", err
