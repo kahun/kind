@@ -50,8 +50,8 @@ const (
 
 	scName = "keos"
 
-	keosClusterChart = "0.1.0-f95b77e"
-	keosClusterImage = "0.1.0-f95b77e"
+	keosClusterChart = "0.1.0-7facf0b"
+	keosClusterImage = "0.1.0-7facf0b"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -237,8 +237,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 			keosCluster.Spec.ControlPlane.AWS = commons.AWSCP{}
 		}
 		if keosCluster.Spec.ControlPlane.Managed {
-			// Setting the parameter to false, hides it from the KeosCluster object
-			keosCluster.Spec.ControlPlane.HighlyAvailable = false
+			keosCluster.Spec.ControlPlane.HighlyAvailable = nil
 		}
 		keosCluster.Spec.Keos = struct {
 			Flavour string `yaml:"flavour,omitempty"`

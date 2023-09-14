@@ -4,7 +4,7 @@ core:
   cluster-api: v1.5.1
   capi-kubeadm-bootstrap-system: v1.5.1
   capi-kubeadm-control-plane-system: v1.5.1
-  cluster-operator: v0.1.0-520a6e3
+  cluster-operator: v0.1.0-7facf0b
   calico:
     calicoctl: v3.26.1
     tigera-operator: v1.30.5
@@ -19,7 +19,8 @@ aws:
     eks-addons:
       aws-ebs-csi-driver: v1.19.0-eksbuild.2
       coredns: v1.9.3-eksbuild.3
-      kube-proxy: v1.24.10-eksbuild.2
+      kube-proxy: v1.24.15-eksbuild.2  # k8s 1.24-1.25
+      kube-proxy: v1.26.7-eksbuild.2 # k8s 1.26-...
       vpc-cni: v1.12.6-eksbuild.2
   unmanaged:
     aws-ebs-csi-driver-chart: v2.20.0
