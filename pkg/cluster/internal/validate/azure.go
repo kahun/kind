@@ -237,28 +237,28 @@ func validateAzureNetwork(network commons.Networks, managed bool) error {
 			if managed {
 				return errors.New("\"vpc_id\": is required when \"vpc_cidr\" is set")
 			} else {
-				return errors.New("\"vpc_cidr\": is only supported in managed clusters")
+				return errors.New("\"vpc_cidr\": is only supported in azure managed clusters")
 			}
 		}
 	}
 	if len(network.Subnets) > 0 {
 		for _, s := range network.Subnets {
 			if s.SubnetId == "" {
-				return errors.New("\"subnet_id\": required")
+				return errors.New("\"subnet_id\": is required")
 			}
 			if managed {
 				if s.CidrBlock == "" {
 					return errors.New("\"cidr\": is required")
 				}
 				if s.Role != "" {
-					return errors.New("\"role\": is only supported in unmanaged clusters")
+					return errors.New("\"role\": is only supported in azure unmanaged clusters")
 				}
 			} else {
 				if s.Role == "" {
-					return errors.New("\"role\": required")
+					return errors.New("\"role\": is required")
 				}
 				if s.CidrBlock != "" {
-					return errors.New("\"cidr\": is only supported in managed clusters")
+					return errors.New("\"cidr\": is only supported in azure managed clusters")
 				}
 			}
 		}
