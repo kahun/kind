@@ -20,6 +20,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -236,9 +237,12 @@ func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) 
 	return false, nil
 }
 
-func getEcrToken(p ProviderParams) (string, error) {
+func getEcrToken(p ProviderParams, u string) (string, error) {
 	var err error
 	var ctx = context.TODO()
+
+	region := strings.Split(u, ".")[3]
+	fmt.Println("region: " + region)
 
 	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
 	if err != nil {
