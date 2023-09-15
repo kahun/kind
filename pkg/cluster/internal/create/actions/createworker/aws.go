@@ -20,7 +20,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -242,9 +241,7 @@ func getEcrToken(p ProviderParams, u string) (string, error) {
 	var ctx = context.TODO()
 
 	region := strings.Split(u, ".")[3]
-	fmt.Println("region: " + region)
-
-	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
+	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, region)
 	if err != nil {
 		return "", err
 	}
