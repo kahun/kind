@@ -29,7 +29,16 @@ import (
 
 // Version returns the kind CLI Semantic Version
 func Version() string {
-	v := gitVersion
+	v := versionCore
+	// add pre-release version info if we have it
+	if gitTag != "" {
+		v = gitTag
+	} else {
+		if gitCommit != "" {
+			// NOTE: use 14 character short hash, like Kubernetes
+			v += "-" + versionPreRelease + "-" + truncate(gitCommit, 14)
+		}
+	}
 	return v
 }
 
@@ -40,15 +49,15 @@ func DisplayVersion() string {
 }
 
 // versionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
-const versionCore = "0.3.0"
+const versionCore = "0.17.0-0.3.1"
 
 // versionPreRelease is the base pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
-const versionPreRelease = "alpha"
+const versionPreRelease = "SNAPSHOT"
 
 // gitTag is the git tag used to build the kind binary, if available.
 // It is injected at build time.
-var gitVersion = ""
+var gitTag = ""
 
 // gitCommitCount count the commits since the last release.
 // It is injected at build time.
