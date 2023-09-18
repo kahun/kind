@@ -75,7 +75,7 @@ func validateWorkersName(workerNodes commons.WorkerNodes) error {
 		// Validate worker name
 		if !regex.MatchString(worker.Name) {
 			return errors.New(worker.Name + " is invalid: " +
-				"must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character," +
+				"must consist of lower case alphanumeric characters, '-' or '.', start with an alphabetic character and end with an alphanumeric character, " +
 				"regex used for validation is '" + regex.String() + "'")
 		}
 		// Validate worker name length
