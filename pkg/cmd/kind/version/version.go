@@ -36,11 +36,12 @@ func Version() string {
 		if gitTag != "" {
 			v = gitTag
 		} else {
-			// otherwise if commit was set, add to the pre-release version
-			if gitCommit != "" {
-				// NOTE: use 14 character short hash, like Kubernetes
-				v += "-" + versionPreRelease + "-" + truncate(gitCommit, 14)
-			}
+			v += "-" + versionPreRelease
+		}
+		// otherwise if commit was set, add to the pre-release version
+		if gitCommit != "" {
+			// NOTE: use 14 character short hash, like Kubernetes
+			v += " GitCommit:" + truncate(gitCommit, 14)
 		}
 	}
 	return v
@@ -49,7 +50,7 @@ func Version() string {
 // DisplayVersion is Version() display formatted, this is what the version
 // subcommand prints
 func DisplayVersion() string {
-	return "cloud-provisioner v" + Version() + " " + runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH
+	return "cloud-provisioner version:" + Version() + " GoVersion:" + runtime.Version() + " Platform:" + runtime.GOOS + "/" + runtime.GOARCH
 }
 
 // versionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
