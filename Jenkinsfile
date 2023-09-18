@@ -18,4 +18,8 @@ hose {
     }
     BUILDTOOL_MEMORY_REQUEST = "1024Mi"
     BUILDTOOL_MEMORY_LIMIT = "4096Mi"
+
+    DOC = { config ->
+        doStratioDocsChecks(conf: config)
+    }
 }
