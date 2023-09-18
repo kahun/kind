@@ -119,7 +119,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	if keosRegistry.registryType == "ecr" {
-		ecrToken, err := getEcrToken(providerParams)
+		ecrToken, err := getEcrToken(providerParams, keosRegistry.url)
 		if err != nil {
 			return errors.Wrap(err, "failed to get ECR auth token")
 		}
@@ -533,11 +533,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				time.Sleep(5 * time.Second)
-				_, err = commons.ExecuteCommand(n, c)
-				if err != nil {
-					return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
-				}
+				return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
 			}
 
 			ctx.Status.End(true)

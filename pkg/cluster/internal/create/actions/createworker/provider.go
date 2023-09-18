@@ -50,8 +50,8 @@ const (
 
 	scName = "keos"
 
-	keosClusterChart = "0.1.0-7facf0b"
-	keosClusterImage = "0.1.0-7facf0b"
+	keosClusterChart = "0.1.0"
+	keosClusterImage = "0.1.0"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -313,11 +313,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	}
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		time.Sleep(5 * time.Second)
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
-		}
+		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
 	}
 
 	// Wait for keoscluster-controller-manager deployment
