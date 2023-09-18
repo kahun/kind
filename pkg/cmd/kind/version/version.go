@@ -30,11 +30,13 @@ import (
 // Version returns the kind CLI Semantic Version
 func Version() string {
 	v := versionCore
+	// add pre-release version info if we have it
 	if versionPreRelease != "" {
-		// add pre-release version info if we have it
+		// If gitTag was set, set it as version
 		if gitTag != "" {
 			v = gitTag
 		} else {
+			// otherwise if commit was set, add to the pre-release version
 			if gitCommit != "" {
 				// NOTE: use 14 character short hash, like Kubernetes
 				v += "-" + versionPreRelease + "-" + truncate(gitCommit, 14)
