@@ -47,7 +47,6 @@ type AzureBuilder struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -67,9 +66,17 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
 	if managed {
+<<<<<<< HEAD
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
 		b.capxTemplate = "azure.tmpl"
+=======
+		b.capxVersion = "v1.9.8"
+		b.capxImageVersion = "v1.9.8"
+	} else {
+		b.capxVersion = "v1.10.3"
+		b.capxImageVersion = "v1.10.3"
+>>>>>>> stratio/master
 	}
 }
 
@@ -121,7 +128,6 @@ func (b *AzureBuilder) getProvider() Provider {
 		capxImageVersion: b.capxImageVersion,
 		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
-		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
@@ -171,10 +177,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
-}
-
-func (b *AzureBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	return []string{"1", "2", "3"}, nil
 }
 
 func getAcrToken(p ProviderParams, acrService string) (string, error) {
