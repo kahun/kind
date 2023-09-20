@@ -414,12 +414,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if azureAKSEnabled {
-			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(providerParams, a.keosCluster.Spec.Security)
-			if err != nil {
-				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
-			}
-
 			// Wait for metrics-server deployment to be ready
 			c = "kubectl --kubeconfig " + kubeconfigPath + " rollout status deploy metrics-server -n kube-system --timeout=5m"
 			_, err = commons.ExecuteCommand(n, c)
