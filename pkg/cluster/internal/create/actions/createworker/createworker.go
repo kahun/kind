@@ -421,6 +421,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
+
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
 		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
