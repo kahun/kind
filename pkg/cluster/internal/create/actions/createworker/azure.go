@@ -177,7 +177,9 @@ func (b *AzureBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]st
 }
 
 func getAcrToken(p ProviderParams, acrService string) (string, error) {
+	var registryPass string
 	var ctx = context.Background()
+	var response map[string]interface{}
 
 	cfg, err := commons.AzureGetConfig(p.Credentials)
 	if err != nil {
@@ -199,11 +201,15 @@ func getAcrToken(p ProviderParams, acrService string) (string, error) {
 	} else if jsonResponse.StatusCode == http.StatusUnauthorized {
 		return "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
 	}
-
-	var response map[string]interface{}
 	json.NewDecoder(jsonResponse.Body).Decode(&response)
-
-	return response["refresh_token"].(string), nil
+	if response["access_token"] != nil {
+		registryPass = response["access_token"].(string)
+	} else if response["refresh_token"] != nil {
+		registryPass = response["refresh_token"].(string)
+	} else {
+		return "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+	}
+	return registryPass, nil
 }
 
 func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
