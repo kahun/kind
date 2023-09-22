@@ -24,6 +24,8 @@ import (
 	"net/url"
 	"strings"
 
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gopkg.in/yaml.v3"
@@ -143,6 +145,24 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
+}
+
+func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
+	var registryUser = p.Credentials["ClientEmail"]
+
+	// Create a JWT config using the credentials.
+	jwtConfig := &jwt.Config{
+		Email:      registryUser,
+		PrivateKey: []byte(p.Credentials["PrivateKey"]),
+		Scopes:     []string{"https://www.googleapis.com/auth/cloud-platform"},
+		TokenURL:   google.JWTTokenURL,
+	}
+	// Get a token using the JWT config.
+	token, err := jwtConfig.TokenSource(context.Background()).Token()
+	if err != nil {
+		return "", "", err
+	}
+	return registryUser, token.AccessToken, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {

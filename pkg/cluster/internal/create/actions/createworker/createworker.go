@@ -118,21 +118,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	if keosRegistry.registryType == "ecr" {
-		ecrToken, err := getEcrToken(providerParams, keosRegistry.url)
+	if keosRegistry.registryType != "generic" {
+		keosRegistry.user, keosRegistry.pass, err = infra.getRegistryCredentials(providerParams, keosRegistry.url)
 		if err != nil {
-			return errors.Wrap(err, "failed to get ECR auth token")
+			return errors.Wrap(err, "failed to get docker registry credentials")
 		}
-		keosRegistry.user = "AWS"
-		keosRegistry.pass = ecrToken
-	} else if keosRegistry.registryType == "acr" {
-		acrService := strings.Split(keosRegistry.url, "/")[0]
-		acrToken, err := getAcrToken(providerParams, acrService)
-		if err != nil {
-			return errors.Wrap(err, "failed to get ACR auth token")
-		}
-		keosRegistry.user = "00000000-0000-0000-0000-000000000000"
-		keosRegistry.pass = acrToken
 	} else {
 		keosRegistry.user = a.clusterCredentials.KeosRegistryCredentials["User"]
 		keosRegistry.pass = a.clusterCredentials.KeosRegistryCredentials["Pass"]

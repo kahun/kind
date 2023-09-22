@@ -67,18 +67,17 @@ func validateGCP(spec commons.Spec) error {
 				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
 			}
 		}
-	}
-
-	for _, wn := range spec.WorkerNodes {
-		if wn.NodeImage == "" || !isGCPNodeImage(wn.NodeImage) {
-			return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": is required and have the format " + GCPNodeImageFormat)
-		}
-		if err := validateVolumeType(wn.RootVolume.Type, GCPVolumes); err != nil {
-			return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
-		}
-		for i, ev := range wn.ExtraVolumes {
-			if err := validateVolumeType(ev.Type, GCPVolumes); err != nil {
-				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+		for _, wn := range spec.WorkerNodes {
+			if wn.NodeImage == "" || !isGCPNodeImage(wn.NodeImage) {
+				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": is required and have the format " + GCPNodeImageFormat)
+			}
+			if err := validateVolumeType(wn.RootVolume.Type, GCPVolumes); err != nil {
+				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
+			}
+			for i, ev := range wn.ExtraVolumes {
+				if err := validateVolumeType(ev.Type, GCPVolumes); err != nil {
+					return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+				}
 			}
 		}
 	}
