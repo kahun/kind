@@ -47,8 +47,11 @@ func validateGCP(spec commons.Spec) error {
 	}
 
 	for i, dr := range spec.DockerRegistries {
-		if dr.Type != "generic" {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": GCP only supports generic docker registries")
+		if dr.Type != "gcr" && spec.ControlPlane.Managed {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only 'gcr' is supported in gcp managed clusters")
+		}
+		if dr.Type != "gcr" && dr.Type != "generic" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only 'gcr' or 'generic' are supported in gcp unmanaged clusters")
 		}
 	}
 
