@@ -149,6 +149,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 
 func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
 	var registryUser = p.Credentials["ClientEmail"]
+	var ctx = context.Background()
 
 	// Create a JWT config using the credentials.
 	jwtConfig := &jwt.Config{
@@ -158,7 +159,7 @@ func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string,
 		TokenURL:   google.JWTTokenURL,
 	}
 	// Get a token using the JWT config.
-	token, err := jwtConfig.TokenSource(context.Background()).Token()
+	token, err := jwtConfig.TokenSource(ctx).Token()
 	if err != nil {
 		return "", "", err
 	}
