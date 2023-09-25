@@ -25,6 +25,7 @@
                 "cloudformation:UpdateStack",
                 "iam:DetachGroupPolicy",
                 "cloudformation:DescribeChangeSet",
+                "iam:CreatePolicyVersion",
                 "cloudformation:ExecuteChangeSet",
                 "iam:DeleteInstanceProfile",
                 "iam:GetRole",
