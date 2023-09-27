@@ -82,6 +82,9 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
 	}
+	if p.Managed {
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")
+	}
 	if p.GithubToken != "" {
 		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
