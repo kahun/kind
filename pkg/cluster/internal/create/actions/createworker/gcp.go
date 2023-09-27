@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"golang.org/x/oauth2/google"
-	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gopkg.in/yaml.v3"
@@ -148,18 +147,15 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 }
 
 func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
-	var registryUser = p.Credentials["ClientEmail"]
+	var registryUser = "oauth2accesstoken"
 	var ctx = context.Background()
-
-	// Create a JWT config using the credentials.
-	jwtConfig := &jwt.Config{
-		Email:      registryUser,
-		PrivateKey: []byte(p.Credentials["PrivateKey"]),
-		Scopes:     []string{"https://www.googleapis.com/auth/cloud-platform"},
-		TokenURL:   google.JWTTokenURL,
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	key, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
+	creds, err := google.CredentialsFromJSON(ctx, key, scope)
+	if err != nil {
+		return "", "", err
 	}
-	// Get a token using the JWT config.
-	token, err := jwtConfig.TokenSource(ctx).Token()
+	token, err := creds.TokenSource.Token()
 	if err != nil {
 		return "", "", err
 	}

@@ -130,7 +130,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Create docker-registry secret for keos cluster
 	c = "kubectl -n kube-system create secret docker-registry regcred" +
-		" --docker-server=" + keosRegistry.url +
+		" --docker-server=" + strings.Split(keosRegistry.url, "/")[0] +
 		" --docker-username=" + keosRegistry.user +
 		" --docker-password=" + keosRegistry.pass
 	_, err = commons.ExecuteCommand(n, c)
