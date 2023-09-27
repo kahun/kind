@@ -84,6 +84,7 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	}
 	if p.Managed {
 		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_CAPG_GKE=true")
 	}
 	if p.GithubToken != "" {
 		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
