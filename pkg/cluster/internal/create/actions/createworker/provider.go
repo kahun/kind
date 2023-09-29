@@ -50,8 +50,8 @@ const (
 
 	scName = "keos"
 
-	clusterOperatorChart = "0.2.0-PR106-SNAPSHOT"
-	clusterOperatorImage = "0.2.0-PR106-SNAPSHOT"
+	clusterOperatorChart = "0.2.0-SNAPSHOT"
+	clusterOperatorImage = "0.2.0-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
