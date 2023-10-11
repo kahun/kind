@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.17.0-0.3.2 (upcoming)
+## 0.17.0-0.3.3 (upcoming)
+
+* Add remote command execution retries
+
+## 0.17.0-0.3.2 (2023-09-29)
 
 * Bump cluster-operator due to hotfix
 
