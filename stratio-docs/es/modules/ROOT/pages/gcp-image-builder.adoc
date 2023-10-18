@@ -53,7 +53,7 @@ iam.serviceAccounts.actAs
 
 * https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
 +
-image:https://user-images.githubusercontent.com/112587171/233296971-6e999cac-cfab-42d4-a20e-93429dbcbc2f.png[alt="Google Service Account Key"]
+image::google-service-account.png[]
 
 * https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
 * https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
@@ -116,7 +116,7 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 [source,shell]
 ----
 # make deps-gce
-image:https://user-images.githubusercontent.com/112587171/233297601-f3f2dc5e-0888-429c-ae6a-24e259260240.png[alt="Make deps GCP",width=800]
+image::deps-gce.png[]
 ----
 +
 * Genera la imagen específica.
@@ -126,9 +126,9 @@ image:https://user-images.githubusercontent.com/112587171/233297601-f3f2dc5e-088
 # make build-gce-ubuntu-2204
 ----
 +
-image:https://user-images.githubusercontent.com/112587171/233297883-5029b10e-912d-42b7-b7ef-c941993c98c6.png[alt="Make build GCP",width=800]
+image::build-gce-ubuntu-2204-part1.png[]
 +
-image:https://user-images.githubusercontent.com/112587171/233298080-c50f610c-85e6-445e-8ed5-77cdc66fad26.png[alt="Make build GCP",width=800]
+image::build-gce-ubuntu-2204-part2.png[]
 
 * Genera todas las disponibles.
 +
