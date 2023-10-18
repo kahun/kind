@@ -6,7 +6,7 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 
 === Globales
 
-Packer y Ansible se utilizan para construir las imágenes.   
+Packer y Ansible se utilizan para construir las imágenes.
 * Versión del empaquetador (Packer) >= 1.6.0
 * Complemento de Goss para la versión de Packer >= 1.2.0
 * Versión de Ansible >= 2.10.0
@@ -24,13 +24,13 @@ Es necesario tener:
 
 ==== Solución a errores frecuentes:
 
-.Error: VPCIdNotSpecified: no hay VPC por defecto para este usuario  
+.Error: VPCIdNotSpecified: no hay VPC por defecto para este usuario
 
 Para solucionarlo edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS.
 
 Para conseguir dicho valor has de navegar a la sección _VPC_ de la consola de AWS y copiar el _VPC ID_ de la pestaña "Detalles".
 
-image:https://user-images.githubusercontent.com/112587171/232500704-3fcf3706-435e-48af-8caf-d1188812b133.png[]
+image::vpc-id.png[]
 
 .Error: subnet_id or subnet_filter must be provided for non-default VPCs
 
@@ -60,7 +60,7 @@ Para solcuionarlo realiza los siguientes pasos:
 [source,json]
 "security_group_id": "sg-1234567890"
 
-image:https://user-images.githubusercontent.com/112587171/232501134-2aac0dda-dada-4203-82a6-952dfeee243b.png[]
+image::segurity-group.png[]
 
 * Añade la variable `ssh_interface` = "public_ip" en la sección _builders_ del fichero _images/capi/packer/ami/packer.json_ para que se conecte a la instancia por la IP privada.
 
@@ -69,7 +69,7 @@ image:https://user-images.githubusercontent.com/112587171/232501134-2aac0dda-dad
 
 * Crea un _internet gateway_ y una _route table_ (o usa la de por defecto) para la VPC de tu cuenta de AWS y asócialos.
 
-image:https://user-images.githubusercontent.com/112587171/232501256-7383320b-cc49-4966-bd99-00f407be09bb.png[]
+image::internet-gatway.png[]
 
 == Configuración de la imagen
 
@@ -121,8 +121,7 @@ Para instalar/comprobar las dependencias necesarias ejecutaremos el comando:
 [source,console]
 make deps-ami
 
-
-image:https://user-images.githubusercontent.com/112587171/232500797-a8168ab5-23c9-43bc-b9bb-c0af20e0093d.png[Make deps, width=100%]
+image::desp-ami.png[]
 
 A continuación ejecutaremos el comando: `make build-ami-<OS>`, donde <OS> es el sistema operativo deseado, para la construción de la imagen.
 
@@ -136,11 +135,11 @@ Por ejemplo, para construir una imagen de Ubuntu 20.04, ejecuta:
 [source,console]
 make build-ami-ubuntu-2204
 
-image:https://user-images.githubusercontent.com/112587171/232500876-2985090a-86b7-4216-b2c6-8aa544a741f5.png[Make build, width=100%]
+image::build-ami-ubuntu-2204-part1.png[]
 
-image:https://user-images.githubusercontent.com/112587171/232500916-6d39cb1b-d6e4-4042-9114-b68d3f14a967.png[Make build, width=100%]
+image::build-ami-ubuntu-2204-part2.png[]
 
-image:https://user-images.githubusercontent.com/112587171/232500986-ec972a0a-7866-40a4-b945-ec5b9f0bdd2a.png[Make build, width=100%]
+image::amis.png[]
 
 Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
 
@@ -153,4 +152,3 @@ El proceso de creación de la imagen se puede depurar con la variable de entorno
 
 [source,console]
 export PACKER_LOG=1
-
