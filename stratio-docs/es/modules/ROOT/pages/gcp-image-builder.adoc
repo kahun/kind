@@ -2,26 +2,26 @@
 
 Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisioner_ https://image-builder.sigs.k8s.io/capi/providers/gcp[en GCP].
 
-El creador de imágenes se puede utilizar para crear imágenes destinadas a usarse con proveedores de CAPI de Kubernetes. Cada proveedor tiene un formato propio de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
-
 == Prerrequisitos
 
 === Globales
 
-Packer y Ansible se utilizan para construir las imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
+Packer y Ansible se utilizan para construir las imágenes.
 
 * Versión del empaquetador (Packer) >= 1.6.0
 * Complemento de Goss para la versión de Packer >= 1.2.0
 * Versión de Ansible >= 2.10.0
 
-Si los archivos binarios necesarios no están presentes, se pueden instalar en _images/capi/.bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
+Si los archivos binarios necesarios no están presentes, se pueden instalar en _images/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
 === De Google Cloud Platform
 
-* https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating[Crear una _service account_].
+* Crear una _service account_ :
+ Para ello seguiremos los pasos descritos en la documentación de link:https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating[Google Cloud Platform]
+
+* Asignaremos los siguientes permisos a la cuenta de servicio:
 
 [source,text]
-----
 compute.disks.create
 compute.disks.delete
 compute.disks.get
@@ -49,23 +49,23 @@ compute.subnetworks.useExternalIp
 compute.zoneOperations.get
 compute.zones.get
 iam.serviceAccounts.actAs
-----
 
-* https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
-+
-image:https://user-images.githubusercontent.com/112587171/233296971-6e999cac-cfab-42d4-a20e-93429dbcbc2f.png[alt="Google Service Account Key"]
+* Generar una clave de cuenta de servicio: Para ello seguiremos los pasos descritos en la documentación de link:https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
 
-* https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
-* https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
+image::gcp-service-account-key.png[]
+
+*  Necesitaremos Ansible y Packers instalados en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
+
+* Tambien necesitaremos el cliente de Google Cloud Platform instalado en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
 
 Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/gce[documentación de Packer].
 
 [TIP]
 ====
 .Modifica las versiones de Kubernetes.
-+
-https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/config/kubernetes.json[Versión de Kubernetes]:
-+
+
+Editar el archivo images/capi/packer/ami/packer.json y modifica el valor de las variables "kubernetes_deb_version", "kubernetes_rpm_version", "kubernetes_semver" y "kubernetes_series" por la versión de Kubernetes que se desea instalar en la imagen.
+
 [%autowidth]
 |===
 | *kubernetes_deb_version* | 1.24.10-00 | Versión de kubernetes para Debian.
@@ -73,75 +73,63 @@ https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
-+
-https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]:
 
 .Cambia el tipo de instancia de la imagen.
-+
+
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable "builder_instance_type" por el tipo de instancia deseado.
 
-[source,bash]
-----
+[source,json]
 "builder_instance_type": "t3.mmedium"
-----
 
 ====
 
 == Construcción de la imagen
 
-. Exporta el ID del proyecto GCP en el que deseas construir imágenes.
-+
-[source,shell]
-----
-# export GCP_PROJECT_ID=<project-id>
-----
+Primero obtendremos el `ID` del proyecto, para ello consultaremos la página de 
+link:https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=es-419#identifying_projects[Identifica proyectos] o ejecutaremos el comando `gcloud projects list`.
 
-. Exporta la ruta a las credenciales de la cuenta de servicio creadas en el paso anterior.
-+
-[source,shell]
-----
-# export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
-----
+A continuación realizaremos los siguientes pasos:
 
-. Clona el repositorio de _image-builder_ si no lo tenías previamente.
-+
-[source,shell]
-----
-# git clone https://github.com/kubernetes-sigs/image-builder.git
-# cd image-builder/images/capi/
-----
+.Exporta el ID del proyecto GCP en el que deseas construir las imágenes.
 
-. Ejecuta el comando `make deps-gce` para instalar Ansible y Packer.
-+
-[source,shell]
-----
-# make deps-gce
-image:https://user-images.githubusercontent.com/112587171/233297601-f3f2dc5e-0888-429c-ae6a-24e259260240.png[alt="Make deps GCP",width=800]
-----
-+
-* Genera la imagen específica.
-+
-[source,shell]
-----
-# make build-gce-ubuntu-2204
-----
-+
-image:https://user-images.githubusercontent.com/112587171/233297883-5029b10e-912d-42b7-b7ef-c941993c98c6.png[alt="Make build GCP",width=800]
-+
-image:https://user-images.githubusercontent.com/112587171/233298080-c50f610c-85e6-445e-8ed5-77cdc66fad26.png[alt="Make build GCP",width=800]
+[source,console]
+export GCP_PROJECT_ID=<project-id>
 
-* Genera todas las disponibles.
-+
-[source,shell]
-----
-# make build-gce-all
-----
+.Exporta la ruta a las credenciales de la cuenta de servicio creadas en el paso anterior.
+
+[source,console]
+export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
+
+.Clona el repositorio de _image-builder_ si no lo tenías previamente.
+
+[source,console]
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+
+
+.Ejecuta el comando `make deps-gce` para instalar/comprobar las dependencias necesarias para crear la imagen.
+
+[source,console]
+make deps-gce
+
+image::gcp-make-deps.png[]
+
+.Genera la imagen específica.
+[source,console]
+make build-gce-ubuntu-2204
+
+image::gcp-make-build01.png[]
+image::gcp-make-build02.png[]
+
+.Genera todas las disponibles.
+
+[source,console]
+make build-gce-all
 
 == Depuración
 
 El proceso de creación de la imagen se puede depurar con la variable de entorno `PACKER_LOG`.
 
-[source,shell]
-----
+[source,console]
 export PACKER_LOG=1
-----
+
