@@ -1,3 +1,6 @@
+// Definimos el directorio de imagenes
+:imagesdir: ../assets/images
+
 = Architecture
 
 Reference architecture
