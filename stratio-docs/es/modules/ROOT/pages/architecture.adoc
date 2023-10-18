@@ -1,4 +1,9 @@
+:imagesdir: ../assets/images
 = Arquitectura
+
+Reference architecture
+
+image::eks-reference-architecture.png[]
 
 == Introducción
 
