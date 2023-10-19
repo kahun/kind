@@ -112,15 +112,22 @@ export AZURE_CLIENT_SECRET="<clientSecret>"
 [source,console]
 ----
 git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder/images/capi/
+cd image-builder
 ----
-
-. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado y actualiza el repositorio de image-builder si ya lo tenías previamente.
++
+Ó actualiza el repositorio de image-builder si ya lo tenías.
 +
 [source,console]
 ----
 cd image-builder
 git pull
+----
+
+. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+[source,console]
+----
+cd images/capi
 ----
 
 . Instala las dependencias necesarias para crear la imagen.
