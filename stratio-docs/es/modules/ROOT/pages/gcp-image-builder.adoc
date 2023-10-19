@@ -12,7 +12,7 @@ Packer y Ansible se utilizan para construir las imágenes.
 * Complemento de Goss para la versión de Packer >= 1.2.0
 * Versión de Ansible >= 2.10.0
 
-Si los archivos binarios necesarios no están presentes, se pueden instalar en _images/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
+Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
 === De Google Cloud Platform
 
@@ -22,6 +22,7 @@ Si los archivos binarios necesarios no están presentes, se pueden instalar en _
 * Asignaremos los siguientes permisos a la cuenta de servicio:
 
 [source,text]
+----
 compute.disks.create
 compute.disks.delete
 compute.disks.get
@@ -49,6 +50,7 @@ compute.subnetworks.useExternalIp
 compute.zoneOperations.get
 compute.zones.get
 iam.serviceAccounts.actAs
+----
 
 * Generar una clave de cuenta de servicio: Para ello seguiremos los pasos descritos en la documentación de link:https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
 
@@ -91,47 +93,69 @@ link:https://cloud.google.com/resource-manager/docs/creating-managing-projects?h
 
 A continuación realizaremos los siguientes pasos:
 
-.Exporta el ID del proyecto GCP en el que deseas construir las imágenes.
 
+. Exporta el ID del proyecto GCP en el que deseas construir las imágenes.
++
 [source,console]
+----
 export GCP_PROJECT_ID=<project-id>
+----
 
-.Exporta la ruta a las credenciales de la cuenta de servicio creadas en el paso anterior.
-
+. Exporta la ruta a las credenciales de la cuenta de servicio creadas en el paso anterior.
++
 [source,console]
+----
 export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
+----
 
-.Clona el repositorio de _image-builder_ si no lo tenías previamente.
-
+. Clona el repositorio de _image-builder_ si no lo tenías previamente.
++
 [source,console]
+----
 git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder/images/capi/
+----
 
+. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
 
-.Ejecuta el comando `make deps-gce` para instalar/comprobar las dependencias necesarias para crear la imagen.
-
+. Ejecuta el siguiente comando para instalar/comprobar las dependencias necesarias para crear la imagen.
++
 [source,console]
+----
 make deps-gce
-
+----
++
 image::deps-gce.png[]
 
-.Genera la imagen específica.
+. Consulta las imágenes que se pueden construir.
++
 [source,console]
-make build-gce-ubuntu-2204
+----
+make help | grep build-gce
+----
 
+. Genera la imagen deseada. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
++
+[source,console]
+----
+make build-gce-ubuntu-2204
+----
++
 image::build-gce-ubuntu-2204-part1.png[]
 image::build-gce-ubuntu-2204-part2.png[]
-
-.Genera todas las disponibles.
-
++
+Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
++
 [source,console]
-make build-gce-all
-
+----
+make -j build-ami-all
+----
 
 == Depuración
 
 El proceso de creación de la imagen se puede depurar con la variable de entorno `PACKER_LOG`.
 
 [source,console]
+----
 export PACKER_LOG=1
-
+----
