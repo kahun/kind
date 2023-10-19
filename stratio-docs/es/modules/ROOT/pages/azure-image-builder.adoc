@@ -39,6 +39,8 @@ La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[critools]_
 |===
 | crictl version | kubernetes version
 | 1.26.1 | 1.24, 1.25, 1.26
+| 1.27.1 | 1.27
+| 1.28.0 | 1.28
 |===
 * Modifica los parámetros del kernel.
 +
@@ -106,16 +108,28 @@ export AZURE_CLIENT_ID="<clientID>"
 export AZURE_CLIENT_SECRET="<clientSecret>"
 ----
 
-. Clona el repositorio de _image-builder_ si no lo tenías previamente.
+. Clona el repositorio de image-builder si no lo tenías previamente.
 +
 [source,console]
 ----
 git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder/images/capi/
+cd image-builder
 ----
 +
+Ó actualiza el repositorio de image-builder si ya lo tenías.
++
+[source,console]
+----
+cd image-builder
+git pull
+----
 
-. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+[source,console]
+----
+cd images/capi
+----
 
 . Instala las dependencias necesarias para crear la imagen.
 +
