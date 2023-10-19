@@ -173,10 +173,23 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 [source,console]
 ----
 git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder/images/capi/
+cd image-builder
+----
++
+Ó actualiza el repositorio de image-builder si ya lo tenías.
++
+[source,console]
+----
+cd image-builder
+git pull
 ----
 
-. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+[source,console]
+----
+cd images/capi
+----
 
 . Instala las dependencias necesarias para crear la imagen.
 +
