@@ -98,7 +98,7 @@ Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valo
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
-+
+
 * Cambia el tipo de instancia de la imagen.
 +
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
@@ -107,7 +107,7 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 ----
 "builder_instance_type": "t3.medium"
 ----
-+
+
 * Modifica la región donde crear la instancia para la construcción de la imagen.
 +
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `region` en la seccion _builders_, por la región donde se creará la instancia.
@@ -116,7 +116,7 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 ----
 "region": "eu-west-1"
 ----
-+
+
 * Limita las regiones donde disponibilizar la imagen.
 +
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ami_regions` en la seccion _variables_, por las regiones donde se disponibilizará la imagen.
@@ -125,7 +125,6 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 ----
 "ami_regions": ["eu-west-1", "eu-west-2"]
 ----
-
 
 == Construcción de la imagen
 
