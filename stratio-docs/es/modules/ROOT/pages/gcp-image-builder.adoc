@@ -149,7 +149,7 @@ Para generar las imagenes de todos los sistemas operativos disponibles, utiliza 
 +
 [source,console]
 ----
-make -j build-ami-all
+make -j build-gce-all
 ----
 
 == Depuración
