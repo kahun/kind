@@ -78,7 +78,7 @@ git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder/images/capi/
 ----
 
-. Pociónate en la ruta _images/capi_ dentro del repositorio clonado.
+. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
 
 . Instala las dependencias necesarias para crear la imagen.
 +
