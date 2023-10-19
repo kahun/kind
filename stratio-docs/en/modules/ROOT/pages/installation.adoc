@@ -22,7 +22,7 @@ The https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMIs
 * Permissions
 
 For deployments on the Google Cloud Platform, you will require permissions on _compute_ (instances, disks, images, routers, networks, etc.). Similarly to other supported providers, provisioning requires an account with all requested permissions.
-+
+
 xref:attachment$stratio-gcp-permissions.list[Download permissions for GCP].
 
 * Certified operating systems
