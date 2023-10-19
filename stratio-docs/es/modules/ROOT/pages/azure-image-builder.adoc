@@ -130,7 +130,7 @@ git pull
 make deps-azure
 ----
 +
-image::desp-azure.png[]
+image::deps-azure.png[]
 
 . Consulta las imágenes que se pueden construir.
 +
