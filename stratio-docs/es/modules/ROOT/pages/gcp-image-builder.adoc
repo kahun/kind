@@ -75,7 +75,7 @@ Edita el archivo images/capi/packer/ami/packer.json y modifica el valor de las v
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
-+
+
 * Cambia el tipo de instancia de la imagen.
 +
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable "builder_instance_type" por el tipo de instancia deseado.
