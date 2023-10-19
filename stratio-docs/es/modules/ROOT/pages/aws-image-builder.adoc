@@ -185,9 +185,11 @@ cd image-builder
 git pull
 ----
 
-. Crear binario para la gestión de la autenticación ECR
+. Modifica el _image-builder_ para habilitar la autenticación con ECR.
 +
 IMPORTANT: Requerido para versiones de kubernetes 1.27+
++
+Crea el binario para la gestión de la autenticación ECR.
 +
 [source,console]
 ----
@@ -197,23 +199,14 @@ pushd cloud-provider-aws/cmd/ecr-credential-provider
 GOOS=linux go build -ldflags="-s -w"
 popd
 ----
-
-. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+Copia el binario generado y crea el fichero de configuración `ecr-credential-provider-config.yaml`.
 +
 [source,console]
 ----
-cd images/capi
-----
-
-. Añadir el binario generado en el punto `1` y el fichero de configuración `ecr-credential-provider-config.yaml`.
-+
-IMPORTANT: Requerido para versiones de kubernetes 1.27+
-+
-[source,console]
-----
-mkdir -p ansible/roles/providers/files
-cp cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider ansible/roles/providers/files/
-cat <<EOF >> ansible/roles/providers/files/ecr-credential-provider-config.yaml
+mkdir -p images/capi/ansible/roles/providers/files
+cp ../cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider images/capi/ansible/roles/providers/files/
+cat <<EOF >> images/capi/ansible/roles/providers/files/ecr-credential-provider-config.yaml
 apiVersion: kubelet.config.k8s.io/v1
 kind: CredentialProviderConfig
 providers:
@@ -228,14 +221,12 @@ providers:
     apiVersion: credentialprovider.kubelet.k8s.io/v1
 EOF
 ----
-
-. Actualizar automatización para configurar los ficheros ecr-credential-provider
 +
-IMPORTANT: Requerido para versiones de kubernetes 1.27+
+Actualiza la tarea de ansible para copiar los archivos creados en la imagen.
 +
 [source,console]
 ----
-cat <<EOF >> ansible/roles/providers/tasks/aws.yml
+cat <<EOF >> images/capi/ansible/roles/providers/tasks/aws.yml
 - name: Add ecr credentials provider
   copy:
     src: files/ecr-credential-provider
@@ -267,6 +258,13 @@ Encuentra más información sobre el requerimiento para kubernetes 1.27+ en los 
 * link:https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider[https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider]
 * link:https://github.com/kubernetes-sigs/image-builder/issues/1249[https://github.com/kubernetes-sigs/image-builder/issues/1249]
 ====
+
+. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+[source,console]
+----
+cd images/capi
+----
 
 . Instala las dependencias necesarias para crear la imagen.
 +
