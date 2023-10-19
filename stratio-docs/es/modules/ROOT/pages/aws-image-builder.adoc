@@ -22,7 +22,6 @@ Es necesario tener:
 * https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI instalado y configurado].
 * VPC por defecto para el usuario de AWS.
 
-
 ==== Solución a errores frecuentes:
 
 .Error: VPCIdNotSpecified: no hay VPC por defecto para este usuario
@@ -165,7 +164,9 @@ make build-ami-ubuntu-2204
 ----
 +
 image::build-ami-ubuntu-2204-part1.png[]
++
 image::build-ami-ubuntu-2204-part2.png[]
++
 image::amis.png[]
 +
 Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.

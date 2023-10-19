@@ -54,7 +54,6 @@ iam.serviceAccounts.actAs
 
 * Generar una clave de cuenta de servicio: Para ello seguiremos los pasos descritos en la documentación de link:https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
 
-
 image::google-service-account.png[]
 
 *  Necesitaremos Ansible y Packers instalados en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
@@ -92,7 +91,6 @@ Primero obtendremos el `ID` del proyecto, para ello consultaremos la página de
 link:https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=es-419#identifying_projects[Identifica proyectos] o ejecutaremos el comando `gcloud projects list`.
 
 A continuación realizaremos los siguientes pasos:
-
 
 . Exporta el ID del proyecto GCP en el que deseas construir las imágenes.
 +
@@ -142,6 +140,7 @@ make build-gce-ubuntu-2204
 ----
 +
 image::build-gce-ubuntu-2204-part1.png[]
++
 image::build-gce-ubuntu-2204-part2.png[]
 +
 Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
