@@ -58,7 +58,7 @@ image::google-service-account.png[]
 
 *  Necesitaremos Ansible y Packers instalados en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
 
-* Tambien necesitaremos el cliente de Google Cloud Platform instalado en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
+* También necesitaremos el cliente de Google Cloud Platform instalado en nuestro sistema. Para ello seguiremos los pasos descritos en la documentación de https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
 
 Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/gce[documentación de Packer].
 
