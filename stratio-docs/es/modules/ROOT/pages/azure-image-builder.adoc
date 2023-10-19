@@ -12,7 +12,7 @@ Packer y Ansible se utilizan para construir las imágenes.
 * Complemento de Goss para la versión de Packer >= 1.2.0
 * Versión de Ansible >= 2.10.0
 
-Si los archivos binarios necesarios no están presentes, se pueden instalar en _images/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
+Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
 == Configuraciones de la imagen
 
