@@ -171,11 +171,13 @@ _Stratio KEOS_ will not manage the lifecycle of previously created objects.
 |_subnets_
 |Array of subnet IDs.
 a|
+
 [source,bash]
 ----
 - subnet_id: subnet-0df..
 - subnet_id: subnet-887..
 ----
+
 |Yes
 
 |===
@@ -192,11 +194,13 @@ In this section you will find the specifics for the Kubernetes _control-plane_.
 |Specific values for EKS logging (API Server, audit, authenticator, controller$$_$$manager and/or scheduler).
 
 a|
+
 [source,bash]
 ----
 logging:
   api_server: true
 ----
+
 |Yes
 
 |managed
@@ -254,17 +258,20 @@ The images used must be supported by EKS, link:repost.aws/knowledge-center/eks-c
 |_labels_
 |Kubernetes labels for worker nodes.
 a|
+
 [source,bash]
 ----
 labels:
   disktype: standard
   gpus: true
 ----
+
 |Yes
 
 |root$$_$$volume
 |Volume specifics such as size, type and encryption.
 a|
+
 [source,bash]
 ----
 root_volume:
@@ -272,6 +279,7 @@ root_volume:
   type: gp2
   encrypted: true
 ----
+
 |Yes
 
 |ssh$$_$$key
