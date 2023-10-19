@@ -1,0 +1,108 @@
+= Azure image builder
+
+Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisioner_ https://image-builder.sigs.k8s.io/capi/providers/azure[en Azure].
+
+== Prerrequisitos
+
+=== Globales
+
+Packer y Ansible se utilizan para construir las imágenes.
+
+* Versión del empaquetador (Packer) >= 1.6.0
+* Complemento de Goss para la versión de Packer >= 1.2.0
+* Versión de Ansible >= 2.10.0
+
+Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
+
+== Configuraciones de la imagen
+
+Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/azure[documentación de Packer].
+
+Estas son algunas de nuestras recomendaciones:
+
+* Modifica las versiones de Kubernetes.
++
+Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valores de las variables `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` y `kubernetes_series`.
++
+[%autowidth]
+|===
+| *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
+| *kubernetes_rpm_version* | 1.24.10-0 | Versión de Kubernetes para RPM.
+| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
+| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
+|===
+
+* Cambia el tipo de instancia de la imagen.
++
+Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
++
+[source,json]
+----
+"builder_instance_type": "Standard_D2as_v4"
+----
+
+== Construcción de la imagen
+
+. Exporta los datos de la subscripción de Azure en la que vas a trabajar.
++
+[source,console]
+----
+export AZURE_SUBSCRIPTION_ID="<subscriptionID>"
+export AZURE_TENANT_ID="<tenantID>"
+export AZURE_LOCATION="<region>"
+----
+
+. Exporta el _resource group_ que se usará para almacenar las imágenes creadas.
++
+[source,console]
+----
+export RESOURCE_GROUP_NAME="<resourceGroup>"
+----
+
+. Exporta las credenciales de la cuenta de servicio creadas en el paso anterior.
++
+[source,console]
+----
+export AZURE_CLIENT_ID="<clientID>"
+export AZURE_CLIENT_SECRET="<clientSecret>"
+----
+
+. Clona el repositorio de _image-builder_ si no lo tenías previamente.
++
+[source,console]
+----
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+----
+
+. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+
+. Instala las dependencias necesarias para crear la imagen.
++
+[source,console]
+----
+make deps-azure
+----
+
+. Consulta las imágenes que se pueden construir.
++
+[source,console]
+----
+make help | grep build-azure-sig
+----
+
+. Genera la imagen deseada. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
++
+[source,console]
+----
+make build-azure-sig-ubuntu-2204
+----
+
+== Depuración
+
+El proceso de creación de la imagen se puede depurar con la variable de entorno `PACKER_LOG`.
+
+[source,console]
+----
+export PACKER_LOG=1
+----

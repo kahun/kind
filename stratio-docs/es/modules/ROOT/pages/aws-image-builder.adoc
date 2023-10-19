@@ -1,0 +1,184 @@
+= AWS image builder
+
+Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisioner_ https://image-builder.sigs.k8s.io/capi/providers/aws.html[en AWS].
+
+== Prerrequisitos
+
+=== Globales
+
+Packer y Ansible se utilizan para construir las imágenes.
+
+* Versión del empaquetador (Packer) >= 1.6.0
+* Complemento de Goss para la versión de Packer >= 1.2.0
+* Versión de Ansible >= 2.10.0
+
+Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
+
+=== De AWS
+
+Es necesario tener:
+
+* Una cuenta de AWS con un https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[usuario IAM con los permisos mínimos necesarios para crear una imagen].
+* https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI instalado y configurado].
+* VPC por defecto para el usuario de AWS.
+
+==== Solución a errores frecuentes:
+
+.Error: VPCIdNotSpecified: no hay VPC por defecto para este usuario
+
+Para solucionarlo edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS.
+
+Para conseguir dicho valor has de navegar a la sección _VPC_ de la consola de AWS y copiar el _VPC ID_ de la pestaña "Detalles".
+
+image::vpc-id.png[]
+
+.Error: subnet_id or subnet_filter must be provided for non-default VPCs
+
+* Para solucionarlo realiza los siguientes pasos:edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `subnet_id` por el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
+
+.Error: Timeout waiting for SSH
+
+Para solcuionarlo realiza los siguientes pasos:
+
+* Edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ssh_keypair_name` por el nombre de la clave SSH.
+
+[source,json]
+----
+"ssh_keypair_name": "my-ssh-keypair"
+----
+
+* Modifica el valor de la variable `ssh_private_key_file` por la ruta al fichero de la clave privada SSH.
+
+[source,json]
+----
+"ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
+----
+
+* La máquina virtual debe tener una IP pública para poder conectarse a ella. Si no tiene, puedes crearla para la instancia editando el fichero _images/capi/packer/ami/packer.json_ y modificando/añadiendo el valor de la variable `associate_public_ip_address` a _true_ en la sección _builders_.
+
+[source,json]
+----
+"associate_public_ip_address": "true"
+----
+
+* Crea/asigna un grupo de seguridad (con permisos al puerto 22) a la instancia creada (en la misma red que esta) y modifica/añade el valor de la variable `security_group_id` con el ID del grupo de seguridad creado/asignado en el fichero _images/capi/packer/ami/packer.json_ en la sección _builders_.
+
+[source,json]
+----
+"security_group_id": "sg-1234567890"
+----
+
+image::segurity-group.png[]
+
+* Añade la variable `ssh_interface` = "public_ip" en la sección _builders_ del fichero _images/capi/packer/ami/packer.json_ para que se conecte a la instancia por la IP privada.
+
+[source,json]
+----
+"ssh_interface": "public_ip"
+----
+
+* Crea un _internet gateway_ y una _route table_ (o usa la de por defecto) para la VPC de tu cuenta de AWS y asócialos.
+
+image::internet-gatway.png[]
+
+== Configuración de la imagen
+
+Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/ami[documentación de Packer].
+
+Estas son algunas de nuestras recomendaciones:
+
+* Modifica las versiones de Kubernetes.
++
+Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valores de las variables `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` y `kubernetes_series`.
++
+[%autowidth]
+|===
+| *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
+| *kubernetes_rpm_version* | 1.24.10-0 | Versión de Kubernetes para RPM.
+| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
+| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
+|===
+
+* Cambia el tipo de instancia de la imagen.
++
+Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
++
+[source,json]
+----
+"builder_instance_type": "t3.medium"
+----
+
+* Modifica la región donde crear la instancia para la construcción de la imagen.
++
+Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `region` en la seccion _builders_, por la región donde se creará la instancia.
++
+[source,json]
+----
+"region": "eu-west-1"
+----
+
+* Limita las regiones donde disponibilizar la imagen.
++
+Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ami_regions` en la seccion _variables_, por las regiones donde se disponibilizará la imagen.
++
+[source,json]
+----
+"ami_regions": ["eu-west-1", "eu-west-2"]
+----
+
+== Construcción de la imagen
+
+. Clona el repositorio de _image-builder_ si no lo tenías previamente.
++
+[source,console]
+----
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+----
+
+. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+
+. Instala las dependencias necesarias para crear la imagen.
++
+[source,console]
+----
+make deps-ami
+----
++
+image::desp-ami.png[]
+
+. Consulta las imágenes que se pueden construir.
++
+[source,console]
+----
+make help | grep build-ami
+----
+
+. Genera la imagen deseada. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
++
+[source,console]
+----
+make build-ami-ubuntu-2204
+----
++
+image::build-ami-ubuntu-2204-part1.png[]
++
+image::build-ami-ubuntu-2204-part2.png[]
++
+image::amis.png[]
++
+Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
++
+[source,console]
+----
+make -j build-ami-all
+----
+
+== Depuración
+
+El proceso de creación de la imagen se puede depurar con la variable de entorno `PACKER_LOG`.
+
+[source,console]
+----
+export PACKER_LOG=1
+----
