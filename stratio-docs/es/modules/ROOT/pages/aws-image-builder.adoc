@@ -43,29 +43,39 @@ Para solcuionarlo realiza los siguientes pasos:
 * Edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ssh_keypair_name` por el nombre de la clave SSH.
 
 [source,json]
+----
 "ssh_keypair_name": "my-ssh-keypair"
+----
 
 * Modifica el valor de la variable `ssh_private_key_file` por la ruta al fichero de la clave privada SSH.
 
 [source,json]
+----
 "ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
+----
 
 * La máquina virtual debe tener una IP pública para poder conectarse a ella. Si no tiene, puedes crearla para la instancia editando el fichero _images/capi/packer/ami/packer.json_ y modificando/añadiendo el valor de la variable `associate_public_ip_address` a _true_ en la sección _builders_.
 
 [source,json]
+----
 "associate_public_ip_address": "true"
+----
 
 * Crea/asigna un grupo de seguridad (con permisos al puerto 22) a la instancia creada (en la misma red que esta) y modifica/añade el valor de la variable `security_group_id` con el ID del grupo de seguridad creado/asignado en el fichero _images/capi/packer/ami/packer.json_ en la sección _builders_.
 
 [source,json]
+----
 "security_group_id": "sg-1234567890"
+----
 
 image::segurity-group.png[]
 
 * Añade la variable `ssh_interface` = "public_ip" en la sección _builders_ del fichero _images/capi/packer/ami/packer.json_ para que se conecte a la instancia por la IP privada.
 
 [source,json]
+----
 "ssh_interface": "public_ip"
+----
 
 * Crea un _internet gateway_ y una _route table_ (o usa la de por defecto) para la VPC de tu cuenta de AWS y asócialos.
 
@@ -94,61 +104,81 @@ Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valo
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
 
 [source,json]
+----
 "builder_instance_type": "t3.medium"
+----
 
 .Modifica la región donde crear la instancia para la construcción de la imagen.
 
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `region` en la seccion _builders_, por la región donde se creará la instancia.
 
 [source,json]
+----
 "region": "eu-west-1"
+----
 
 .Limita las regiones donde disponibilizar la imagen.
 
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ami_regions` en la seccion _variables_, por las regiones donde se disponibilizará la imagen.
 
 [source,json]
+----
 "ami_regions": ["eu-west-1", "eu-west-2"]
+----
 
 ====
 
 == Construcción de la imagen
 
-Lo primero será posicionarnos en la ruta _images/capi_.
-
-Para instalar/comprobar las dependencias necesarias ejecutaremos el comando:
-
+. Clona el repositorio de _image-builder_ si no lo tenías previamente.
++
 [source,console]
-make deps-ami
+----
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+----
 
+. Pociónate en la ruta _images/capi_ dentro del repositorio clonado.
+
+. Instala las dependencias necesarias para crear la imagen.
++
+[source,console]
+----
+make deps-ami
+----
++
 image::desp-ami.png[]
 
-A continuación ejecutaremos el comando: `make build-ami-<OS>`, donde <OS> es el sistema operativo deseado, para la construción de la imagen.
-
-Las opciones disponibles se enumeran a través del comando:
-
+. Consulta las imágenes que se pueden construir.
++
 [source,console]
-make help | grep -i "build-ami"
+----
+make help | grep build-ami
+----
 
-Por ejemplo, para construir una imagen de Ubuntu 20.04, ejecuta:
-
+. Genera la imagen deseada. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
++
 [source,console]
+----
 make build-ami-ubuntu-2204
-
+----
++
 image::build-ami-ubuntu-2204-part1.png[]
-
 image::build-ami-ubuntu-2204-part2.png[]
-
 image::amis.png[]
-
++
 Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
-
++
 [source,console]
+----
 make -j build-ami-all
+----
 
 == Depuración
 
 El proceso de creación de la imagen se puede depurar con la variable de entorno `PACKER_LOG`.
 
 [source,console]
+----
 export PACKER_LOG=1
+----
