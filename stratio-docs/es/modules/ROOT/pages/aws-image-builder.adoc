@@ -169,19 +169,6 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 
 == Construcción de la imagen
 
-. Crear binario para la gestión de la autenticación ECR
-+
-IMPORTANT: Requerido para versiones de kubernetes 1.27+
-+
-[source,console]
-----
-cd ..
-git clone git@github.com:kubernetes/cloud-provider-aws.git
-pushd cloud-provider-aws/cmd/ecr-credential-provider
-GOOS=linux go build -ldflags="-s -w"
-popd
-----
-
 . Clona el repositorio de image-builder si no lo tenías previamente.
 +
 [source,console]
@@ -196,6 +183,19 @@ cd image-builder
 ----
 cd image-builder
 git pull
+----
+
+. Crear binario para la gestión de la autenticación ECR
++
+IMPORTANT: Requerido para versiones de kubernetes 1.27+
++
+[source,console]
+----
+cd ..
+git clone git@github.com:kubernetes/cloud-provider-aws.git
+pushd cloud-provider-aws/cmd/ecr-credential-provider
+GOOS=linux go build -ldflags="-s -w"
+popd
 ----
 
 . Posiciónate en la ruta _images/capi_ dentro del repositorio.

@@ -108,17 +108,30 @@ export GCP_PROJECT_ID=<project-id>
 export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
 ----
 
-. Clona el repositorio de _image-builder_ si no lo tenías previamente.
+. Clona el repositorio de image-builder si no lo tenías previamente.
 +
 [source,console]
 ----
 git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder/images/capi/
+cd image-builder
+----
++
+Ó actualiza el repositorio de image-builder si ya lo tenías.
++
+[source,console]
+----
+cd image-builder
+git pull
 ----
 
-. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+. Posiciónate en la ruta _images/capi_ dentro del repositorio.
++
+[source,console]
+----
+cd images/capi
+----
 
-. Ejecuta el siguiente comando para instalar/comprobar las dependencias necesarias para crear la imagen.
+. Instala las dependencias necesarias para crear la imagen.
 +
 [source,console]
 ----
