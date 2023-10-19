@@ -68,15 +68,55 @@ Estas son algunas de nuestras recomendaciones:
 
 * Modifica las versiones de Kubernetes.
 +
-Edita el archivo images/capi/packer/ami/packer.json y modifica el valor de las variables "kubernetes_deb_version", "kubernetes_rpm_version", "kubernetes_semver" y "kubernetes_series" por la versión de Kubernetes que se desea instalar en la imagen.
+Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valores de las variables `crictl_version`, `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` y `kubernetes_series`.
 +
 [%autowidth]
 |===
-| *kubernetes_deb_version* | 1.24.10-00 | Versión de kubernetes para Debian.
-| *kubernetes_rpm_version* | 1.24.10-0 | Versión de kubernetes para RPM.
+| *crictl_version* | 1.26.1 | Version de las critools
+| *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
+| *kubernetes_rpm_version* | 1.24.10-0 | Versión de Kubernetes para RPM.
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
++
+La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[critools]_ tiene que ir pareja con la versión de kubernetes que queramos usar.
++
+[%autowidth]
+|===
+| *crictl version* | *kubernetes version*
+| 1.26.1 | 1.24, 1.25, 1.26
+|===
+
+* Modifica los parámetros del kernel.
++
+IMPORTANT: Requerido para que funcione la monitorización de Stratio.
++
+Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la tarea con el nombre _Set and persist kernel params_ para añadir el parámetro `vm.max_map_count` con el valor 262144.
++
+[source,yaml]
+----
+- name: Set and persist kernel params
+  sysctl:
+    name: "{{ item.param }}"
+    value: "{{ item.val }}"
+    state: present
+    sysctl_set: yes
+    sysctl_file: "{{ sysctl_conf_file }}"
+    reload: yes
+  loop:
+    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
+    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
+    - { param: net.ipv4.ip_forward, val: 1 }
+    - { param: net.ipv6.conf.all.forwarding, val: 1 }
+    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
+    - { param: net.ipv4.tcp_congestion_control, val: bbr }
+    - { param: vm.overcommit_memory, val: 1 }
+    - { param: kernel.panic, val: 10 }
+    - { param: kernel.panic_on_oops, val: 1 }
+    - { param: fs.inotify.max_user_instances, val: 8192 }
+    - { param: fs.inotify.max_user_watches, val: 524288 }
+    - { param: vm.max_map_count, val: 262144 }
+----
 
 * Cambia el tipo de instancia de la imagen.
 +
@@ -89,7 +129,7 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 
 == Construcción de la imagen
 
-Primero obtendremos el `ID` del proyecto, para ello consultaremos la página de 
+Primero obtendremos el `ID` del proyecto, para ello consultaremos la página de
 link:https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=es-419#identifying_projects[Identifica proyectos] o ejecutaremos el comando `gcloud projects list`.
 
 A continuación realizaremos los siguientes pasos:
@@ -116,7 +156,13 @@ git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder/images/capi/
 ----
 
-. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado.
+. Posiciónate en la ruta _images/capi_ dentro del repositorio clonado y actualiza el repositorio de image-builder si ya lo tenías previamente.
++
+[source,console]
+----
+cd image-builder
+git pull
+----
 
 . Ejecuta el siguiente comando para instalar/comprobar las dependencias necesarias para crear la imagen.
 +
