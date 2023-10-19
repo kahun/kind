@@ -7,6 +7,7 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 === Globales
 
 Packer y Ansible se utilizan para construir las imágenes.
+
 * Versión del empaquetador (Packer) >= 1.6.0
 * Complemento de Goss para la versión de Packer >= 1.2.0
 * Versión de Ansible >= 2.10.0
