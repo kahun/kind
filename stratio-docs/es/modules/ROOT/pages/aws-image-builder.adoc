@@ -85,12 +85,12 @@ image::internet-gatway.png[]
 
 Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/ami[documentación de Packer].
 
-[TIP]
-====
-.Modifica las versiones de Kubernetes.
+Estas son algunas de nuestras recomendaciones:
 
+* Modifica las versiones de Kubernetes.
++
 Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valores de las variables `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` y `kubernetes_series`.
-
++
 [%autowidth]
 |===
 | *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
@@ -98,35 +98,34 @@ Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valo
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
-
-.Cambia el tipo de instancia de la imagen.
-
++
+* Cambia el tipo de instancia de la imagen.
++
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
-
++
 [source,json]
 ----
 "builder_instance_type": "t3.medium"
 ----
-
-.Modifica la región donde crear la instancia para la construcción de la imagen.
-
++
+* Modifica la región donde crear la instancia para la construcción de la imagen.
++
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `region` en la seccion _builders_, por la región donde se creará la instancia.
-
++
 [source,json]
 ----
 "region": "eu-west-1"
 ----
-
-.Limita las regiones donde disponibilizar la imagen.
-
++
+* Limita las regiones donde disponibilizar la imagen.
++
 Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ami_regions` en la seccion _variables_, por las regiones donde se disponibilizará la imagen.
-
++
 [source,json]
 ----
 "ami_regions": ["eu-west-1", "eu-west-2"]
 ----
 
-====
 
 == Construcción de la imagen
 
