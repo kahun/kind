@@ -200,7 +200,7 @@ GOOS=linux go build -ldflags="-s -w"
 popd
 ----
 +
-Copia el binario generado y crea el fichero de configuración `ecr-credential-provider-config.yaml`.
+Copia el binario generado al repositorio y crea el fichero de configuración `ecr-credential-provider-config.yaml`.
 +
 [source,console]
 ----
