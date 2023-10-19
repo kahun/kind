@@ -106,6 +106,8 @@ La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[critools]_
 |===
 | crictl version | kubernetes version
 | 1.26.1 | 1.24, 1.25, 1.26
+| 1.27.1 | 1.27
+| 1.28.0 | 1.28
 |===
 * Modifica los parámetros del kernel.
 +
