@@ -42,7 +42,7 @@ Al igual que con otros proveedores soportados, el aprovisionamiento requiere una
 
 * Sistemas operativos certificados
 +
-Para los entornos en Azure, se podrá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:azure_image_builder.adoc[guía para Azure].
+Para los entornos en Azure, se podrá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:azure-image-builder.adoc[guía para Azure].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04, siendo el que crea por defecto el controller de este _cloud provider_.
 +
