@@ -27,7 +27,7 @@ Para los despliegues en Google Cloud Platform, se necesitarán principalmente pe
 
 * Sistemas operativos certificados
 +
-Para los entornos en GCP, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:gcp_image_builder.adoc[guía para GCP].
+Para los entornos en GCP, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:gcp-image-builder.adoc[guía para GCP].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
