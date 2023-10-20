@@ -22,21 +22,21 @@ Es necesario tener:
 * https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI instalado y configurado].
 * VPC por defecto para el usuario de AWS.
 
-==== Solución a errores frecuentes:
+==== Errores frecuentes
 
-.Error: VPCIdNotSpecified: no hay VPC por defecto para este usuario
+*VPCIdNotSpecified: no hay VPC por defecto para este usuario*
 
-Para solucionarlo edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS.
+Para solucionarlo, edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS.
 
-Para conseguir dicho valor has de navegar a la sección _VPC_ de la consola de AWS y copiar el _VPC ID_ de la pestaña "Detalles".
+Para conseguir dicho valor debes navegar a la sección 'VPC' de la consola de AWS y copiar el _VPC ID_ de la pestaña 'Details'.
 
 image::vpc-id.png[]
 
-.Error: subnet_id or subnet_filter must be provided for non-default VPCs
+*subnet_id or subnet_filter must be provided for non-default VPCs*
 
-* Para solucionarlo realiza los siguientes pasos:edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `subnet_id` por el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
+* Para solucionarlo, edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `subnet_id` por el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
 
-.Error: Timeout waiting for SSH
+*Timeout waiting for SSH*
 
 Para solcuionarlo realiza los siguientes pasos:
 
@@ -168,7 +168,7 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 
 == Construcción de la imagen
 
-. Clona el repositorio de _image-builder_ si no lo tenías previamente.
+. Clona el repositorio _image-builder_ si no lo tenías previamente.
 +
 [source,console]
 ----
@@ -176,7 +176,7 @@ git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder
 ----
 +
-Ó actualiza el repositorio de image-builder si ya lo tenías.
+O actualízalo si ya lo tenías.
 +
 [source,console]
 ----
@@ -220,7 +220,7 @@ image::build-ami-ubuntu-2204-part2.png[]
 +
 image::amis.png[]
 +
-Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
+Para generar las imágenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
 +
 [source,console]
 ----

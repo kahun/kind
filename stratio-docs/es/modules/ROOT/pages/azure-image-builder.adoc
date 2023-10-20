@@ -107,7 +107,7 @@ export AZURE_CLIENT_ID="<clientID>"
 export AZURE_CLIENT_SECRET="<clientSecret>"
 ----
 
-. Clona el repositorio de _image-builder_ si no lo tenías previamente.
+. Clona el repositorio _image-builder_ si no lo tenías previamente.
 +
 [source,console]
 ----
@@ -115,7 +115,7 @@ git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder
 ----
 +
-Ó actualiza el repositorio de image-builder si ya lo tenías.
+O actualízalo si ya lo tenías.
 +
 [source,console]
 ----
