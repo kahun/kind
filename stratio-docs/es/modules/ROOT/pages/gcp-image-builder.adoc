@@ -89,10 +89,9 @@ Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la 
 
 == Construcción de la imagen
 
-Primero obtendremos el `ID` del proyecto, para ello consultaremos la página de 
-link:https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=es-419#identifying_projects[Identifica proyectos] o ejecutaremos el comando `gcloud projects list`.
+Primero obtén el `ID` del proyecto. Para ello, consulta la página https://cloud.google.com/resource-manager/docs/creating-managing-projects?hl=es-419#identifying_projects[Identifica proyectos] o ejecuta el comando `gcloud projects list`.
 
-A continuación realizaremos los siguientes pasos:
+A continuación, ejecuta los siguientes pasos:
 
 . Exporta el ID del proyecto GCP en el que deseas construir las imágenes.
 +
@@ -108,7 +107,7 @@ export GCP_PROJECT_ID=<project-id>
 export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
 ----
 
-. Clona el repositorio de image-builder si no lo tenías previamente.
+. Clona el repositorio _image-builder_ si no lo tenías previamente.
 +
 [source,console]
 ----
@@ -116,7 +115,7 @@ git clone https://github.com/kubernetes-sigs/image-builder.git
 cd image-builder
 ----
 +
-Ó actualiza el repositorio de image-builder si ya lo tenías.
+O actualízalo si ya lo tenías.
 +
 [source,console]
 ----
@@ -158,7 +157,7 @@ image::build-gce-ubuntu-2204-part1.png[]
 +
 image::build-gce-ubuntu-2204-part2.png[]
 +
-Para generar las imagenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
+Para generar las imágenes de todos los sistemas operativos disponibles, utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
 +
 [source,console]
 ----
