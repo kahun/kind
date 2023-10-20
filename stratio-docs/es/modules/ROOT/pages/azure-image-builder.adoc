@@ -108,11 +108,7 @@ export AZURE_CLIENT_ID="<clientID>"
 export AZURE_CLIENT_SECRET="<clientSecret>"
 ----
 
-<<<<<<< HEAD
-. Clona el repositorio de image-builder si no lo tenías previamente.
-=======
 . Clona el repositorio _image-builder_ si no lo tenías previamente.
->>>>>>> fad4e5f2... Apply suggested changes
 +
 [source,console]
 ----
