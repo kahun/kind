@@ -33,7 +33,7 @@ Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valo
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
 +
-La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools]_ tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
+La versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools] tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
 +
 [%autowidth]
 |===
