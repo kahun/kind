@@ -238,7 +238,6 @@ spec:
 	  pods_cidr: 172.16.0.0/20
 ----
 
-
 == Seguridad
 
 === Autenticación
@@ -314,7 +313,6 @@ El _Health Check_ del servicio se hace por TCP, pero se recomienda cambiar a HTT
 ==== AKS
 
 En este caso, el APIserver se expone públicamente y con la URL indicada en el _kubeconfig_.
-
 
 == Almacenamiento
 
@@ -466,7 +464,6 @@ spec:
 Con estos datos, se renderizará el keos.yaml de tal forma que en la ejecución del keos-installer se despliegue el driver y se configure la _StorageClass_ correspondiente.
 
 NOTE: Esta funcionalidad está pensada para infraestructura personalizada, ya que el filesystem de EFS deberá asociarse a un VPC existente en su creación.
-
 
 == Tags en EKS
 
