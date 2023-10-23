@@ -18,7 +18,7 @@ Si los archivos binarios necesarios no están presentes, se pueden instalar en _
 
 Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/azure[documentación de Packer].
 
-Estas son algunas de nuestras recomendaciones:
+Estas son algunas recomendaciones:
 
 * Modifica las versiones de Kubernetes.
 +
@@ -26,18 +26,18 @@ Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valo
 +
 [%autowidth]
 |===
-| *crictl_version* | 1.26.1 | Version de las critools
+| *crictl_version* | 1.26.1 | Versión de las cri-tools.
 | *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
 | *kubernetes_rpm_version* | 1.24.10-0 | Versión de Kubernetes para RPM.
 | *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
 +
-La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[critools]_ tiene que ir pareja con la versión de kubernetes que queramos usar.
+La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools]_ tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
 +
 [%autowidth]
 |===
-| *crictl version* | *kubernetes version*
+| Versión de las cri-tools | Versión de Kubernetes
 | 1.26.1 | 1.24, 1.25, 1.26
 |===
 
@@ -45,7 +45,7 @@ La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[critools]_
 +
 IMPORTANT: Requerido para que funcione la monitorización de Stratio.
 +
-Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la tarea con el nombre _Set and persist kernel params_ para añadir el parámetro `vm.max_map_count` con el valor 262144.
+Edita el fichero _ansible/roles/node/tasks/main.yml_ y modifica la tarea con el nombre _Set and persist kernel params_ para añadir el parámetro `vm.max_map_count` con el valor 262144.
 +
 [source,yaml]
 ----
@@ -74,7 +74,7 @@ Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la
 
 * Cambia el tipo de instancia de la imagen.
 +
-Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la seccion _builders_, por el tipo de instancia deseado.
+Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la sección 'builders' por el tipo de instancia deseado.
 +
 [source,json]
 ----

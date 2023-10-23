@@ -1,6 +1,6 @@
 = Arquitectura
 
-Reference architecture
+Arquitectura de referencia:
 
 image::eks-reference-architecture.png[]
 
