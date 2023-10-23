@@ -1,6 +1,10 @@
 :caution-caption: ⛔
 = Arquitectura
 
+Arquitectura de referencia:
+
+image::eks-reference-architecture.png[]
+
 == Introducción
 
 image::arq-intro.png[]
