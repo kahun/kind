@@ -51,7 +51,7 @@ compute.zones.get
 iam.serviceAccounts.actAs
 ----
 
-* Generar una clave de cuenta de servicio. Para ello, sigue los pasos descritos en la documentación de link:https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key].
+* Generar una clave de cuenta de servicio. Para ello, sigue los pasos descritos en la documentación de https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key].
 +
 image::google-service-account.png[]
 
@@ -78,7 +78,7 @@ Edita el archivo images/capi/packer/ami/packer.json y modifica el valor de las v
 | *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
 |===
 +
-La versión de las _https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools]_ tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
+La versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools] tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
 +
 [%autowidth]
 |===
