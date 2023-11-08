@@ -6,9 +6,9 @@
 ##############################################################
 # Author: Stratio Clouds <clouds-integration@stratio.com>    #
 # Date: 03/11/2023                                           #
-# Version: 0.3.0-SNAP                                        #
+# Version: 0.3.0                                             #
 # Supported provisioner versions: 0.2.0                      #
-# Supported providers: EKS                                   #
+# Supported providers: EKS, GCP                              #
 ##############################################################
 
 __version__ = "0.3.0"
