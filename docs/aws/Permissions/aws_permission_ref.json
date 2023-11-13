@@ -2,19 +2,55 @@
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": [
-                "ec2:RevokeSecurityGroupIngress",
-                "elasticloadbalancing:ModifyLoadBalancerAttributes"
+                "eks:UpdateClusterVersion",
+                "secretsmanager:CreateSecret",
+                "eks:UpdateAddon",
+                "secretsmanager:DeleteSecret",
+                "ec2:CreateVpc",
+                "eks:ListAddons",
+                "eks:UpdateClusterConfig",
+                "ec2:DescribeVpcAttribute",
+                "ec2:ReplaceRoute",
+                "eks:DescribeAddon",
+                "ec2:CreateInternetGateway",
+                "ec2:CreateRoute",
+                "ec2:ModifyVpcAttribute",
+                "kms:CreateGrant",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ec2:CreateRouteTable",
+                "eks:DeleteCluster",
+                "eks:TagResource",
+                "elasticloadbalancing:AddTags",
+                "eks:CreateAddon",
+                "ecr:BatchGetImage",
+                "eks:DescribeCluster",
+                "secretsmanager:TagResource"
             ],
             "Resource": [
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*",
+                "arn:aws:secretsmanager:*:268367799918:secret:aws.cluster.x-k8s.io/*",
+                "arn:aws:kms:*:268367799918:key/*",
+                "arn:aws:ec2:*:268367799918:internet-gateway/*",
+                "arn:aws:ec2:*:268367799918:route-table/*",
+                "arn:aws:ec2:*:268367799918:vpc/*",
+                "arn:aws:eks:*:268367799918:addon/*",
+                "arn:aws:eks:*:268367799918:cluster/*",
+                "arn:aws:ecr:*:*:repository/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:RevokeSecurityGroupIngress"
+            ],
+            "Resource": [
                 "arn:aws:ec2:*:268367799918:security-group/*"
             ]
         },
         {
-            "Sid": "VisualEditor1",
             "Effect": "Allow",
             "Action": [
                 "ec2:AssociateVpcCidrBlock",
@@ -27,145 +63,66 @@
             ]
         },
         {
-            "Sid": "VisualEditor2",
             "Effect": "Allow",
             "Action": [
-                "ec2:AuthorizeSecurityGroupIngress",
-                "elasticloadbalancing:CreateLoadBalancer",
-                "elasticloadbalancing:AddTags"
-            ],
-            "Resource": [
-                "arn:aws:ec2:*:268367799918:security-group/*",
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
-            ]
-        },
-        {
-            "Sid": "VisualEditor3",
-            "Effect": "Allow",
-            "Action": [
-                "iam:DeleteOpenIDConnectProvider",
-                "elasticloadbalancing:ModifyLoadBalancerAttributes",
                 "ssm:GetParameter"
             ],
             "Resource": [
-                "arn:aws:iam::268367799918:oidc-provider/*",
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*",
-                "arn:aws:ec2:*:268367799918:internet-gateway/*",
-                "arn:aws:ec2:*:268367799918:route-table/*",
-                "arn:aws:ec2:*:268367799918:vpc/*",
                 "arn:*:ssm:*:*:parameter/aws/service/eks/optimized-ami/*"
             ]
         },
         {
-            "Sid": "VisualEditor4",
             "Effect": "Allow",
             "Action": [
-                "elasticloadbalancing:DeleteLoadBalancer",
                 "iam:GetRole",
+                "iam:PassRole",
                 "iam:ListRoleTags",
                 "iam:ListAttachedRolePolicies",
                 "iam:TagRole",
                 "iam:CreateRole",
+                "iam:DeleteRole",
                 "iam:AttachRolePolicy",
-                "iam:PutRolePolicy"
-            ],
-            "Resource": [
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*",
-                "arn:aws:iam::268367799918:role/*"
-            ]
-        },
-        {
-            "Sid": "VisualEditor5",
-            "Effect": "Allow",
-            "Action": [
+                "iam:PutRolePolicy",
+                "iam:UpdateAssumeRolePolicy",
                 "iam:CreateInstanceProfile",
-                "elasticloadbalancing:DeleteLoadBalancer",
                 "iam:ListInstanceProfilesForRole",
                 "iam:DetachRolePolicy",
-                "iam:AddRoleToInstanceProfile"
+                "iam:AddRoleToInstanceProfile",
+                "iam:CreateOpenIDConnectProvider",
+                "iam:DeleteOpenIDConnectProvider",
+                "iam:GetOpenIDConnectProvider"
             ],
             "Resource": [
                 "arn:aws:iam::268367799918:role/*",
                 "arn:aws:iam::268367799918:instance-profile/*",
+                "arn:aws:iam::268367799918:oidc-provider/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "elasticloadbalancing:CreateLoadBalancer",
+                "elasticloadbalancing:AddTags",
+                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                "elasticloadbalancing:ModifyLoadBalancerAttributes",
+                "elasticloadbalancing:DeleteLoadBalancer",
+                "elasticloadbalancing:RemoveTags",
+                "iam:CreateOpenIDConnectProvider"
+            ],
+            "Resource": [
                 "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
             ]
         },
         {
-            "Sid": "VisualEditor6",
-            "Effect": "Allow",
-            "Action": [
-                "iam:PassRole",
-                "iam:DeleteRole",
-                "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
-            ],
-            "Resource": [
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*",
-                "arn:aws:iam::268367799918:role/*"
-            ]
-        },
-        {
-            "Sid": "VisualEditor7",
-            "Effect": "Allow",
-            "Action": [
-                "iam:GetOpenIDConnectProvider",
-                "iam:CreateOpenIDConnectProvider"
-            ],
-            "Resource": "arn:aws:iam::268367799918:oidc-provider/*"
-        },
-        {
-            "Sid": "VisualEditor8",
-            "Effect": "Allow",
-            "Action": "iam:UpdateAssumeRolePolicy",
-            "Resource": "arn:aws:iam::268367799918:role/*"
-        },
-        {
-            "Sid": "VisualEditor9",
-            "Effect": "Allow",
-            "Action": [
-                "eks:UpdateClusterVersion",
-                "secretsmanager:CreateSecret",
-                "secretsmanager:DeleteSecret",
-                "eks:ListAddons",
-                "ec2:CreateVpc",
-                "eks:UpdateClusterConfig",
-                "ec2:DescribeVpcAttribute",
-                "ec2:ReplaceRoute",
-                "eks:DescribeAddon",
-                "ec2:CreateInternetGateway",
-                "ec2:CreateRoute",
-                "ec2:ModifyVpcAttribute",
-                "kms:CreateGrant",
-                "ecr:BatchCheckLayerAvailability",
-                "elasticloadbalancing:CreateLoadBalancer",
-                "ecr:GetDownloadUrlForLayer",
-                "ec2:CreateRouteTable",
-                "eks:DeleteCluster",
-                "elasticloadbalancing:AddTags",
-                "eks:TagResource",
-                "eks:CreateAddon",
-                "ecr:BatchGetImage",
-                "eks:DescribeCluster",
-                "secretsmanager:TagResource"
-            ],
-            "Resource": [
-                "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*",
-                "arn:aws:secretsmanager:*:268367799918:secret:aws.cluster.x-k8s.io/*",
-                "arn:aws:eks:*:268367799918:cluster/*",
-                "arn:aws:ec2:*:268367799918:internet-gateway/*",
-                "arn:aws:ec2:*:268367799918:route-table/*",
-                "arn:aws:ec2:*:268367799918:vpc/*",
-                "arn:aws:kms:*:268367799918:key/*",
-                "arn:aws:ecr:*:*:repository/*"
-            ]
-        },
-        {
-            "Sid": "VisualEditor10",
             "Effect": "Allow",
             "Action": [
                 "ec2:DeleteSubnet",
                 "ec2:DescribeAddresses",
                 "ec2:DescribeInstances",
+                "ec2:DeleteTags",
                 "ec2:CreateNatGateway",
+                "ec2:DescribeRegions",
+                "eks:UpdateAddon",
                 "ec2:AttachInternetGateway",
                 "ec2:DeleteRouteTable",
                 "ec2:ModifySubnetAttribute",
@@ -176,7 +133,6 @@
                 "ec2:DescribeNetworkInterfaces",
                 "ec2:DescribeAvailabilityZones",
                 "ec2:DescribeNetworkInterfaceAttribute",
-                "ec2:ModifyNetworkInterfaceAttribute",
                 "ec2:CreateSecurityGroup",
                 "ec2:DeleteInternetGateway",
                 "eks:DescribeAddonVersions",
@@ -185,9 +141,10 @@
                 "ec2:ReleaseAddress",
                 "ec2:TerminateInstances",
                 "iam:GetPolicy",
-                "ec2:CreateTags",
                 "elasticloadbalancing:DescribeTags",
+                "ec2:CreateTags",
                 "route53:ListHostedZones",
+                "ec2:ModifyNetworkInterfaceAttribute",
                 "ecr:GetAuthorizationToken",
                 "ec2:RunInstances",
                 "ec2:DetachInternetGateway",
@@ -195,8 +152,8 @@
                 "ec2:DisassociateRouteTable",
                 "ec2:AllocateAddress",
                 "ec2:DescribeSecurityGroups",
-                "ec2:DescribeImages",
                 "elasticloadbalancing:DescribeLoadBalancerAttributes",
+                "ec2:DescribeImages",
                 "iam:ListOpenIDConnectProviders",
                 "ec2:DescribeVpcs",
                 "ec2:DeleteSecurityGroup",
@@ -204,13 +161,11 @@
                 "ec2:DeleteNatGateway",
                 "ec2:DeleteVpc",
                 "ec2:CreateSubnet",
-                "ec2:DescribeSubnets",
-                "eks:UpdateAddon"                
+                "ec2:DescribeSubnets"
             ],
             "Resource": "*"
         },
         {
-            "Sid": "VisualEditor11",
             "Effect": "Allow",
             "Action": "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
             "Resource": "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
