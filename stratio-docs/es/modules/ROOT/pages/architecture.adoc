@@ -17,15 +17,13 @@ Al finalizar la creación del cluster en esta fase, y según un descriptor de cl
 
 Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura cloud en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del cluster. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_
 
-image::arq-operator.png[]
-
 == Objeto _KeosCluster_
 
 Durante la fase de instalación, tras desplegar el chart de helm de _Stratio Cluster Operator_ y, teniendo como punto de partida el descriptor del cluster, se creará por defecto un recurso _KeosCluster_ que centralizará la creación del cluster y de todos los objetos de los distintos proveedores Cloud y las operaciones sobre estos.
 
-=== Medidas de resiliencia
+=== Mitigación del error humano
 
-Al centralizar todas las operaciones sobre el cluster y los distintos recursos cloud, una vez se inicie una operación en el cluster, desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ negará cualquier otra solicitud hasta que haya finalizado la operación previa.
+Al centralizar todas las operaciones sobre el cluster y los distintos recursos cloud, una vez se inicie una operación en el cluster, desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
 
 Para ello se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
