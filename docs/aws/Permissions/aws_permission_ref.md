@@ -1,7 +1,7 @@
 # AWS Permissions
 
 > user: sa-XXXXX  
-> permissions: janr-policy  
+> permissions: stratio-eks-policy  
 
 ### Permissions Table
 
@@ -67,6 +67,7 @@
 | ec2:AssociateVpcCidrBlock | failed to associate vpc cidr block | AssociateVpcCidrBlock | * | cloud-provisioner |
 | ec2:DissociateVpcCidrBlock | failed to dissociate vpc cidr block | DissociateVpcCidrBlock | * | cloud-provisioner |
 | iam:CreatePolicyVersion | failed to create policy version | CreatePolicyVersion | arn:aws:iam::268367799918:policy/* | cloud-provisioner |
+| ec2:Describeregions | failed to describe regions | Describeregions | * | cloud-provisioner |
 
 **Test:** cloud-provisioner create cluster --name eks-cl01 --retain --vault-password 123456 (same permissions as --keep-mgmt)
 
@@ -114,84 +115,38 @@ Cluster/eks-cl01                                                True            
 
 | NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 1 | 6 | 5 | ScalingUp | 3m53s | v1.24.11 | 
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running   | 3m50s | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 1 | 2 | 1 | ScalingUp | 3m51s | v1.24.11 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 1 | 6 | 5 | ScalingUp | 3m53s | v1.26.8 | 
+| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running   | 3m50s | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 1 | 2 | 1 | ScalingUp | 3m51s | v1.26.8 |
 
 | NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 6 | 6 | |0 | Running | 6m27s | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 6m24s | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 2 | 2 | |0 | Running | 6m25s | v1.24.11 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 6 | 6 | |0 | Running | 6m27s | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 6m24s | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 2 | 2 | |0 | Running | 6m25s | v1.26.8 |
 
 | NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 1 | 6 | 5 | ScalingDown | 19m | v1.24.11 | 
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running   | 19m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 1 | 2 | 1 | ScalingDown | 19m | v1.24.11 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 6 | 1 | 6 | 5 | ScalingDown | 19m | v1.26.8 | 
+| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running   | 19m | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 2 | 1 | 2 | 1 | ScalingDown | 19m | v1.26.8 |
 
 | NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.26.8 |
+| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.26.8 |
 
 | Permission | Needed for | Description | Resource | Application |
 | --- | --- | --- | --- | --- |
 | ec2:TerminateInstances | failed to terminate instance | TerminateInstances | * | cloud-provisioner |
 | ec2:ModifyNetworkInterfaceAttribute | filed to modify network interface attribute | ModifyNetworkInterfaceAttribute | * | cloud-provisioner |
 
-**Test:** Scale Manually (up/dpwn) kubectl -n cluster-eks-cl01 scale --replicas 3 machinedeployments --all (same as above)
-
-**Test:** Create new MachineDeployment Manually (same as above) (scale ok)
-
-| NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-3 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 48s | v1.24.11 |
-
-**Test:** Destroy Machine on AWS UI (self-healing) (eks-cl01-worker-1-md-2) (same as above)
-
-| NAMESPACE | NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE  | AGE | VERSION
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-0 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 26m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | |0 |  ScalingUp| 64m | v1.24.11 |
-| cluster-eks-cl01 | eks-cl01-worker-1-md-3 | eks-cl01 | 1 | 1 | 1 | |0 | Running | 48s | v1.24.11 |
-
-**Test:** kubectl --kubeconfig /home/jnovoa/.kube/config -n cluster-eks-cl01 patch awsmanagedcontrolplanes.controlplane.cluster.x-k8s.io eks-cl01-control-plane --type merge -p '{"spec":{"version":"v1.25.0"}}'  
-(upgrade control-plane k8s version from 1.24 to 1.25) 
+**Test**: keoscluster
 
 | Permission | Needed for | Description | Resource | Application |
 | --- | --- | --- | --- | --- |
-| eks:UpdateClusterVersion | failed to update cluster version | UpdateClusterVersion | arn:aws:eks:*:268367799918:cluster/* | cloud-provisioner |
-
-|   Cluster name | Status | Kubernetes version| Provider |
-| --- | --- | --- | --- |
-| eks-cl01 |	Updating | 1.24 | EKS |
-| eks-cl01 |    Active | 1.25 Update now | EKS |
-
-**Test:** kubectl --kubeconfig /home/jnovoa/.kube/config -n cluster-eks-cl01 patch machinedeployments.cluster.x-k8s.io eks-cl01-worker-1-md-0 --type merge -p '{"spec":{"template":{"spec":{"version":"v1.25.0"}}}}'  (no more permissions needed)  
-
-| NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE | AGE | VERSION |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| eks-cl01-worker-1-md-0 |  eks-cl01 | 1 | 1 | 1 | 0 | Running | 17m | v1.24.11  |
-| eks-cl01-worker-1-md-1 |  eks-cl01 | 1 | 1 | 1 | 0 | Running | 17m | v1.24.11  |
-| eks-cl01-worker-1-md-2 |  eks-cl01 | 1 | 1 | 1 | 0 | Running | 17m | v1.24.11  |
-
-| NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE | AGE | VERSION |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| eks-cl01-worker-1-md-0 | eks-cl01 | 2 | 2 | 1 | 0 | ScalingDown | 18m | v1.25.0  |
-| eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running     | 18m | v1.24.11 |
-| eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | 0 | Running     | 18m | v1.24.11 |
-
-| NAME | CLUSTER | REPLICAS | READY | UPDATED | UNAVAILABLE | PHASE | AGE | VERSION |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| eks-cl01-worker-1-md-0 | eks-cl01 | 1 | 1 | 1 | 0 | Running | 21m | v1.25.0  |
-| eks-cl01-worker-1-md-1 | eks-cl01 | 1 | 1 | 1 | 0 | Running | 21m | v1.25.0 | 
-| eks-cl01-worker-1-md-2 | eks-cl01 | 1 | 1 | 1 | 0 | Running | 21m | v1.25.0 | 
+| eks:UpdateClusterConfig | Upgrade loggin | UpdateClusterConfig | arn:aws:eks:*:268367799918:cluster/* | cloud-provisioner |
 
 
 **Test:** Delete cluster (From local container)
@@ -210,6 +165,8 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | ec2:DetachInternetGateway | failed to detach internet gateway "igw-027278b62139ce652": UnauthorizedOperation: You are not authorized | DetachInternetGateway | * | cloud-provisioner |
 | ec2:DeleteSubnet |failed to delete subnet "subnet-0c5ff226c483b3818": UnauthorizedOperation | DeleteSubnet | * | cloud-provisioner |
 | ec2:DeleteInternetGateway | failed to delete internet gateway "igw-027278b62139ce652": UnauthorizedOperation: You are not authorized | DeleteInternetGateway | * | cloud-provisioner |
+| elasticloadbalancing:RemoveTags | failed to remove tags from load balancer "eks-cl01-apiserver" | RemoveTags | * | cloud-provisioner |
+| ec2:DeleteTags | failed to ensure tags | DeleteTags | * | cloud-provisioner |
 
 **Test**: Keos Install
 
@@ -241,9 +198,3 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | elasticloadbalancing:RegisterInstancesWithLoadBalancer | not authorized to perform: elasticloadbalancing:RegisterInstancesWithLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
 | elasticloadbalancing:DeleteLoadBalancer | not authorized to perform: elasticloadbalancing:RegisterInstancesWithLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
 | ec2:RevokeSecurityGroupIngress | not authorized to perform this operation | arn:aws:ec2:*:268367799918:security-group/* | cloud-provisioner |
-
-**Test**: keoscluster
-
-| Permission | Needed for | Description | Resource | Application |
-| --- | --- | --- | --- | --- |
-| eks:UpdateClusterConfig | Upgrade loggin | UpdateClusterConfig | arn:aws:eks:*:268367799918:cluster/* | cloud-provisioner |
