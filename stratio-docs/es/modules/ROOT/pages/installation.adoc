@@ -2,7 +2,7 @@
 
 == Prerrequisitos
 
-=== AWS no-gestionado/EKS
+=== AWS (EKS y no-gestionado)
 
 * Roles y políticas
 +
@@ -16,7 +16,7 @@ Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones
 Para asegurar las funcionalidades soportadas por el _control-plane_ gestionado de EKS, se deberá utilizar cualquier AMI provista por AWS específicamente para este fin.
 +
 Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo _Amazon Linux 2_.
-
++
 En el caso de los despliegues en AWS no-gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:aws-image-builder.adoc[guía para AWS].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
@@ -57,10 +57,10 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 * Permisos
 +
 Para este tipo de clusters se deberá desplegar utilizando una identidad con los roles Contributor, Managed Identity Operator, y la política de AcrPull para el ACR.
-
++
 Al igual que para el caso anterior, se requiere un role para los nodos del cluster (indicado en el descriptor en _spec.security.nodes_identity_).
 +
-xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
+** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
 
 * Sistemas operativos certificados
 +
@@ -144,7 +144,7 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 |<<credentials, credentials>>
 |Set de credenciales del _cloud provider_ usadas en el aprovisionamiento.
 |Ver el <<ejemplo_de_descriptor,Ejemplo de descriptor>>
-|No en 1a ejecución.
+|No en 1ª ejecución.
 
 |k8s$$_$$version
 |Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el _cloud provider_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la _patch version_.
@@ -357,14 +357,12 @@ Las imágenes utilizadas deberán estar soportadas por EKS link://repost.aws/kno
 |_labels_
 |Etiquetas de Kubernetes para los nodos _worker_.
 a|
-
 [source,yaml]
 ----
 labels:
     disktype: standard
     gpus: true
 ----
-
 |Si
 
 |root$$_$$volume
