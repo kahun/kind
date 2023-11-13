@@ -61,7 +61,7 @@ def backup(backup_dir, namespace, cluster_name):
 
     # Backup CAPX files
     os.makedirs(backup_dir + "/" + namespace, exist_ok=True)
-    command = "clusterctl -n cluster-" + cluster_name + " move --to-directory " + backup_dir + "/" + namespace + " >/dev/null 2>&1"
+    command = "clusterctl --kubeconfig " + kubeconfig + " -n cluster-" + cluster_name + " move --to-directory " + backup_dir + "/" + namespace + " >/dev/null 2>&1"
     status, output = subprocess.getstatusoutput(command)
     if status != 0:
         print("[ERROR] Backing up CAPX files failed:\n" + output)
@@ -98,16 +98,18 @@ def prepare_capsule(dry_run):
 
     # Get capsule version
     command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
-               """jq -r '.webhooks[0].objectSelector |= {"matchExpressions":[{"key":"name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","capa-system","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","capa-system","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]}]}' """ +
-               "| " + kubectl + " apply -f -")
+               '''jq -r '.webhooks[0].objectSelector |= {"matchExpressions":[{"key":"name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
+               namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
+               namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]}]}' | ''' + kubectl + " apply -f -")
     if not dry_run:
         status, output = subprocess.getstatusoutput(command)
         if status != 0:
             print("[ERROR] Getting capsule version failed:\n" + output)
             sys.exit(1)
     command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
-               """jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= ({"matchExpressions":[{"key":"name","operator":"NotIn","values":["capa-system","tigera-operator","calico-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["capa-system","tigera-operator","calico-system"]}]}))' """ +
-               "| " + kubectl + " apply -f -")
+               '''jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= ({"matchExpressions":[{"key":"name","operator":"NotIn","values":["''' +
+               namespace + '''","tigera-operator","calico-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["''' +
+               namespace + '''","tigera-operator","calico-system"]}]}))' | ''' + kubectl + " apply -f -")
     if not dry_run:
         status, output = subprocess.getstatusoutput(command)
         if status != 0:
