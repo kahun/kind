@@ -17,7 +17,6 @@ Una vez finalizada la instalación, se podrá utilizar el _Stratio Cluster Opera
 
 image::arq-operator.png[]
 
-
 == Objetos del proveedor del _Cloud_
 
 En un *despliegue por defecto*, se crean los siguientes objetos en cada _cloud provider_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
