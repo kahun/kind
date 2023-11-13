@@ -68,9 +68,11 @@ Este flavour no permite especificar ninguna imagen custom, y despliega por defec
 
 === Consideraciones para imágenes
 
-Si nos referimos al control-plane, y como es evidente, en EKS y AKS no se podrá indicar una imagen, pero en AWS no-gestionado, Azure no-gestionado y en GCP si, siendo obligatorio en AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry y en GCP para todas las versiones.
+Si nos referimos al control-plane, y como es evidente, en EKS y AKS no se podrá indicar una imagen, pero en AWS no-gestionado, Azure no-gestionado y en GCP si.
 
-Para los nodos workers, es opcional en todos los casos (al no indicarla, el controller asigna una disponibilizada por el _cloud provider_) menos AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry y GCP para todas las versiones, donde también será obligatorio especificarla ya que no disponibiliza ninguna imagen.
+Tanto para los control-plane como para los nodos workers, es obligatorio indicar las imágenes en GCP no-gestionado para todas las versiones y en AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry.
+
+Para los nodos workers, es opcional en todos los _cloud providers_ salvo en los casos descritos anteriormente (al no indicarla, el controller asigna una disponibilizada por el _cloud provider_).
 
 Al momento de crear la imagen para el cluster, se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (systemd units, DaemonSets, etc.) y la versión de Kubernetes a utilizar.
 
@@ -80,7 +82,7 @@ Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá con
 
 Para las imágenes creadas con _image-builder_ (*AWS unmanaged, Azure unmanaged y GCP unmanaged*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[loop de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
 
-[source,bash]
+[source,yaml]
 ----
 - { param: vm.max_map_count, val: 262144 }
 ----
@@ -230,17 +232,17 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |github$$_$$token
 |Token de GitHub. Se puede utilizar un _Fine-grained token_ o un token tipo _classic_ y no necesita ningún permiso. Para generarlo, ve a: 'Settings' → 'Developer settings' → 'Personal access tokens'.
 |github$$_$$pat$$_$$11APW.
-|No
+|Sí
 
 |docker$$_$$registries
 |_Registries_ de Docker accesibles por los nodos. Para EKS, no hace falta autenticación, ya que se hace automáticamente con las credenciales del usuario.
-|-
-|Sí
+|ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|Sí, para _registries_ no autenticados.
 
 |helm$$_$$repository
 |Repositorio de helm para la instalación de los charts de _Stratio_.
-|-
-|Sí
+|ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|Sí, para repositorios no autenticados.
 
 |===
 
@@ -300,7 +302,7 @@ a|
 ----
 tier: Paid
 ----
-|Sí, usará Paid por defecto
+|Sí
 
 |managed
 |Indica si el _control-plane_ es o no gestionado en el _cloud provider_.
@@ -539,7 +541,6 @@ spec:
             project_id: gcp-prod
             region: europe-west4
             client_id: "6767910929.."
-        github_token: github_pat_11APW..
         docker_registries:
             - url: keosregistry.stratio.com/keos
               user: "myuser"
