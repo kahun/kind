@@ -499,9 +499,6 @@ Tabla de registries soportados según provider/flavour:
 
 [.center,cols="2,1",width=40%]
 |===
-^|AWS
-^|ecr, generic
-
 ^|EKS
 ^|ecr, generic
 
