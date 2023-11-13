@@ -39,10 +39,11 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un role para los nodos del cluster (indicado en el descriptor en _spec.security.nodes_identity_).
+Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un role para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
 ** xref:attachment$stratio-azure-role.json[Descargar permisos para Azure]
-** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
+** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para workers de Azure]
+** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para control-plane de Azure]
 
 * Sistemas operativos certificados
 +
@@ -56,11 +57,11 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Para este tipo de clusters se deberá desplegar utilizando una identidad con los roles Contributor, Managed Identity Operator, y la política de AcrPull para el ACR.
+Este tipo de clusters se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
-Al igual que para el caso anterior, se requiere un role para los nodos del cluster (indicado en el descriptor en _spec.security.nodes_identity_).
-+
-** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
+** xref:attachment$stratio-aks-role.json[Descargar permisos para Azure]
+** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para workers de Azure]
+** xref:attachment$stratio-aks-cp-role.json[Descargar permisos para control-plane de Azure]
 
 * Sistemas operativos certificados
 +
