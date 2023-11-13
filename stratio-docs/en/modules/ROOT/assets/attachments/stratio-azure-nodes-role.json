@@ -10,7 +10,7 @@
         "Microsoft.Resources/subscriptions/resourceGroups/read",
         "Microsoft.Resources/deployments/*",
         "Microsoft.Support/*",
-	    "Microsoft.ContainerRegistry/registries/pull/read",
+        "Microsoft.ContainerRegistry/registries/pull/read",
         "Microsoft.Compute/disks/read",
         "Microsoft.Compute/disks/write"
     ],
