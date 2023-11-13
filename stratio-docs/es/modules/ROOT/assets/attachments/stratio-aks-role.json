@@ -1,5 +1,5 @@
 {
-    "Name": "capz-role-restricted-aks",
+    "Name": "stratio-aks-role",
     "IsCustom": true,
     "Description": "Stratio aks role permissions",
     "Actions": [

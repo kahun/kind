@@ -1,0 +1,14 @@
+{
+    "Name": "stratio-aks-workers-role",
+    "IsCustom": true,
+    "Description": "Stratio azure workers role permissions",
+    "Actions": [
+        "Microsoft.ContainerRegistry/registries/pull/read"
+    ],
+    "NotActions": [
+        "Microsoft.Compute/galleries/share/action"
+    ],
+    "AssignableScopes": [
+        "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65/"
+    ]
+}

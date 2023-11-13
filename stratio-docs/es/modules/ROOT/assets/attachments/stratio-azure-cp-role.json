@@ -1,7 +1,7 @@
 {
-    "Name": "capz-role-controlplane",
+    "Name": "stratio-azure-cp-role",
     "IsCustom": true,
-    "Description": "Control-plane role for testing",
+    "Description": "Stratio azure cp role permissions",
     "Actions": [
         "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
         "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action",
@@ -38,5 +38,3 @@
         "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65"
     ]
 }
-
-
