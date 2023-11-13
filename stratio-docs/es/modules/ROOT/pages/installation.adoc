@@ -268,11 +268,13 @@ _Stratio KEOS_ no gestionará el ciclo de vida de los objetos creados previament
 |_subnets_
 |_Array_ de _subnet_'s IDs.
 a|
+
 [source,yaml]
 ----
 - subnet_id: subnet-0df..
 - subnet_id: subnet-887..
 ----
+
 |Sí
 
 |===
@@ -288,20 +290,24 @@ En este apartado se indican las particularidades para el _control-plane_ de Kube
 |aws
 |Valores específicos para el _logging_ de EKS (APIserver, audit, authenticator, controller$$_$$manager y/o scheduler).
 a|
+
 [source,yaml]
 ----
 logging:
     api_server: true
 ----
+
 |Sí
 
 |azure
 |Valores específicos para el _control-plane_ de AKS (Free, Paid).
 a|
+
 [source,yaml]
 ----
 tier: Paid
 ----
+
 |Sí
 
 |managed
@@ -359,12 +365,14 @@ Las imágenes utilizadas deberán estar soportadas por EKS link://repost.aws/kno
 |_labels_
 |Etiquetas de Kubernetes para los nodos _worker_.
 a|
+
 [source,yaml]
 ----
 labels:
     disktype: standard
     gpus: true
 ----
+
 |Si
 
 |root$$_$$volume
