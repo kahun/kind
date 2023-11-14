@@ -96,8 +96,8 @@ Para el caso de *AKS* y dado que las imágenes no pueden ser construidas con ima
 ----
 spec:
   linuxOSConfig:
-    sysctls:
-      vmMaxMapCount: 262144
+  sysctls:
+    vmMaxMapCount: 262144
 ----
 
 Así que odos los nodos del cluster ya cuentan con este parámetro/valor.
@@ -295,7 +295,7 @@ a|
 [source,yaml]
 ----
 logging:
-    api_server: true
+  api_server: true
 ----
 
 |Sí
@@ -370,8 +370,8 @@ a|
 [source,yaml]
 ----
 labels:
-    disktype: standard
-    gpus: true
+  disktype: standard
+  gpus: true
 ----
 
 |Si
@@ -383,9 +383,9 @@ a|
 [source,yaml]
 ----
 root_volume:
-    size: 50
-    type: gp3
-    encrypted: true
+  size: 50
+  type: gp3
+  encrypted: true
 ----
 
 |Si
@@ -446,68 +446,68 @@ En este ejemplo se pueden ver las siguientes particularidades:
 apiVersion: installer.stratio.com/v1beta1
 kind: KeosCluster
 metadata:
-    name: eks-prod
+  name: eks-prod
 spec:
-    infra_provider: aws
-    credentials:
-        aws:
-            region: eu-west-1
-            access_key: AKIAT4..
-            account_id: '3683675..'
-            secret_key: wq3/Vsc..
-        github_token: github_pat_11APW..
-    k8s_version: v1.26.7
+  infra_provider: aws
+  credentials:
+  aws:
     region: eu-west-1
-    external_domain: domain.ext
-    networks:
-        vpc_id: vpc-02698..
-        subnets:
-            - subnet_id: subnet-0416d..
-            - subnet_id: subnet-0b2f8..
-            - subnet_id: subnet-0df75..
-    docker_registries:
-        - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
-          auth_required: false
-          type: ecr
-          keos_registry: true
-    storageclass:
-        parameters:
-            type: gp3
-            fsType: ext4
-            encrypted: "true"
-            labels: "owner=stratio"
-    keos:
-        flavour: production
-        version: 1.0.2
-    control_plane:
-        aws:
-            logging:
-                api_server: true
-        managed: true
-    worker_nodes:
-        - name: eks-prod-xlarge
-          quantity: 6
-          max_size: 18
-          min_size: 6
-          size: m6i.xlarge
-          labels:
-              disktype: standard
-          root_volume:
-              size: 50
-              type: gp3
-              encrypted: true
-          ssh_key: stg-key
-        - name: eks-prod-medium-spot
-          quantity: 4
-          zone_distribution: unbalanced
-          size: t3.medium
-          spot: true
-          labels:
-              disktype: standard
-        - name: eks-prod-medium-az
-          quantity: 3
-          size: t3.medium
-          az: eu-west-1c
+    access_key: AKIAT4..
+    account_id: '3683675..'
+    secret_key: wq3/Vsc..
+  github_token: github_pat_11APW..
+  k8s_version: v1.26.7
+  region: eu-west-1
+  external_domain: domain.ext
+  networks:
+  vpc_id: vpc-02698..
+  subnets:
+    - subnet_id: subnet-0416d..
+    - subnet_id: subnet-0b2f8..
+    - subnet_id: subnet-0df75..
+  docker_registries:
+  - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+    auth_required: false
+    type: ecr
+    keos_registry: true
+  storageclass:
+  parameters:
+    type: gp3
+    fsType: ext4
+    encrypted: "true"
+    labels: "owner=stratio"
+  keos:
+  flavour: production
+  version: 1.0.2
+  control_plane:
+  aws:
+    logging:
+    api_server: true
+  managed: true
+  worker_nodes:
+  - name: eks-prod-xlarge
+    quantity: 6
+    max_size: 18
+    min_size: 6
+    size: m6i.xlarge
+    labels:
+    disktype: standard
+    root_volume:
+    size: 50
+    type: gp3
+    encrypted: true
+    ssh_key: stg-key
+  - name: eks-prod-medium-spot
+    quantity: 4
+    zone_distribution: unbalanced
+    size: t3.medium
+    spot: true
+    labels:
+    disktype: standard
+  - name: eks-prod-medium-az
+    quantity: 3
+    size: t3.medium
+    az: eu-west-1c
 ----
 
 ==== GCP
@@ -539,74 +539,74 @@ En este ejemplo se pueden ver las siguientes particularidades:
 apiVersion: installer.stratio.com/v1beta1
 kind: KeosCluster
 metadata:
-    name: gcp-prod
+  name: gcp-prod
 spec:
-    infra_provider: gcp
-    credentials:
-        gcp:
-            private_key_id: "efdf19f5605a.."
-            private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvw.."
-            client_email: keos@stratio.com
-            project_id: gcp-prod
-            region: europe-west4
-            client_id: "6767910929.."
-        docker_registries:
-            - url: keosregistry.stratio.com/keos
-              user: "myuser"
-              pass: "mypass"
-    k8s_version: v1.26.8
-    region: europe-west4
+  infra_provider: gcp
+  credentials:
+    gcp:
+      private_key_id: "efdf19f5605a.."
+      private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvw.."
+      client_email: keos@stratio.com
+      project_id: gcp-prod
+      region: europe-west4
+      client_id: "6767910929.."
     docker_registries:
-        - url: eosregistry.azurecr.io/keos
-          auth_required: false
-          type: acr
-          keos_registry: true
-    dns:
-        manage_zone: false
-    external_domain: domain.ext
-    storageclass:
-        parameters:
-            type: pd-standard
-            fsType: ext4
-            replication-type: none
-            labels: "owner=stratio"
-    keos:
-        flavour: production
-        version: 1.0.2
-    control_plane:
-        managed: false
-        highly_available: true
-        size: c2d-highcpu-4
-        node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
-        root_volume:
-            size: 50
-            type: pd-ssd
-    worker_nodes:
-        - name: gcp-prod-xlarge
-          quantity: 6
-          max_size: 18
-          min_size: 6
-          size: c2d-highcpu-4
-          node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
-          labels:
-              disktype: standard
-          root_volume:
-              size: 50
-              type: pd-standard
-          ssh_key: stg-key
-        - name: gcp-prod-medium-spot
-          quantity: 4
-          zone_distribution: unbalanced
-          size: c2d-highcpu-4
-          node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
-          spot: true
-          labels:
-              disktype: standard
-        - name: gcp-prod-medium-az
-          quantity: 3
-          size: c2d-highcpu-4
-          az: europe-west4-a
-          node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
+      - url: keosregistry.stratio.com/keos
+        user: "myuser"
+        pass: "mypass"
+  k8s_version: v1.26.8
+  region: europe-west4
+  docker_registries:
+    - url: eosregistry.azurecr.io/keos
+      auth_required: false
+      type: acr
+      keos_registry: true
+  dns:
+    manage_zone: false
+  external_domain: domain.ext
+  storageclass:
+    parameters:
+      type: pd-standard
+      fsType: ext4
+      replication-type: none
+      labels: "owner=stratio"
+  keos:
+    flavour: production
+    version: 1.0.2
+  control_plane:
+    managed: false
+    highly_available: true
+    size: c2d-highcpu-4
+    node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
+    root_volume:
+      size: 50
+      type: pd-ssd
+  worker_nodes:
+    - name: gcp-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: c2d-highcpu-4
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: pd-standard
+      ssh_key: stg-key
+    - name: gcp-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: c2d-highcpu-4
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
+      spot: true
+      labels:
+        disktype: standard
+    - name: gcp-prod-medium-az
+      quantity: 3
+      size: c2d-highcpu-4
+      az: europe-west4-a
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
 ----
 
 ==== Azure no-gestionado
@@ -633,54 +633,54 @@ En este ejemplo se pueden ver las siguientes particularidades:
 apiVersion: installer.stratio.com/v1beta1
 kind: KeosCluster
 metadata:
-    name: azure-prod
+  name: azure-prod
 spec:
-    infra_provider: azure
-    credentials:
-        azure:
-            client_id: ee435ab0..
-            client_secret: lSF8Q~n..
-            subscription_id: '6e2a38cd-e..'
-            tenant_id: '9c2f8eb6-5..'
-    k8s_version: v1.26.8
-    region: westeurope
-    docker_registries:
-        - url: eosregistry.azurecr.io/keos
-          auth_required: false
-          type: acr
-          keos_registry: true
-    networks:
-        pods_cidr: 172.16.0.0/20
-    storageclass:
-        parameters:
-            type: Standard_LRS
-            fsType: ext4
-            tags: "owner=stratio"
-    external_domain: domain.ext
-    keos:
-        flavour: production
-        version: 1.0.2
-    security:
-        control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
-        nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
-    control_plane:
-        managed: false
-        size: Standard_D8_v3
-        root_volume:
-            size: 100
-            type: Standard_LRS
-    worker_nodes:
-        - name: azure-prod-std
-          quantity: 3
-          max_size: 18
-          min_size: 3
-          size: Standard_D8_v3
-          node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
-          labels:
-              backup: "false"
-          root_volume:
-              size: 100
-              type: Standard_LRS
+  infra_provider: azure
+  credentials:
+    azure:
+      client_id: ee435ab0..
+      client_secret: lSF8Q~n..
+      subscription_id: '6e2a38cd-e..'
+      tenant_id: '9c2f8eb6-5..'
+  k8s_version: v1.26.8
+  region: westeurope
+  docker_registries:
+    - url: eosregistry.azurecr.io/keos
+      auth_required: false
+      type: acr
+      keos_registry: true
+  networks:
+    pods_cidr: 172.16.0.0/20
+  storageclass:
+    parameters:
+      type: Standard_LRS
+      fsType: ext4
+      tags: "owner=stratio"
+  external_domain: domain.ext
+  keos:
+    flavour: production
+    version: 1.0.2
+  security:
+    control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
+    nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
+  control_plane:
+    managed: false
+    size: Standard_D8_v3
+    root_volume:
+      size: 100
+      type: Standard_LRS
+  worker_nodes:
+    - name: azure-prod-std
+      quantity: 3
+      max_size: 18
+      min_size: 3
+      size: Standard_D8_v3
+      node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
+      labels:
+        backup: "false"
+      root_volume:
+        size: 100
+        type: Standard_LRS
 ----
 
 ==== AKS
@@ -702,49 +702,49 @@ En este ejemplo se pueden ver las siguientes particularidades:
 apiVersion: installer.stratio.com/v1beta1
 kind: KeosCluster
 metadata:
-    name: aks-prod
+  name: aks-prod
 spec:
   infra_provider: azure
   credentials:
-      azure:
-          client_id: ee435ab0..
-          client_secret: lSF8Q~n..
-          subscription_id: '6e2a38cd-e..'
-          tenant_id: '9c2f8eb6-5..'
+    azure:
+      client_id: ee435ab0..
+      client_secret: lSF8Q~n..
+      subscription_id: '6e2a38cd-e..'
+      tenant_id: '9c2f8eb6-5..'
   k8s_version: v1.26.6
   region: westeurope
   docker_registries:
-      - url: eosregistry.azurecr.io/keos
-        auth_required: false
-        type: acr
-        keos_registry: true
+    - url: eosregistry.azurecr.io/keos
+    auth_required: false
+    type: acr
+    keos_registry: true
   helm_repository:
-      auth_required: false
-      url: http://charts.stratio.com
+    auth_required: false
+    url: http://charts.stratio.com
   networks:
-      pods_cidr: 172.16.0.0/20
+    pods_cidr: 172.16.0.0/20
   storageclass:
-      encryption_key: myKey
-      class: premium
+    encryption_key: myKey
+    class: premium
   external_domain: domain.ext
   keos:
-      flavour: production
-      version: 1.0.2
+    flavour: production
+    version: 1.0.2
   control_plane:
-      azure:
-          tier: Paid
-      managed: true
+    azure:
+      tier: Paid
+    managed: true
   worker_nodes:
-      - name: aks-prod-prem
-        quantity: 3
-        max_size: 18
-        min_size: 3
-        size: Standard_D8s_v3
-        labels:
-            premium_sc: "true"
-        root_volume:
-            size: 50
-            type: Managed
+    - name: aks-prod-prem
+    quantity: 3
+    max_size: 18
+    min_size: 3
+    size: Standard_D8s_v3
+    labels:
+      premium_sc: "true"
+    root_volume:
+      size: 50
+      type: Managed
 ----
 
 == Creación del cluster
@@ -767,8 +767,8 @@ sudo ./cloud-provisioner create cluster --name stratio-pre --descriptor cluster-
 Vault Password:
 Rewrite Vault Password:
 Creating temporary cluster "stratio-pre" ...
- ✓ Ensuring node image (kindest/node:v1.24.7) 🖼
- ✓ Building Stratio image (stratio-capi-image:v1.24.7) 📸
+ ✓ Ensuring node image (kindest/node:v1.27.0) 🖼
+ ✓ Building Stratio image (stratio-capi-image:v1.27.0) 📸
  ✓ Preparing nodes 📦
  ✓ Writing configuration 📜
  ✓ Starting control-plane 🕹️
@@ -777,14 +777,17 @@ Creating temporary cluster "stratio-pre" ...
  ✓ Installing CAPx 🎖️
  ✓ Generating workload cluster manifests 📝
  ✓ Generating secrets file 📝🗝️
+ ✓ Installing keos cluster operator 💻
  ✓ Creating the workload cluster 💥
  ✓ Saving the workload cluster kubeconfig 📝
- ✓ Installing Calico in workload cluster 🔌
- ✓ Installing StorageClass in workload cluster 💾
  ✓ Preparing nodes in workload cluster 📦
+ ✓ Installing StorageClass in workload cluster 💾
  ✓ Enabling workload cluster's self-healing 🏥
  ✓ Installing CAPx in workload cluster 🎖️
- ✓ Adding Cluster-Autoescaler 🗚
+ ✓ Configuring Network Policy Engine in workload cluster 🚧
+ ✓ Installing cluster-autoscaler in workload cluster 🗚
+ ✓ Installing keos cluster operator in workload cluster 💻
+ ✓ Creating cloud-provisioner Objects backup 🗄️
  ✓ Moving the management role 🗝️
  ✓ Generating the KEOS descriptor 📝
 
