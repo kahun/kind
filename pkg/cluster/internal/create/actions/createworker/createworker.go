@@ -451,33 +451,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return err
 		}
 
-		err = provider.configHACAPI(n, kubeconfigPath)
+		err = provider.configCAPIWorker(n, a.keosCluster, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
-		}
-
-		// Allow egress in CAPI's Namespaces
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system apply -f " + allowCommonEgressNetPolPath
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
-		}
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-kubeadm-bootstrap-system apply -f " + allowCommonEgressNetPolPath
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
-		}
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-kubeadm-control-plane-system apply -f " + allowCommonEgressNetPolPath
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
-		}
-
-		// Allow egress in cert-manager Namespace
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n cert-manager apply -f " + allowCommonEgressNetPolPath
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
 		}
 
 		ctx.Status.End(true) // End Installing CAPx in workload cluster

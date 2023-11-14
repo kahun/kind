@@ -1,0 +1,47 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: cluster-api
+  namespace: capi-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: cluster-api
+{{- if not $.ControlPlane.Managed }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-kubeadm-bootstrap-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: bootstrap-kubeadm
+  namespace: capi-kubeadm-bootstrap-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: bootstrap-kubeadm
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-kubeadm-control-plane-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: control-plane-kubeadm
+  namespace: capi-kubeadm-control-plane-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: control-plane-kubeadm
+{{ end }}

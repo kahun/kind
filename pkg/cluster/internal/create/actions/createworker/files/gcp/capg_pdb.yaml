@@ -1,0 +1,15 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capg-controller-manager
+  labels:
+    control-plane: capg-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-gcp
+  namespace: capg-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capg-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-gcp
