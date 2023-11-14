@@ -26,8 +26,8 @@ A su vez, podrá utilizarse el alias "kw" desde el container local para interact
 -----
 root@example-azure-control-plane:/# kw get nodes
 NAME                                STATUS   ROLES           AGE   VERSION
-example-azure-control-plane-6kp94   Ready    control-plane   60m   v1.24.13
-example-azure-control-plane-fgkcc   Ready    control-plane   63m   v1.24.13
+example-azure-control-plane-6kp94   Ready    control-plane   60m   v1.26.8
+example-azure-control-plane-fgkcc   Ready    control-plane   63m   v1.26.8
 ...
 -----
 
@@ -53,43 +53,7 @@ data:
 
 image::controllers.png[]
 
-_Stratio KEOS_ permite realizar múltiples operaciones avanzadas interactuando únicamente con el APIserver (infrastructure as code o IaC), siendo los _controllers_ desplegados quienes, en sus ciclos de reconciliación, realicen las tareas necesarias.
-
-NOTE: Como se verá a continuación, *los grupos de nodos en AKS se gestionan con MachinePools* en vez de MachineDeployments como el resto de providers, lo que deriva en particularidades al momento de realizar algunas operaciones.
-
-=== CRDs
-
-image::crds.png[]
-
-Para la gestión APIficada del _cluster_, se crean los siguientes grupos de objetos según el provider:
-
-===== EKS
-
-- La definición del cluster se hace con los objetos _Cluster_ y _AWSManagedCluster_.
-- Para definir parámetros del _control-plane_ (EKS), se utilizará el objeto _AWSManagedControlPlane_.
-- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _EKSConfigTemplate_ y _AWSMachineTemplate_.
-- Para indicar los parámetros del _self-healing_, se utiliza un _MachineHealthCheck_ para todo el _cluster_.
-
-===== GCP
-
-- La definición del cluster se hace con los objetos _Cluster_ y _GCPCluster_.
-- Para la definición de los nodos del _control-plane_, se utilizarán _KubeadmControlPlane_ y _GCPMachineTemplate_.
-- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _KubeadmConfigTemplate_ y _GCPMachineTemplate_.
-- Para indicar los parámetros del _self-healing_, se utilizan dos _MachineHealthCheck_, uno para _workers_ y otro para el _control-plane_.
-
-===== Azure no-gestionado
-
-- La definición del cluster se hace con los objetos _Cluster_ y _AzureCluster_.
-- Para la definición de los nodos del _control-plane_, se utilizarán _KubeadmControlPlane_ y _AzureMachineTemplate_.
-- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _KubeadmConfigTemplate_ y _AzureMachineTemplate_.
-- Para indicar los parámetros del _self-healing_, se utilizan dos _MachineHealthCheck_, uno para _workers_ y otro para el _control-plane_.
-
-===== AKS
-
-- La definición del cluster se hace con los objetos _Cluster_ y _AzureManagedCluster_.
-- Para definir parámetros del _control-plane_ (AKS), se utilizará el objeto _AzureManagedControlPlane_.
-- Para detallar los nodos _workers_ se utilizarán _MachinePool_ y _AzureManagedMachinePool_.
-- Para indicar los parámetros del _self-healing_, se utiliza un _MachineHealthCheck_ para todo el _cluster_.
+_Stratio KEOS_ permite realizar múltiples operaciones avanzadas interactuando con el _Stratio Cluster Operator_ (infrastructure as code o IaC), quién en su ciclo de reconciliación interactúa a su vez con los distintos providers para realizar las operaciones solicitadas.
 
 === _Self-healing_
 
@@ -145,30 +109,37 @@ Aunque se desaconseja el escalado manual de un grupo de nodos existente, se pres
 
 image::escalado-manual.png[]
 
-Para escalar manualmente un grupo de _workers_, se usa el objeto _MachineDeployment_, que soporta el comando _scale_ de kubectl:
+Para escalar manualmente un grupo de _workers_, se usa el objeto _KeosCluster_:
 
 [source,bash]
 ----
-kubectl -n cluster-example-eks scale --replicas 3 MachineDeployment --all
+kubectl -n cluster-example-eks edit keoscluster
 ----
 
-Vemos el nuevo número de réplicas y los nuevos objetos Machine:
+[source,yaml]
+----
+spec:
+  ...
+  worker_nodes:
+    - name: eks-prod-xlarge
+      quantity: 9
+      ...
+----
+
+Verificamos el cambio consultando el status del objeto _KeosCluster_:
 
 [source,bash]
 ----
-kubectl -n cluster-example-eks get MachineDeployment
-kubectl -n cluster-example-eks get Machine
+kubectl -n cluster-<cluster_name> get keoscluster <cluster_name> --subresource=status
 ----
 
 ===== AKS
 
-El comando "scale" utilizado para el resto de providers, no realiza ninguna acción en los MachinePools.
+En el caso de este provider, si están definidos los parámetros _min_size_ y _max_size_ en el objeto _KeosCluster_, no se realiza ninguna acción.
 
-A su vez, si se cambian las réplicas del objeto MachinePool a mano, éste pasara a estado "Scaling" y volverá al número de répicas anterior, dejando sin efecto el cambio.
+NOTE: Los grupos de nodos del objeto _KeosCluster_ se corresponden en Azure a _Node pools_ dentro de AKS y sus correspondientes _VM Scale Sets_.
 
-NOTE: Los objetos _MachinePools_ del APIserver se corresponden en Azure a _Node pools_ dentro de AKS y sus correspondientes _VM Scale Sets_.
-
-El escalado manual de un grupo de nodos en AKS se deberá hacer desde el portal de Azure en:
+El escalado manual de un grupo de nodos en AKS con el autoescalado configurado se deberá hacer desde el portal de Azure en:
 
 _VM Scale set -> <scale_set_name> -> Scalling -> <instance_number>_
 
@@ -176,13 +147,9 @@ o bien desde:
 
 _Kubernetes services_ -> <aks_name> -> Node pools -> <nodepool_name> -> Scale node pool -> Manual -> <node_count>
 
-Las nuevas instancias se pueden ver en _VM Scale set -> Instances_. Para ver las nuevas instancias en el APIserver, hay que consultar el status del objeto MachinePool:
+Las nuevas instancias se pueden ver en _VM Scale set -> Instances_. Este cambio no se reflejará en el parámetro _quantity_ del grupo de nodos del objeto _KeosCluster_.
 
-[source,bash]
-----
-kubectl -n cluster-stg-aks get mp <machinepool_name> -o json | jq -r .status.nodeRefs[].name
-----
-Una vez escalado el VM Scale set, se agrega la nueva VM como nodo de k8s y se actualiza el objeto MachinePool con el nuevo numero de instancias. Los tiempos estimados de este proceso son los siguientes:
+Los tiempos estimados de este proceso son los siguientes:
 
 [source,bash]
 ----
@@ -195,62 +162,33 @@ The MachinePool is updated: 1m 33s
 
 ==== Crear un nuevo grupo de _workers_
 
-===== EKS
+Para crear un nuevo grupo de nodos basta con crear un nuevo elemento al array _worker_nodes_ del objeto _KeosCluster_:
 
-En EKS se deberán crear los siguientes tres objetos: _MachineDeployment_, _AWSMachineTemplate_ y _EKSConfigTemplate_.
+[source,yaml]
+----
+spec:
+  ...
+  worker_nodes:
+    - ...
+    - name: eks-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+----
 
-Una vez confeccionado el _manifest_, la creación del grupo consiste simplemente en aplicarlo al _cluster_ de la siguiente forma:
+Nuevamente verificamos el cambio consultando el status del objeto _KeosCluster_:
 
 [source,bash]
 ----
-kubectl apply -f xref:attachment$example-eks-md.yaml[example-eks-md.yaml]
-----
-
-Para ver los objetos creados:
-
-[source,bash]
-----
-kubectl -n cluster-example get md,eksct,awsmt
-----
-
-===== GCP y Azure
-
-Para el caso de estos providers, se crearán: _MachineDeployment_, _<provider_name>MachineTemplate_ y _KubeadmConfigTemplate_.
-
-[.underline]#Ejemplo para GCP:#
-
-Creación de un nuevo grupo de _workers_ a partir de un _manifest_:
-
-[source,bash]
-----
-kubectl apply -f xref:attachment$example-gcp-md.yaml[example-gcp-md.yaml]
-----
-
-Para ver los objetos creados (para cada provider):
-
-[source,bash]
-----
-kubectl -n cluster-example get md,gcpmachinetemplate,kubeadmconfigtemplate
-
-kubectl -n cluster-example get md,azuremachinetemplate,kubeadmconfigtemplate
-----
-
-===== AKS
-
-En AKS se deberán crear los objetos: _MachinePool_ y _AzureManagedMachinePool_.
-
-Una vez confeccionado el _manifest_, la creación del grupo consiste simplemente en aplicarlo al _cluster_ de la siguiente forma:
-
-[source,bash]
-----
-kubectl apply -f xref:attachment$example-aks-md.yaml[example-aks-md.yaml]
-----
-
-Para ver los objetos creados:
-
-[source,bash]
-----
-kubectl -n cluster-example get mp,ammp
+kubectl -n cluster-<cluster_name> get keoscluster <cluster_name> --subresource=status
 ----
 
 ==== Escalado vertical
