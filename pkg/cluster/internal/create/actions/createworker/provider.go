@@ -21,6 +21,7 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"time"
@@ -501,6 +502,41 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 		return errors.Wrap(err, "failed to apply CAPX's NetworkPolicy in workload cluster")
 	}
 
+	return nil
+}
+
+func (p *Provider) configHACAPI(n nodes.Node, kubeconfigPath string) error {
+	var c string
+	var err error
+	var capiKubeadmReplicas int
+
+	// Determine the number of replicas for capi-kubeadm deployments
+	if p.capxManaged {
+		capiKubeadmReplicas = 0
+	} else {
+		capiKubeadmReplicas = 2
+	}
+
+	// Scale capi-controller-manager to 2 replicas
+	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-system scale --replicas 2 deploy capi-controller-manager", kubeconfigPath)
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to scale the CAPI Deployment")
+	}
+
+	// Scale capi-kubeadm-control-plane to 2 replicas
+	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-control-plane-system scale --replicas %d deploy capi-kubeadm-control-plane-controller-manager", kubeconfigPath, capiKubeadmReplicas)
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to scale the capi-kubeadm-control-plane Deployment")
+	}
+
+	// Scale capi-kubeadm-bootstrap to 2 replicas
+	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-bootstrap-system scale --replicas %d deploy capi-kubeadm-bootstrap-controller-manager", kubeconfigPath, capiKubeadmReplicas)
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to scale the capi-kubeadm-bootstrap Deployment")
+	}
 	return nil
 }
 

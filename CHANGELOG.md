@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0-0.3.4 (upcoming)
+
+* [Core] Conditionally increase replicas for capi controller manager services
+
 ## 0.17.0-0.3.3 (2023-10-11)
 
 * Add remote command execution retries
