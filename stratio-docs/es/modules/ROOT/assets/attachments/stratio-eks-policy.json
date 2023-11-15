@@ -107,7 +107,7 @@
               "elasticloadbalancing:ModifyLoadBalancerAttributes",
               "elasticloadbalancing:DeleteLoadBalancer",
               "elasticloadbalancing:RemoveTags",
-              "iam:CreateOpenIDConnectProvider"
+              "elasticloadbalancing:ConfigureHealthCheck"
           ],
           "Resource": [
               "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
