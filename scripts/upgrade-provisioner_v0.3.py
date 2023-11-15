@@ -53,6 +53,7 @@ def parse_args():
     parser.add_argument("--helm-user", help="Set the helm repository user for installing cluster-operator")
     parser.add_argument("--helm-password", help="Set the helm repository password for installing cluster-operator")
     parser.add_argument("--disable-backup", action="store_true", help="Disable backing up files before upgrading (enabled by default)")
+    parser.add_argument("--disable-prepare-capsule", action="store_true", help="Disable preparing capsule for the upgrade process (enabled by default)")
     parser.add_argument("--only-capx", action="store_true", help="Upgrade only CAPx components")
     parser.add_argument("--only-calico", action="store_true", help="Upgrade only Calico components")
     parser.add_argument("--only-drivers", action="store_true", help="Upgrade only Azure drivers")
@@ -100,51 +101,88 @@ def backup(backup_dir, namespace, cluster_name):
         sys.exit(1)
 
 def prepare_capsule(dry_run):
-    print("[INFO] Preparing the Capsule webhook for the upgrade process")
-
-    # Get capsule version
+    print("[INFO] Preparing capsule-mutating-webhook-configuration for the upgrade process:", end =" ", flush=True)
     command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
                '''jq -r '.webhooks[0].objectSelector |= {"matchExpressions":[{"key":"name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
                namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
                namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]}]}' | ''' + kubectl + " apply -f -")
-    if not dry_run:
-        status, output = subprocess.getstatusoutput(command)
-        if status != 0:
-            print("[ERROR] Getting capsule version failed:\n" + output)
-            sys.exit(1)
+    execute_command(command, dry_run)
+
+    print("[INFO] Preparing capsule-validating-webhook-configuration for the upgrade process:", end =" ", flush=True)
     command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
                '''jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= ({"matchExpressions":[{"key":"name","operator":"NotIn","values":["''' +
                namespace + '''","tigera-operator","calico-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["''' +
                namespace + '''","tigera-operator","calico-system"]}]}))' | ''' + kubectl + " apply -f -")
-    if not dry_run:
-        status, output = subprocess.getstatusoutput(command)
-        if status != 0:
-            print("[ERROR] Getting capsule version failed:\n" + output)
-            sys.exit(1)
+    execute_command(command, dry_run)
 
 def restore_capsule(dry_run):
-    print("[INFO] Restoring the Capsule webhooks")
-
+    print("[INFO] Restoring capsule-mutating-webhook-configuration:", end =" ", flush=True)
     command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
                "jq -r '.webhooks[0].objectSelector |= {}' | " + kubectl + " apply -f -")
-    if not dry_run:
-        status, output = subprocess.getstatusoutput(command)
-        if status != 0:
-            print("[ERROR] Restoring capsule webhooks failed:\n" + output)
-            sys.exit(1)
+    execute_command(command, dry_run)
 
+    print("[INFO] Restoring capsule-validating-webhook-configuration:", end =" ", flush=True)
     command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
                """jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= {})' """ +
                "| " + kubectl + " apply -f -")
-    if not dry_run:
-        status, output = subprocess.getstatusoutput(command)
-        if status != 0:
-            print("[ERROR] Restoring capsule webhooks failed:\n" + output)
-            sys.exit(1)
+    execute_command(command, dry_run)
 
 def upgrade_capx(kubeconfig, provider, namespace, version, env_vars, dry_run):
     replicas = "2"
     gnp = ""
+    pdb = ""
+
+    capi_pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: cluster-api
+  namespace: capi-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: cluster-api
+"""
+
+    if provider != "aws":
+        capi_kubeadm_pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-kubeadm-bootstrap-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: bootstrap-kubeadm
+  namespace: capi-kubeadm-bootstrap-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: bootstrap-kubeadm
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capi-kubeadm-control-plane-controller-manager
+  labels:
+    control-plane: controller-manager
+    cluster.x-k8s.io/provider: control-plane-kubeadm
+  namespace: capi-kubeadm-control-plane-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      cluster.x-k8s.io/provider: control-plane-kubeadm
+"""
 
     if provider == "aws":
         gnp = """
@@ -166,6 +204,24 @@ spec:
   types:
   - Egress
 """
+        pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capa-controller-manager
+  labels:
+    control-plane: capa-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-aws
+  namespace: capa-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capa-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-aws
+"""
+
     if provider == "gcp":
         gnp = """
 ---
@@ -186,9 +242,63 @@ spec:
   types:
   - Egress
 """
+        pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capg-controller-manager
+  labels:
+    control-plane: capg-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-gcp
+  namespace: capg-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capg-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-gcp
+"""
+
+    if provider == "azure":
+        pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capz-controller-manager
+  labels:
+    control-plane: capz-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-azure
+  namespace: capz-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capz-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-azure
+"""
+
     if provider != "azure":
         print("[INFO] Updating GlobalNetworkPolicy:", end =" ", flush=True)
         command = "cat <<EOF | " + kubectl + " apply -f -" + gnp + "EOF"
+        execute_command(command, dry_run)
+
+    print("[INFO] Adding PodDisruptionBudget to " + namespace.split("-")[0] + ":", end =" ", flush=True)
+    command = "cat <<EOF | " + kubectl + " apply -f -" + pdb + "EOF"
+    execute_command(command, dry_run)
+
+    print("[INFO] Adding PodDisruptionBudget to capi-controller-manager:", end =" ", flush=True)
+    command = "cat <<EOF | " + kubectl + " apply -f -" + capi_pdb + "EOF"
+    execute_command(command, dry_run)
+
+    print("[INFO] Adding PodDisruptionBudget to capi-kubeadm:", end =" ", flush=True)
+    command = "cat <<EOF | " + kubectl + " apply -f -" + capi_kubeadm_pdb + "EOF"
+    execute_command(command, dry_run)
+
+    if provider == "azure":
+        print("[INFO] Setting priorityClass system-node-critical to capz-nmi:", end =" ", flush=True)
+        command = kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
         execute_command(command, dry_run)
 
     print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI_VERSION + ":", end =" ", flush=True)
@@ -333,7 +443,7 @@ def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_ru
     if status == 0:
         print("SKIP")
     else:
-        command = kubectl + " -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + str(docker_registries) + "'"
+        command = kubectl + " -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + json.dumps(docker_registries, separators=(',', ':')) + "'"
         execute_command(command, dry_run)
 
     print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
@@ -370,14 +480,19 @@ def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run
             for k in ["api_server", "audit", "authenticator", "controller_manager", "scheduler"]:
                 if k not in keoscluster["spec"]["control_plane"]["aws"]["logging"]:
                     keoscluster["spec"]["control_plane"]["aws"]["logging"][k] = False
-    if "azure" in keoscluster["spec"]["control_plane"]:
-        if "identity_id" in keoscluster["spec"]["control_plane"]["azure"]:
-            identity = keoscluster["spec"]["control_plane"]["azure"]["identity_id"]
-            keoscluster["spec"]["security"] = {"control_plane_identity": identity, "nodes_identity": identity}
-            keoscluster["spec"]["control_plane"].pop("azure")
+    if provider in ["azure", "gcp"]:
+        if not "highly_available" in keoscluster["spec"]["control_plane"]:
+            keoscluster["spec"]["control_plane"]["highly_available"] = True
+        if not "managed" in keoscluster["spec"]["control_plane"]:
+            keoscluster["spec"]["control_plane"]["managed"] = False
+    else:
+        if not "managed" in keoscluster["spec"]["control_plane"]:
+            keoscluster["spec"]["control_plane"]["managed"] = True
     if "security" in keoscluster["spec"]:
         if "aws" in keoscluster["spec"]["security"]:
             keoscluster["spec"]["security"].pop("aws")
+        if "nodes_identity" in keoscluster["spec"]["security"]:
+            keoscluster["spec"]["security"]["control_plane_identity"] = keoscluster["spec"]["security"]["nodes_identity"]
         if keoscluster["spec"]["security"] == {}:
             keoscluster["spec"].pop("security")
     keoscluster["spec"]["helm_repository"] = {"url": helm_repo["url"]}
@@ -385,14 +500,19 @@ def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run
         keoscluster["spec"]["helm_repository"]["auth_required"] = True
     else:
         keoscluster["spec"]["helm_repository"]["auth_required"] = False
-    keoscluster["metadata"]["annotations"] = {"cluster-operator.stratio.com/last-configuration": json.dumps(keoscluster, indent=None)}
+    keoscluster["metadata"]["annotations"] = {"cluster-operator.stratio.com/last-configuration": json.dumps(keoscluster, separators=(',', ':'))}
     keoscluster_file = open('./keoscluster.yaml', 'w')
     keoscluster_file.write(yaml.dump(keoscluster, default_flow_style=False))
     keoscluster_file.close()
 
     print("[INFO] Applying Cluster Operator descriptor:", end =" ", flush=True)
-    command = kubectl + " apply -f ./keoscluster.yaml"
-    execute_command(command, dry_run)
+    command = kubectl + " -n cluster-" + cluster_name + " get keoscluster " + cluster_name
+    status = subprocess.getstatusoutput(command)[0]
+    if status == 0:
+        print("SKIP")
+    else:
+        command = kubectl + " apply -f ./keoscluster.yaml"
+        execute_command(command, dry_run)
 
 def execute_command(command, dry_run):
     if dry_run:
@@ -400,7 +520,7 @@ def execute_command(command, dry_run):
     else:
         status, output = subprocess.getstatusoutput(command)
         if status == 0:
-            print("SKIP")
+            print("OK")
         else:
             print("FAILED (" + output + ")")
             sys.exit(1)
@@ -462,7 +582,7 @@ if __name__ == '__main__':
         cluster_name = cluster["metadata"]["name"]
     else:
         cluster_name = cluster["spec"]["cluster_id"]
-    print("[INFO] Cluster name is " + cluster_name)
+    print("[INFO] Cluster name: " + cluster_name)
 
     # Check kubectl access
     command = kubectl + " get cl -A --no-headers | awk '{print $1}'"
@@ -520,7 +640,7 @@ if __name__ == '__main__':
             print("[ERROR] Azure credentials not found in secrets file")
             sys.exit(1)
 
-    if data["secrets"]["github_token"] != "":
+    if "github_token" in data["secrets"]:
         env_vars += " GITHUB_TOKEN=" + data["secrets"]["github_token"]
         helm = "GITHUB_TOKEN=" + data["secrets"]["github_token"] + " " + helm
 
@@ -546,9 +666,10 @@ if __name__ == '__main__':
         backup_dir = backup_dir + now.strftime("%Y%m%d-%H%M%S")
         backup(backup_dir, namespace, cluster_name)
 
-    prepare_capsule(config["dry_run"])
-    if not config["yes"]:
-        request_confirmation()
+    if not config["disable_prepare_capsule"]:
+        prepare_capsule(config["dry_run"])
+        if not config["yes"]:
+            request_confirmation()
 
     if config["all"] or config["only_capx"]:
         upgrade_capx(kubeconfig, provider, namespace, version, env_vars, config["dry_run"])
@@ -575,4 +696,5 @@ if __name__ == '__main__':
         if not config["yes"]:
             request_confirmation()
 
-    restore_capsule(config["dry_run"])
+    if not config["disable_prepare_capsule"]:
+        restore_capsule(config["dry_run"])
