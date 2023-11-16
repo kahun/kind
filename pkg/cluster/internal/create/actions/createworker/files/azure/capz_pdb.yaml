@@ -1,0 +1,15 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capz-controller-manager
+  labels:
+    control-plane: capz-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-azure
+  namespace: capz-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capz-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-azure

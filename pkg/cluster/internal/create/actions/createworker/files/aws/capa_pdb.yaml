@@ -1,0 +1,15 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: capa-controller-manager
+  labels:
+    control-plane: capa-controller-manager
+    cluster.x-k8s.io/provider: infrastructure-aws
+  namespace: capa-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      control-plane: capa-controller-manager
+      cluster.x-k8s.io/provider: infrastructure-aws
