@@ -92,6 +92,12 @@ Cluster/jazure                                        True                     2
 | jazure1-mp-1  | jazure  |  1  |       1    |      Running    | 7m11s  | v1.26.3 |
 | jazure1-mp-2  | jazure  |  2  |       1    |      ScalingUp  | 7m10s  | v1.26.3 |
 
+**Test:** Remove machine pool (same as above)
+
+| Permission | Needed for | Description | Resource | Application |
+| --- | --- | --- | --- | --- |
+| Microsoft.ContainerService/managedClusters/agentPools/delete | Delete MachinePool | does not have authorization to perform action 'Microsoft.ContainerService/managedClusters/agentPools/delete' over scope '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxx/providers/Microsoft.ContainerService/managedClusters/jazure/agentPools/jazure1mp2 | Microsoft.ContainerService | Provisioner |
+
 **Test:** Destroy Machine on Azure UI (self-healing) (same as above)
 
 **Test:** upgrade k8s version from 1.26.3 to 1.27.3 (same as above)
