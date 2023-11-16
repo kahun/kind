@@ -131,7 +131,7 @@ def upgrade_capx(kubeconfig, provider, namespace, version, env_vars, dry_run):
     replicas = "2"
     gnp = ""
     pdb = ""
-
+    capi_kubeadm_pdb = ""
     capi_pdb = """
 ---
 apiVersion: policy/v1
@@ -292,9 +292,10 @@ spec:
     command = "cat <<EOF | " + kubectl + " apply -f -" + capi_pdb + "EOF"
     execute_command(command, dry_run)
 
-    print("[INFO] Adding PodDisruptionBudget to capi-kubeadm:", end =" ", flush=True)
-    command = "cat <<EOF | " + kubectl + " apply -f -" + capi_kubeadm_pdb + "EOF"
-    execute_command(command, dry_run)
+    if provider != "aws":
+        print("[INFO] Adding PodDisruptionBudget to capi-kubeadm:", end =" ", flush=True)
+        command = "cat <<EOF | " + kubectl + " apply -f -" + capi_kubeadm_pdb + "EOF"
+        execute_command(command, dry_run)
 
     if provider == "azure":
         print("[INFO] Setting priorityClass system-node-critical to capz-nmi:", end =" ", flush=True)
@@ -369,30 +370,37 @@ def upgrade_drivers(dry_run):
         execute_command(command, dry_run)
 
     # Cloud provider Azure
-    output = subprocess.getstatusoutput(helm + " list -A | grep cloud-provider-azure")[1]
-    chart_version = output.split()[8].split("-")[3]
-    chart_namespace = output.split()[1]
-    chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
-    if not dry_run:
-        f = open('./cloudproviderazure.values', 'w')
-        f.write(chart_values)
-        f.close()
+    status, output = subprocess.getstatusoutput(helm + " list -A | grep cloud-provider-azure")
+    if status == 0:
+        chart_version = output.split()[8].split("-")[3]
+        chart_namespace = output.split()[1]
+        chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
+        if not dry_run:
+            f = open('./cloudproviderazure.values', 'w')
+            f.write(chart_values)
+            f.close()
 
-    if chart_namespace != "kube-system":
-        print("[INFO] Uninstalling Cloud Provider Azure:", end =" ", flush=True)
-        command = helm + " -n " + chart_namespace + " uninstall cloud-provider-azure"
-        execute_command(command, dry_run)
-        print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + " in kube-system namespace:", end =" ", flush=True)
-        command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
-                    " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
-                    " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
-        execute_command(command, dry_run)
-    else:
-        print("[INFO] Upgrading Cloud Provider Azure to " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
-        if chart_version == CLOUD_PROVIDER_AZURE_CHART[1:]:
-            print("SKIP")
+        if chart_namespace != "kube-system":
+            print("[INFO] Uninstalling Cloud Provider Azure:", end =" ", flush=True)
+            command = helm + " -n " + chart_namespace + " uninstall cloud-provider-azure"
+            execute_command(command, dry_run)
+            print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + " in kube-system namespace:", end =" ", flush=True)
+            command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
+                        " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
+                        " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
+            execute_command(command, dry_run)
         else:
-            command = (helm + " -n kube-system upgrade cloud-provider-azure cloud-provider-azure" +
+            print("[INFO] Upgrading Cloud Provider Azure to " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
+            if chart_version == CLOUD_PROVIDER_AZURE_CHART[1:]:
+                print("SKIP")
+            else:
+                command = (helm + " -n kube-system upgrade cloud-provider-azure cloud-provider-azure" +
+                            " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
+                            " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
+                execute_command(command, dry_run)
+    else:
+            print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + " in kube-system namespace:", end =" ", flush=True)
+            command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
                         " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             execute_command(command, dry_run)
