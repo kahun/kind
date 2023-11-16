@@ -57,8 +57,8 @@ const (
 
 	scName = "keos"
 
-	keosClusterChart = "0.1.4-36d41ca"
-	keosClusterImage = "0.1.4-36d41ca"
+	keosClusterChart = "0.1.4-ff61435"
+	keosClusterImage = "0.1.4-ff61435"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -502,11 +502,11 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system patch deploy " + p.capxName + "-controller-manager -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to assigned priorityClass to " + p.capxName +"-controller-manager")
+		return errors.Wrap(err, "failed to assigned priorityClass to "+p.capxName+"-controller-manager")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
 	if err != nil {
-		return errors.Wrap(err, "failed to check rollout status for " + p.capxName +"-controller-manager")
+		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
 
 	// Scale CAPX to 2 replicas
@@ -517,7 +517,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
 	if err != nil {
-		return errors.Wrap(err, "failed to check rollout status for " + p.capxName +"-controller-manager")
+		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
 
 	// Define PodDisruptionBudget for capa service

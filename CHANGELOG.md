@@ -4,7 +4,7 @@
 
 * [Core] Conditionally increase replicas for capi controller manager services
 * [Core] Add PDB and PriorityClass to capx components
-
+* [Core] Add upgrade script from 0.2 to 0.3
 
 ## 0.17.0-0.3.3 (2023-10-11)
 
