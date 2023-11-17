@@ -13,7 +13,7 @@ _Stratio Cloud Provisioner_ es la fase inicial para la creación de un _cluster_
 
 Para llevar a cabo la creación del _cluster_, _Stratio Cloud Provisioner_ creará un recurso de Kubernetes _KeosCluster_ y el _controller_ encargado de su ciclo de vida, _Stratio Cluster Operator_. Este _KeosCluster_ será el encargado de la generación de los recursos necesarios para la creación y operación del _cluster_.
 
-Al finalizar la creación del cluster en esta fase, y según un descriptor de cluster indicado, se creará un fichero descriptor (keos.yaml) y otro cifrado de credenciales (secrets.yml) para la siguiente fase, de instalación de _Stratio KEOS_.
+Al finalizar la creación del _cluster_ en esta fase y según un descriptor de _cluster_ indicado, se creará un fichero descriptor (_keos.yaml_) y otro cifrado de credenciales (_secrets.yml_) para la siguiente fase, de instalación de _Stratio KEOS_.
 
 Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura cloud en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del cluster. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_
 
