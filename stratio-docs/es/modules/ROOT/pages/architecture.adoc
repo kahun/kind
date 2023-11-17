@@ -29,7 +29,7 @@ Para ello se define el subrecurso del _KeosCluster_, _status_ que informará del
 
 == Objetos del proveedor del _Cloud_
 
-En un *despliegue por defecto*, se crean los siguientes objetos en cada _cloud provider_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
+En un *despliegue por defecto* se crean los siguientes objetos en cada _cloud provider_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
 
 === EKS
 
