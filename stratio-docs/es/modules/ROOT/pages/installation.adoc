@@ -2,7 +2,7 @@
 
 == Prerrequisitos
 
-=== AWS (EKS y no-gestionado)
+=== AWS (EKS y no gestionado)
 
 * Roles y políticas
 +
