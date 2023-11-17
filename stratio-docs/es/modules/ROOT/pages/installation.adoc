@@ -223,7 +223,7 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |azure
 |Credenciales para acceso a Azure.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
-|No cuando infra$$_$$provider=azure.
+|No cuando infra++_++provider=azure.
 
 |gcp
 |Credenciales para el acceso a GCP.
@@ -240,7 +240,7 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para _registries_ no autenticados.
 
-|helm$$_$$repository
+|_helm++_++repository_
 |Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para repositorios no autenticados.
