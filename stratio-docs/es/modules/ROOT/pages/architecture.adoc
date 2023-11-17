@@ -26,7 +26,7 @@ Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos
 
 Para ello, se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
-== Objetos del proveedor del _Cloud_
+== Objetos del proveedor del _cloud_
 
 En un *despliegue por defecto* se crean los siguientes objetos en cada _cloud provider_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
 
