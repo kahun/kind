@@ -57,7 +57,7 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en "spec.security.nodes_identity") y otro para el _control-plane_ (indicado en el descriptor en "spec.security.control_plane_identity").
 +
 ** xref:attachment$stratio-aks-role.json[Descargar permisos para Azure]
 ** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para _workers_ de Azure]
@@ -139,47 +139,47 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 |===
 ^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
 
-|infra$$_$$provider
+|_infra++_++provider_
 |Nombre del _cloud provider_ (AWS, GCP o Azure).
 |aws
 |No
 
-|<<credentials, credentials>>
+|<<credentials, _credentials_>>
 |Set de credenciales del proveedor _cloud_ usadas en el aprovisionamiento.
 |Ver el <<ejemplo_de_descriptor,Ejemplo de descriptor>>
 |No en 1ª ejecución.
 
-|k8s$$_$$version
+|_k8s++_++version_
 |Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el proveedor _cloud_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la versión _patch_.
 |v1.26.8
 |No
 
-|docker$$_$$registries
+|_docker++_++registries_
 |_Registries_ de Docker accesibles por los nodos.
 |-
 |No
 
-|helm$$_$$repository
+|_helm++_++repository_
 |Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |-
 |No
 
-|region
+|_region_
 |Región del proveedor _cloud_ usada para el aprovisionamiento.
 |eu-west-1
 |No
 
-|external$$_$$domain
+|_external++_++domain_
 |Dominio externo al _cluster_.
 |domain.ext
 |No
 
-|<<keos, keos>>
+|<<keos, _keos_>>
 |Sección de configuraciones para la instalación de _Stratio KEOS_.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |No
 
-|storageclass
+|_storageclass_
 |Configuración de la _StorageClass_ que se creará por defecto en el _cluster_.
 |Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí
