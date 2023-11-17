@@ -19,7 +19,7 @@ Una vez finalizada la instalación, todas las operaciones de día 2 sobre la pro
 
 == Objeto _KeosCluster_
 
-Durante la fase de instalación, tras desplegar el chart de helm de _Stratio Cluster Operator_ y, teniendo como punto de partida el descriptor del cluster, se creará por defecto un recurso _KeosCluster_ que centralizará la creación del cluster y de todos los objetos de los distintos proveedores Cloud y las operaciones sobre estos.
+Durante la fase de instalación, tras desplegar el _chart_ de Helm de _Stratio Cluster Operator_ y teniendo como punto de partida el descriptor del _cluster_, se creará por defecto un recurso _KeosCluster_ que centralizará la creación del _cluster_ y de todos los objetos de los distintos proveedores _Cloud_ y las operaciones sobre estos.
 
 === Mitigación del error humano
 
