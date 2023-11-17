@@ -370,7 +370,7 @@ A su vez se deberá tener en cuenta que el proceso requiere del binario del _clu
 [bastion]$ sudo clusterctl --kubeconfig $KUBECONFIG move -n cluster-<cluster_name> --to-kubeconfig /root/.kube/config
 -----
 +
-. Se accede al _cluster_ local y se elimina el _cluster_ _worker_.
+. Accede al _cluster_ local y elimina el _cluster_ _worker_.
 +
 [source,bash]
 -----
