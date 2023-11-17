@@ -1,3 +1,5 @@
+_TO BE TRANSLATED_
+
 = Operations
 
 == Obtaining the _kubeconfig_

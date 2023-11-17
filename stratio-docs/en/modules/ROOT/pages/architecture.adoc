@@ -1,3 +1,5 @@
+_TO BE TRANSLATED_
+
 = Architecture
 
 Reference architecture
