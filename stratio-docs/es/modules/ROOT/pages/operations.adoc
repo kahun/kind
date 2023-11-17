@@ -1,9 +1,8 @@
-:caution-caption: ⛔
 = Operaciones
 
 == Obtención del _kubeconfig_
 
-Para comunicarse con el APIserver del _cluster_ creado, es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _Cloud_ utilizado y la gestión del control-plane del _cluster_.
+Para comunicarse con el _API Server_ del _cluster_ creado, es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _cloud_ utilizado y la gestión del control-plane del _cluster_.
 
 * Para EKS, se obtendrá de la forma indicada por AWS:
 
