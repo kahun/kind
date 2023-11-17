@@ -71,26 +71,26 @@ Este _flavour_ no permite especificar ninguna imagen personalizada y despliega p
 
 Refiriéndose al _control-plane_, en EKS y AKS no se podrá indicar una imagen, pero en AWS y Azure no gestionados y en GCP sí.
 
-Tanto para los control-plane como para los nodos workers, es obligatorio indicar las imágenes en GCP no-gestionado para todas las versiones y en AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry.
+Tanto para los _control-plane_ como para los nodos _worker_ es obligatorio indicar las imágenes en GCP no gestionado para todas las versiones y en AWS no gestionado para las versiones de Kubernetes ≥ 1.27 en el caso de usar ECR como _registry_.
 
-Para los nodos workers, es opcional en todos los _cloud providers_ salvo en los casos descritos anteriormente (al no indicarla, el controller asigna una disponibilizada por el _cloud provider_).
+Para los nodos _workers_ es opcional en todos los proveedores _cloud_ salvo en los casos descritos anteriormente (al no indicarla, el _controller_ asigna una disponibilizada por el proveedor _cloud_).
 
-Al momento de crear la imagen para el cluster, se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (systemd units, DaemonSets, etc.) y la versión de Kubernetes a utilizar.
+Al momento de crear la imagen para el _cluster_ se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (_systemd units, DaemonSets_, etc.) y la versión de Kubernetes a utilizar.
 
 ==== Elasticsearch
 
-Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá contar con el parámetro "max_map_count = 262144" del sysctl como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
+Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá contar con el parámetro `max_map_count = 262144` del sysctl como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
 
-Para las imágenes creadas con _image-builder_ (*AWS unmanaged, Azure unmanaged y GCP unmanaged*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[loop de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
+Para las imágenes creadas con _image-builder_ (*AWS no gestionado, Azure no gestionado y GCP no gestionado*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[_loop_ de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
 
 [source,yaml]
 ----
 - { param: vm.max_map_count, val: 262144 }
 ----
 
-Las imágenes de _Amazon Linux 2_ utilizadas por *EKS* ya cuentan con este parámetro/valor.
+Las imágenes de Amazon Linux 2 *utilizadas por EKS* ya cuentan con este parámetro/valor.
 
-Para el caso de *AKS* y dado que las imágenes no pueden ser construidas con image-builder, añadimos la siguiente configuración en el objeto AzureManagedMachinePool:
+Para el *caso de AKS* y dado que las imágenes no pueden construirse con _image-builder_, se añade la siguiente configuración en el objeto _AzureManagedMachinePool_:
 
 [source,yaml]
 ----
@@ -100,7 +100,7 @@ spec:
     vmMaxMapCount: 262144
 ----
 
-Así que odos los nodos del cluster ya cuentan con este parámetro/valor.
+Por tanto, todos los nodos del _cluster_ ya cuentan con este parámetro/valor.
 
 == Descriptor del _cluster_
 
@@ -118,7 +118,7 @@ spec:
 
 === _metadata_
 
-La _metadata_ del _KeosCluster_ está compuesto por los siguientes campos:
+Los _metadata_ del _KeosCluster_ están compuestos por los siguientes campos:
 
 [cols="1,4,2,1"]
 |===
@@ -140,7 +140,7 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 ^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
 
 |infra$$_$$provider
-|Nombre del _cloud provider_ (aws, gcp o azure).
+|Nombre del _cloud provider_ (AWS, GCP o Azure).
 |aws
 |No
 
