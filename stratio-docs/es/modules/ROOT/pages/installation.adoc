@@ -15,7 +15,7 @@ Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones
 +
 Para asegurar las funcionalidades soportadas por el _control-plane_ gestionado de EKS, se deberá utilizar cualquier AMI provista por AWS específicamente para este fin.
 +
-Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo _Amazon Linux 2_.
+Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo Amazon Linux 2.
 +
 En el caso de los despliegues en AWS no-gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:aws-image-builder.adoc[guía para AWS].
 +
