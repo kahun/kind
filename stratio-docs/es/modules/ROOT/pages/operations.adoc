@@ -263,6 +263,37 @@ Los _logs_ del _cluster-autoscaler_ se pueden ver desde su _Deployment_:
 kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-autoscaler
 ----
 
+=== Actualización de _Stratio Cloud Provisioner_
+
+==== Prerequisitos
+
+Los siguientes binarios deberán estar disponibles en la máquina bastión:
+
+- python3
+- ansible-vault (pip)
+- clusterctl
+- helm
+- kubectl
+- jq
+
+Se deberán asegurar los permisos necesarios en el directorio backup de la máquina bastión para que el usuario que ejecuta el script pueda escribir en él (se crea el directorio ./backup/upgrade/).
+
+==== Ejecución
+
+Para actualizar la versión de cloud-provisioner (0.2 to 0.3) ejecutaremos el script upgrade-provisioner_v0.3.py. Podemos consultar la ayuda del script con el siguiente comando:
+
+[source,bash]
+----
+python3 upgrade-provisioner_v0.3.py -h
+----
+
+Ejemplo:
+
+[source,bash]
+----
+python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
+----
+
 === Actualización de Kubernetes
 
 La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes, dentro del mismo proceso atómico: primero el _control-plane_ y, una vez que esté en la nueva versión, se procederá a la actualización de los nodos _workers_ iterando por cada grupo y actualizando los nodos uno a uno.
@@ -386,34 +417,3 @@ root@<cluster_name>-control-plane:/#
 -----
 [bastion]$ sudo ./bin/cloud-provisioner delete cluster --name <cluster_name>
 -----
-
-=== Actualización de _Stratio Cloud Provisioner_
-
-==== Prerequisitos
-
-Los siguientes binarios deberán estar disponibles en la máquina bastión:
-
-- python3
-- ansible-vault (pip)
-- clusterctl
-- helm
-- kubectl
-- jq
-
-Se deberán asegurar los permisos necesarios en el directorio backup de la máquina bastión para que el usuario que ejecuta el script pueda escribir en él (se crea el directorio ./backup/upgrade/).
-
-==== Ejecución
-
-Para actualizar la versión de cloud-provisioner (0.2 to 0.3) ejecutaremos el script upgrade-provisioner_v0.3.py. Podemos consultar la ayuda del script con el siguiente comando:
-
-[source,bash]
-----
-python3 upgrade-provisioner_v0.3.py -h
-----
-
-Ejemplo:
-
-[source,bash]
-----
-python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
-----
