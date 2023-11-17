@@ -2,11 +2,11 @@
 
 == Prerrequisitos
 
-=== AWS (EKS y no-gestionado)
+=== AWS (EKS y no gestionado)
 
 * Roles y políticas
 +
-Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones sobre diversos servicios de AWS como ec2, ecr, eks, elasticloadbalancing, etc. Si bien la utilización o no de estas acciones dependerá del tipo de instalación, el proveedor valida que el usuario indicado tenga estos permisos para poder ejecutarse con normalidad.
+Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones sobre diversos servicios de AWS como EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Si bien la utilización o no de estas acciones dependerá del tipo de instalación, el proveedor valida que el usuario indicado tenga estos permisos para poder ejecutarse con normalidad.
 +
 ** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
 ** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
@@ -15,35 +15,35 @@ Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones
 +
 Para asegurar las funcionalidades soportadas por el _control-plane_ gestionado de EKS, se deberá utilizar cualquier AMI provista por AWS específicamente para este fin.
 +
-Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo _Amazon Linux 2_.
+Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo Amazon Linux 2.
 +
-En el caso de los despliegues en AWS no-gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:aws-image-builder.adoc[guía para AWS].
+En el caso de los despliegues en AWS no gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes consulta la xref:ROOT:aws-image-builder.adoc[guía para AWS].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
-=== GCP no-gestionado
+=== GCP no gestionado
 
 * Permisos
 +
-Para los despliegues en Google Cloud Platform no-gestionado, se necesitarán principalmente permisos en _compute_ (instancias, discos, imágenes, _routers_, redes, etc.). Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados.
+Para los despliegues en Google Cloud Platform no gestionado se necesitarán principalmente permisos en _compute_ (instancias, discos, imágenes, _routers_, redes, etc.). Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados.
 +
 ** xref:attachment$stratio-gcp-permissions.list[Descargar permisos para GCP]
 
 * Sistemas operativos certificados
 +
-Para los entornos en GCP no-gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:gcp-image-builder.adoc[guía para GCP].
+Para los entornos en GCP no gestionado se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes consulta la xref:ROOT:gcp-image-builder.adoc[guía para GCP].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
-=== Azure no-gestionado
+=== Azure no gestionado
 
 * Permisos
 +
-Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un role para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un rol para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
 ** xref:attachment$stratio-azure-role.json[Descargar permisos para Azure]
-** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para workers de Azure]
-** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para control-plane de Azure]
+** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para _workers_ de Azure]
+** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para _control-plane_ de Azure]
 
 * Sistemas operativos certificados
 +
@@ -57,40 +57,40 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Este tipo de clusters se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
 ** xref:attachment$stratio-aks-role.json[Descargar permisos para Azure]
-** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para workers de Azure]
-** xref:attachment$stratio-aks-cp-role.json[Descargar permisos para control-plane de Azure]
+** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para _workers_ de Azure]
+** xref:attachment$stratio-aks-cp-role.json[Descargar permisos para _control-plane_ de Azure]
 
 * Sistemas operativos certificados
 +
-Este flavour no permite especificar ninguna imagen custom, y despliega por defecto Ubuntu 22.04.
+Este _flavour_ no permite especificar ninguna imagen personalizada y despliega por defecto Ubuntu 22.04.
 
 === Consideraciones para imágenes
 
-Si nos referimos al control-plane, y como es evidente, en EKS y AKS no se podrá indicar una imagen, pero en AWS no-gestionado, Azure no-gestionado y en GCP si.
+Refiriéndose al _control-plane_, en EKS y AKS no se podrá indicar una imagen, pero en AWS y Azure no gestionados y en GCP sí.
 
-Tanto para los control-plane como para los nodos workers, es obligatorio indicar las imágenes en GCP no-gestionado para todas las versiones y en AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry.
+Tanto para los _control-plane_ como para los nodos _worker_ es obligatorio indicar las imágenes en GCP no gestionado para todas las versiones y en AWS no gestionado para las versiones de Kubernetes ≥ 1.27 en el caso de usar ECR como _registry_.
 
-Para los nodos workers, es opcional en todos los _cloud providers_ salvo en los casos descritos anteriormente (al no indicarla, el controller asigna una disponibilizada por el _cloud provider_).
+Para los nodos _workers_ es opcional en todos los proveedores _cloud_ salvo en los casos descritos anteriormente (al no indicarla, el _controller_ asigna una disponibilizada por el proveedor _cloud_).
 
-Al momento de crear la imagen para el cluster, se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (systemd units, DaemonSets, etc.) y la versión de Kubernetes a utilizar.
+Al momento de crear la imagen para el _cluster_ se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (_systemd units, DaemonSets_, etc.) y la versión de Kubernetes a utilizar.
 
 ==== Elasticsearch
 
-Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá contar con el parámetro "max_map_count = 262144" del sysctl como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
+Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá contar con el parámetro `max_map_count = 262144` del sysctl como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
 
-Para las imágenes creadas con _image-builder_ (*AWS unmanaged, Azure unmanaged y GCP unmanaged*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[loop de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
+Para las imágenes creadas con _image-builder_ (*AWS no gestionado, Azure no gestionado y GCP no gestionado*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[_loop_ de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
 
 [source,yaml]
 ----
 - { param: vm.max_map_count, val: 262144 }
 ----
 
-Las imágenes de _Amazon Linux 2_ utilizadas por *EKS* ya cuentan con este parámetro/valor.
+Las imágenes de Amazon Linux 2 *utilizadas por EKS* ya cuentan con este parámetro/valor.
 
-Para el caso de *AKS* y dado que las imágenes no pueden ser construidas con image-builder, añadimos la siguiente configuración en el objeto AzureManagedMachinePool:
+Para el *caso de AKS* y dado que las imágenes no pueden construirse con _image-builder_, se añade la siguiente configuración en el objeto _AzureManagedMachinePool_:
 
 [source,yaml]
 ----
@@ -100,7 +100,7 @@ spec:
     vmMaxMapCount: 262144
 ----
 
-Así que odos los nodos del cluster ya cuentan con este parámetro/valor.
+Por tanto, todos los nodos del _cluster_ ya cuentan con este parámetro/valor.
 
 == Descriptor del _cluster_
 
@@ -118,7 +118,7 @@ spec:
 
 === _metadata_
 
-La _metadata_ del _KeosCluster_ está compuesto por los siguientes campos:
+Los _metadata_ del _KeosCluster_ están compuestos por los siguientes campos:
 
 [cols="1,4,2,1"]
 |===
@@ -140,17 +140,17 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 ^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
 
 |infra$$_$$provider
-|Nombre del _cloud provider_ (aws, gcp o azure).
+|Nombre del _cloud provider_ (AWS, GCP o Azure).
 |aws
 |No
 
 |<<credentials, credentials>>
-|Set de credenciales del _cloud provider_ usadas en el aprovisionamiento.
+|Set de credenciales del proveedor _cloud_ usadas en el aprovisionamiento.
 |Ver el <<ejemplo_de_descriptor,Ejemplo de descriptor>>
 |No en 1ª ejecución.
 
 |k8s$$_$$version
-|Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el _cloud provider_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la _patch version_.
+|Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el proveedor _cloud_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la versión _patch_.
 |v1.26.8
 |No
 
@@ -160,12 +160,12 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 |No
 
 |helm$$_$$repository
-|Repositorio de helm para la instalación de los charts de _Stratio_.
+|Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |-
 |No
 
 |region
-|Región del _cloud provider_ usada para el aprovisionamiento.
+|Región del proveedor _cloud_ usada para el aprovisionamiento.
 |eu-west-1
 |No
 
@@ -226,22 +226,22 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |No cuando infra$$_$$provider=azure.
 
 |gcp
-|Credenciales para acceso a GCP.
+|Credenciales para el acceso a GCP.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |No cuando infra$$_$$provider=gcp.
 
 |github$$_$$token
-|Token de GitHub. Se puede utilizar un _Fine-grained token_ o un token tipo _classic_ y no necesita ningún permiso. Para generarlo, ve a: 'Settings' → 'Developer settings' → 'Personal access tokens'.
+|Token de GitHub. Se puede utilizar un _Fine-grained token_ o un _token_ tipo _classic_ y no necesita ningún permiso. Para generarlo, ve a: 'Settings' → 'Developer settings' → 'Personal access tokens'.
 |github$$_$$pat$$_$$11APW.
 |Sí
 
 |docker$$_$$registries
-|_Registries_ de Docker accesibles por los nodos. Para EKS, no hace falta autenticación, ya que se hace automáticamente con las credenciales del usuario.
+|_Registries_ de Docker accesibles por los nodos. Para EKS no hace falta autenticación, ya que se hace automáticamente con las credenciales del usuario.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para _registries_ no autenticados.
 
 |helm$$_$$repository
-|Repositorio de helm para la instalación de los charts de _Stratio_.
+|Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para repositorios no autenticados.
 
@@ -289,7 +289,7 @@ En este apartado se indican las particularidades para el _control-plane_ de Kube
 ^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
 
 |aws
-|Valores específicos para el _logging_ de EKS (APIserver, audit, authenticator, controller$$_$$manager y/o scheduler).
+|Valores específicos para el _logging_ de EKS (_API Server, audit, authenticator, controller++_++manager_ y/o _scheduler_).
 a|
 
 [source,yaml]
@@ -301,7 +301,7 @@ logging:
 |Sí
 
 |azure
-|Valores específicos para el _control-plane_ de AKS (Free, Paid).
+|Valores específicos para el _control-plane_ de AKS (_Free, Paid_).
 a|
 
 [source,yaml]
@@ -312,7 +312,7 @@ tier: Paid
 |Sí
 
 |managed
-|Indica si el _control-plane_ es o no gestionado en el _cloud provider_.
+|Indica si el _control-plane_ es o no gestionado en el proveedor _cloud_.
 |true
 |No
 
@@ -426,11 +426,11 @@ Se presentan dos casos de descriptor para demostrar la capacidad del _cloud-prov
 En este ejemplo se pueden ver las siguientes particularidades:
 
 * _Cluster_ en AWS con _control-plane_ gestionado (EKS).
-* Kubernetes versión 1.26.x (EKS no tiene en cuenta la _patch version_).
+* Kubernetes versión 1.26.x (EKS no tiene en cuenta la versión _patch_).
 * Uso de ECR como _Docker registry_ (no necesita credenciales).
 * Uso de VPC y _subnets_ personalizadas (creadas anteriormente). Este apartado es opcional.
 * Definición de una _StorageClass_ por defecto. Este apartado es opcional.
-* Se habilitan los _logs_ del APIserver en EKS.
+* Se habilitan los _logs_ del API Server en EKS.
 * Grupos de nodos _workers_ con múltiples casuísticas:
 ** Diferentes tipos de instancia.
 ** Con clave SSH.
@@ -518,7 +518,7 @@ En este ejemplo se pueden ver las siguientes particularidades:
 * Uso de un _Docker registry_ autenticado genérico (con sus credenciales).
 * Sin control de la zona DNS (habilitado por defecto).
 * Definición de una _StorageClass_ por defecto. Este apartado es opcional.
-* Características de las VMs para el _control-plane_:
+* Características de las VM para el _control-plane_:
 ** Con alta disponibilidad (se despliegan 3 instancias).
 ** Con tipo de instancia específico.
 ** Con imagen específica (obligatoria para este _cloud provider_). Nota: las versiones de los componentes de la imagen deberán estar alineadas con la versión de Kubernetes indicada.
@@ -609,15 +609,15 @@ spec:
       node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-26-8-1679997686
 ----
 
-==== Azure no-gestionado
+==== Azure no gestionado
 
 En este ejemplo se pueden ver las siguientes particularidades:
 
 * _Cluster_ en Azure con _control-plane_ no gestionado.
 * Uso de ACR como _Docker registry_ (no necesita credenciales).
-* Uso de un CIDR específico para Pods.
+* Uso de un CIDR específico para _pods_.
 * Definición de una _StorageClass_ por defecto. Este apartado es opcional.
-* Características de las VMs para el _control-plane_:
+* Características de las VM para el _control-plane_:
 ** Con alta disponibilidad (se despliegan 3 instancias).
 ** Con tipo de instancia específico.
 ** Sin imagen específica (opcional para este _cloud provider_).
@@ -747,7 +747,7 @@ spec:
       type: Managed
 ----
 
-== Creación del cluster
+== Creación del _cluster_
 
 _cloud-provisioner_ es una herramienta que facilita el aprovisionamiento de los elementos necesarios en el _cloud provider_ especificado para la creación de un _cluster_ de Kubernetes según el <<descriptor_del_cluster, descriptor>> especificado.
 

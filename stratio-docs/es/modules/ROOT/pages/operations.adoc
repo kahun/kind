@@ -12,7 +12,7 @@ Para comunicarse con el APIserver del _cluster_ creado, es necesario el fichero 
 aws eks update-kubeconfig --region eu-west-1 --name <cluster_name> --kubeconfig ./<cluster_name>.kubeconfig
 -----
 
-* Para GCP, Azure no-gestionado y AKS, al finalizar del aprovisionamiento, el _kubeconfig_ se deja en el directorio de ejecución (_workspace_):
+* Para GCP, Azure no gestionado y AKS, al finalizar del aprovisionamiento, el _kubeconfig_ se deja en el directorio de ejecución (_workspace_):
 
 [source,bash]
 -----
@@ -53,7 +53,7 @@ data:
 
 image::controllers.png[]
 
-_Stratio KEOS_ permite realizar múltiples operaciones avanzadas interactuando con el _Stratio Cluster Operator_ (infrastructure as code o IaC), quién en su ciclo de reconciliación interactúa a su vez con los distintos providers para realizar las operaciones solicitadas.
+_Stratio KEOS_ permite realizar múltiples operaciones avanzadas interactuando con el _Stratio Cluster Operator_ (_infrastructure as code_ o IaC), quien en su ciclo de reconciliación interactua a su vez con los distintos proveedores para realizar las operaciones solicitadas.
 
 === _Self-healing_
 
@@ -109,7 +109,7 @@ Aunque se desaconseja el escalado manual de un grupo de nodos existente, se pres
 
 image::escalado-manual.png[]
 
-Para escalar manualmente un grupo de _workers_, se usa el objeto _KeosCluster_:
+Para escalar manualmente un grupo de _workers_ se usa el objeto _KeosCluster_:
 
 [source,bash]
 ----
@@ -126,7 +126,7 @@ spec:
       ...
 ----
 
-Verificamos el cambio consultando el status del objeto _KeosCluster_:
+Verifica el cambio consultando el estado del objeto _KeosCluster_:
 
 [source,bash]
 ----
@@ -135,19 +135,19 @@ kubectl -n cluster-<cluster_name> get keoscluster <cluster_name> --subresource=s
 
 ===== AKS
 
-En el caso de este provider, si están definidos los parámetros _min_size_ y _max_size_ en el objeto _KeosCluster_, no se realiza ninguna acción.
+En el caso de este proveedor, si están definidos los parámetros `min_size` y `max_size` en el objeto _KeosCluster_ no se realiza ninguna acción.
 
 NOTE: Los grupos de nodos del objeto _KeosCluster_ se corresponden en Azure a _Node pools_ dentro de AKS y sus correspondientes _VM Scale Sets_.
 
 El escalado manual de un grupo de nodos en AKS con el autoescalado configurado se deberá hacer desde el portal de Azure en:
 
-_VM Scale set -> <scale_set_name> -> Scalling -> <instance_number>_
+'VM Scale set' -> '<scale_set_name>' -> 'Scalling' -> '<instance_number>'
 
 o bien desde:
 
-_Kubernetes services_ -> <aks_name> -> Node pools -> <nodepool_name> -> Scale node pool -> Manual -> <node_count>
+'Kubernetes services' -> '<aks_name>' -> 'Node pools' -> '<nodepool_name>' -> 'Scale node pool' -> 'Manual' -> '<node_count>'
 
-Las nuevas instancias se pueden ver en _VM Scale set -> Instances_. Este cambio no se reflejará en el parámetro _quantity_ del grupo de nodos del objeto _KeosCluster_.
+Las nuevas instancias se pueden ver en 'VM Scale set' -> 'Instances'. Este cambio no se reflejará en el parámetro _quantity_ del grupo de nodos del objeto _KeosCluster_.
 
 Los tiempos estimados de este proceso son los siguientes:
 
@@ -162,7 +162,7 @@ The MachinePool is updated: 1m 33s
 
 ==== Crear un nuevo grupo de _workers_
 
-Para crear un nuevo grupo de nodos basta con crear un nuevo elemento al array _worker_nodes_ del objeto _KeosCluster_:
+Para crear un nuevo grupo de nodos basta con crear un nuevo elemento al _array_ _worker++_++nodes_ del objeto _KeosCluster_:
 
 [source,yaml]
 ----
@@ -184,7 +184,7 @@ spec:
       ssh_key: stg-key
 ----
 
-Nuevamente verificamos el cambio consultando el status del objeto _KeosCluster_:
+Nuevamente, verifica el cambio consultando el estado del objeto _KeosCluster_:
 
 [source,bash]
 ----
@@ -193,9 +193,9 @@ kubectl -n cluster-<cluster_name> get keoscluster <cluster_name> --subresource=s
 
 ==== Escalado vertical
 
-CAUTION: *AKS no soporta escalado vertical* de los grupos de nodos. Para este provider se deberá crear un grupo nuevo y eliminar el anterior como lo indica la https://learn.microsoft.com/en-us/azure/aks/resize-node-pool[documentación oficial].
+CAUTION: *AKS no soporta escalado vertical* de los grupos de nodos. Para este proveedor se deberá crear un grupo nuevo y eliminar el anterior como lo indica la https://learn.microsoft.com/en-us/azure/aks/resize-node-pool[documentación oficial].
 
-El escalado vertical de un grupo de nodos se realiza modificando el tipo de instancia en el objeto _KeosCluster_ correspondiente al grupo
+El escalado vertical de un grupo de nodos se realiza modificando el tipo de instancia en el objeto _KeosCluster_ correspondiente al grupo.
 
 [source,yaml]
 ----
@@ -213,7 +213,7 @@ image::autoescalado.png[]
 
 Para el autoescalado de nodos, se utiliza _cluster-autoscaler_, quien detectará _pods_ pendientes de ejecutar por falta de recursos y escalará el grupo de nodos que considere según los filtros de los despliegues.
 
-Esta operación se realiza en el APIserver, siendo los _controllers_ los encargados de crear las VMs en el proveedor de _Cloud_ y agregarlas al _cluster_ como nodos _workers_ de Kubernetes.
+Esta operación se realiza en el API Server, siendo los _controllers_ los encargados de crear las VM en el proveedor de _Cloud_ y agregarlas al _cluster_ como nodos _worker_ de Kubernetes.
 
 Dado que el autoescalado está basado en el _cluster-autoscaler_, se añadirá el mínimo y máximo en el grupo de nodos en el objeto _KeosCluster_:
 
@@ -230,9 +230,9 @@ spec:
 
 ===== AKS
 
-En este provider, el autoescalado se getiona desde los _VM Scale sets_ de Azure y no con el cluster-autoscaler.
+En este proveedor el autoescalado se getiona desde los _VM Scale sets_ de Azure y no con el _cluster-autoscaler_.
 
-Durante el aprovisionamiento, en el momento de crear los grupos de nodos, se instanciarán los _Node pools_ en AKS y sus respectivos _VM Scale Sets_. Si los grupos de nodos definidos tienen un rango de autoescalado, éstos se trasladarán a los _Node pools_ creados.
+Durante el aprovisionamiento, en el momento de crear los grupos de nodos se instanciarán los _Node pools_ en AKS y sus respectivos _VM Scale Sets_. Si los grupos de nodos definidos tienen un rango de autoescalado, estos se trasladarán a los _Node pools_ creados.
 
 Para verlos en el portal de Azure, se deberá consultar:
 
@@ -296,15 +296,15 @@ python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
 
 === Actualización de Kubernetes
 
-La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes, dentro del mismo proceso atómico: primero el _control-plane_ y, una vez que esté en la nueva versión, se procederá a la actualización de los nodos _workers_ iterando por cada grupo y actualizando los nodos uno a uno.
+La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes dentro del mismo proceso atómico: primero el _control-plane_ y, una vez que esté en la nueva versión, se procederá a la actualización de los nodos _worker_ iterando por cada grupo y actualizando los nodos uno a uno.
 
-CAUTION: La actualización de la version de Kubernetes de los nodos en los clusters donde no se haya especificado la imágen, puede implicar una actualización del Sistema Operativo.
+CAUTION: La actualización de la versión de Kubernetes de los nodos en los _clusters_ donde no se haya especificado la imagen puede implicar una actualización del Sistema Operativo.
 
 image::upgrade-cp.png[]
 
 image::upgrade-w.png[]
 
-Para iniciar la actualización, una vez satisfechos los prerequisitos, se ejecutará un _patch_ de _spec.k8s_version_ en el objeto _KeosCluster_:
+Para iniciar la actualización, una vez satisfechos los prerrequisitos se ejecutará un _patch_ de _spec.k8s++_++version_ en el objeto _KeosCluster_:
 
 [source,bash]
 ----
@@ -313,27 +313,27 @@ kubectl -n cluster-<cluster_name> patch KeosCluster <cluster_name> --type merge 
 
 NOTE: El _controller_ aprovisiona un nuevo nodo del grupo de _workers_ con la versión actualizada y, una vez que esté _Ready_ en Kubernetes, elimina un nodo con la versión vieja. De esta forma, asegura siempre el número de nodos configurado.
 
-==== Prerequisitos
+==== Prerrequisitos
 
-El upgrade de un cluster en entornos productivos, y especialmente en flavours no-gestionados, deberá hacerse extremando todas las precauciones. En particular, antes del upgrade del cluster, se recomienda realizar un backup de los objetos que gestionan la infraestructura con el siguiente comando:
+La actualización de versión de un _cluster_ en entornos productivos y especialmente en _flavours_ no gestionados deberá hacerse extremando todas las precauciones. En particular, antes de actualizar se recomienda hacer un _backup_ de los objetos que gestionan la infraestructura con el siguiente comando:
 
 [source,bash]
 ----
 clusterctl --kubeconfig ./kubeconfig/path move -n cluster-<cluster_name> --to-directory ./backup/path/
 ----
 
-En el caso de _control-plane_ gestionados, se deberá verificar que la versión deseada de Kubernetes está soportada por el provider.
+En el caso de un _control-plane_ gestionado, se deberá verificar que la versión deseada de Kubernetes está soportada por el proveedor.
 
 ===== EKS
 
-Previo a la actualización de EKS, debemos asegurar que la versión deseada está soportada, para ello, podemos utilizar el siguiente comando:
+Previo a la actualización de EKS debes asegurarte de que la versión deseada está soportada. Para ello, puedes utilizar el siguiente comando:
 
 [source,bash]
 ----
 aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compatibilities[] | .clusterVersion" | sort -nr | uniq | head -4
 ----
 
-===== GCP y Azure no-gestionado
+===== GCP y Azure no gestionado
 
 La GlobalNetworkPolicy creada para el _control-plane_ en la fase de instalación de KEOS, se deberá modificar de modo que *permita toda la red de los nodos momentáneamente* mientras se ejecuta el upgrade.
 
@@ -361,7 +361,7 @@ az aks get-versions --location <region> --output table
 
 ==== Verificación de etcd
 
-Una forma de asegurar que el etcd está correcto después de actualizar un _control-plane_ no-gestionado es abrir una terminal en cualquier Pod de etcd, ver el status del cluster y comparar las IPs de los miembros registrados con las IPs de los nodos del _control-plane_.
+Una forma de asegurar que el etcd está correcto después de actualizar un _control-plane_ no gestionado es abrir una terminal en cualquier _pod_ de etcd, ver el estado del _cluster_ y comparar las IP de los miembros registrados con las de los nodos del _control-plane_.
 
 [source,bash]
 ----
@@ -376,32 +376,37 @@ e member remove <member-id>
 
 === Eliminación del _cluster_
 
-Previo a la eliminación de los recusos del proveedor _Cloud_ generados por el _cloud-provisioner_, se deberán eliminar aquellos que han sido creados por el _keos-installer_ o cualquier automatismo externo (por ejemplo, los _Services_ de tipo _LoadBalancer_).
+[NOTE]
+.Consideraciones previas
+====
+Antes de eliminar los recursos del proveedor _cloud_ generados por _Stratio Cloud Provisioner_ se deberán eliminar aquellos creados por _keos-installer_ o cualquier automatismo externo (por ejemplo, los _Services_ de tipo _LoadBalancer_).
 
-A su vez se deberá tener en cuenta que el proceso requiere del binario del _clusterctl_ en la máquina bastión (cualquier ordenador con acceso al _APIserver_) en la que se va a ejecutar.
+Además, deberás tener en cuenta que el proceso requiere del binario del _clusterctl_ en la máquina bastión (cualquier ordenador con acceso al _API Server_) en la que se va a ejecutar.
 
-. Se crea un _cluster_ local indicando que no se genere ningún objeto en el  proveedor _Cloud_.
+Ejecuta los siguientes pasos para llevar a cabo la eliminación del _cluster_:
+
+. Crea un _cluster_ local indicando que no se genere ningún objeto en el proveedor _cloud_.
 +
 [source,bash]
 -----
 [bastion]$ sudo ./bin/cloud-provisioner create cluster --name <cluster_name> --descriptor cluster.yaml --vault-password <my-passphrase> --avoid-creation
 -----
 +
-. Se pausa el controller del _Stratio Cluster Operator_:
+. Pausa el _controller_ del _Stratio Cluster Operator_:
 +
 [source,bash]
 ----
 [bastion]$ kubectl --kubeconfig $KUBECONFIG -n kube-system scale deployment keoscluster-controller-manager --replicas 0
 ----
 +
-. Se mueve la gestión del _cluster_ _worker_ al _cluster_ local, utilizando el _kubeconfig_ correspondiente (nótese que para los _control-planes_ gestionados se necesitará el _kubeconfig_ del proveedor). Para asegurar este paso, se buscará el siguiente texto en la salida del comando: *Moving Cluster API objects Clusters=1*.
+. Se mueve la gestión del _cluster_ _worker_ al _cluster_ local, utilizando el _kubeconfig_ correspondiente (para los _control-planes_ gestionados se necesitará el _kubeconfig_ del proveedor). Para asegurar este paso, se buscará el siguiente texto en la salida del comando: *Moving Cluster API objects Clusters=1*.
 +
 [source,bash]
 -----
 [bastion]$ sudo clusterctl --kubeconfig $KUBECONFIG move -n cluster-<cluster_name> --to-kubeconfig /root/.kube/config
 -----
 +
-. Se accede al _cluster_ local y se elimina el _cluster_ _worker_.
+. Accede al _cluster_ local y elimina el _cluster_ _worker_.
 +
 [source,bash]
 -----
@@ -411,7 +416,7 @@ cluster.cluster.x-k8s.io "<cluster_name>" deleted
 root@<cluster_name>-control-plane:/#
 -----
 +
-. Finalmente, se elimina el _cluster_ local.
+. Finalmente, elimina el _cluster_ local.
 +
 [source,bash]
 -----

@@ -9,23 +9,23 @@ image::eks-reference-architecture.png[]
 
 image::arq-intro.png[]
 
-_Stratio Cloud Provisioner_ es la fase inicial para la creación de un cluster de _Stratio KEOS_ en un _cloud provider_. Ésta comprende el aprovisionamiento de la infraestructura (máquinas virtuales, red privada, load balancers,  etc. en el _cloud_), la creación de un cluster de Kubernetes, su networking y almacenamiento.
+_Stratio Cloud Provisioner_ es la fase inicial para la creación de un _cluster_ de _Stratio KEOS_ en un _cloud provider_. Esta comprende el aprovisionamiento de la infraestructura (máquinas virtuales, red privada, balanceadores de carga, etc., en el _cloud_), la creación de un _cluster_ de Kubernetes, su _networking_ y almacenamiento.
 
-Para llevar a cabo la creación del cluster, el cloud-privisioner creará un recurso de Kubernetes _KeosCluster_ y el controller encargado de su ciclo de vida, _Stratio Cluster Operator_. Este _KeosCluster_ será el encargado de la generación de los recursos necesarios para la creación y operación del cluster.
+Para llevar a cabo la creación del _cluster_, _Stratio Cloud Provisioner_ creará un recurso de Kubernetes _KeosCluster_ y el _controller_ encargado de su ciclo de vida, _Stratio Cluster Operator_. Este _KeosCluster_ será el encargado de la generación de los recursos necesarios para la creación y operación del _cluster_.
 
-Al finalizar la creación del cluster en esta fase, y según un descriptor de cluster indicado, se creará un fichero descriptor (keos.yaml) y otro cifrado de credenciales (secrets.yml) para la siguiente fase, de instalación de _Stratio KEOS_.
+Al finalizar la creación del _cluster_ en esta fase y según un descriptor de _cluster_ indicado, se creará un fichero descriptor (_keos.yaml_) y otro cifrado de credenciales (_secrets.yml_) para la siguiente fase, de instalación de _Stratio KEOS_.
 
-Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura cloud en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del cluster. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_
+Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura _cloud_ en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del _cluster_. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_.
 
 == Objeto _KeosCluster_
 
-Durante la fase de instalación, tras desplegar el chart de helm de _Stratio Cluster Operator_ y, teniendo como punto de partida el descriptor del cluster, se creará por defecto un recurso _KeosCluster_ que centralizará la creación del cluster y de todos los objetos de los distintos proveedores Cloud y las operaciones sobre estos.
+Durante la fase de instalación, tras desplegar el _chart_ de Helm de _Stratio Cluster Operator_ y teniendo como punto de partida el descriptor del _cluster_, se creará por defecto un recurso _KeosCluster_ que centralizará la creación del _cluster_ y de todos los objetos de los distintos proveedores _Cloud_ y las operaciones sobre estos.
 
 === Mitigación del error humano
 
-Al centralizar todas las operaciones sobre el cluster y los distintos recursos cloud, una vez se inicie una operación en el cluster, desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
+Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos _cloud_, una vez se inicie una operación en el _cluster_ desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
 
-Para ello se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
+Para ello, se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
 == Objetos del proveedor del _Cloud_
 

@@ -30,13 +30,13 @@
               "secretsmanager:TagResource"
           ],
           "Resource": [
-              "arn:aws:secretsmanager:*:268367799918:secret:aws.cluster.x-k8s.io/*",
-              "arn:aws:kms:*:268367799918:key/*",
-              "arn:aws:ec2:*:268367799918:internet-gateway/*",
-              "arn:aws:ec2:*:268367799918:route-table/*",
-              "arn:aws:ec2:*:268367799918:vpc/*",
-              "arn:aws:eks:*:268367799918:addon/*",
-              "arn:aws:eks:*:268367799918:cluster/*",
+              "arn:aws:secretsmanager:*:${AWS_ACCOUNT_ID}:secret:aws.cluster.x-k8s.io/*",
+              "arn:aws:kms:*:${AWS_ACCOUNT_ID}:key/*",
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:internet-gateway/*",
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:route-table/*",
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:vpc/*",
+              "arn:aws:eks:*:${AWS_ACCOUNT_ID}:addon/*",
+              "arn:aws:eks:*:${AWS_ACCOUNT_ID}:cluster/*",
               "arn:aws:ecr:*:*:repository/*"
           ]
       },
@@ -47,7 +47,7 @@
               "ec2:RevokeSecurityGroupIngress"
           ],
           "Resource": [
-              "arn:aws:ec2:*:268367799918:security-group/*"
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:security-group/*"
           ]
       },
       {
@@ -57,9 +57,9 @@
               "ec2:DisassociateVpcCidrBlock"
           ],
           "Resource": [
-              "arn:aws:ec2::268367799918:ipam-pool/*",
-              "arn:aws:ec2:*:268367799918:vpc/*",
-              "arn:aws:ec2:*:268367799918:ipv6pool-ec2/*"
+              "arn:aws:ec2::${AWS_ACCOUNT_ID}:ipam-pool/*",
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:vpc/*",
+              "arn:aws:ec2:*:${AWS_ACCOUNT_ID}:ipv6pool-ec2/*"
           ]
       },
       {
@@ -93,9 +93,9 @@
               "iam:GetOpenIDConnectProvider"
           ],
           "Resource": [
-              "arn:aws:iam::268367799918:role/*",
-              "arn:aws:iam::268367799918:instance-profile/*",
-              "arn:aws:iam::268367799918:oidc-provider/*"
+              "arn:aws:iam::${AWS_ACCOUNT_ID}:role/*",
+              "arn:aws:iam::${AWS_ACCOUNT_ID}:instance-profile/*",
+              "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/*"
           ]
       },
       {
@@ -107,10 +107,10 @@
               "elasticloadbalancing:ModifyLoadBalancerAttributes",
               "elasticloadbalancing:DeleteLoadBalancer",
               "elasticloadbalancing:RemoveTags",
-              "iam:CreateOpenIDConnectProvider"
+              "elasticloadbalancing:ConfigureHealthCheck"
           ],
           "Resource": [
-              "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
+              "arn:aws:elasticloadbalancing:*:${AWS_ACCOUNT_ID}:loadbalancer/*"
           ]
       },
       {
@@ -168,7 +168,7 @@
       {
           "Effect": "Allow",
           "Action": "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-          "Resource": "arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/*"
+          "Resource": "arn:aws:elasticloadbalancing:*:${AWS_ACCOUNT_ID}:loadbalancer/*"
       }
   ]
 }
