@@ -400,7 +400,7 @@ Los siguientes binarios deberán estar disponibles en la máquina bastión:
 - kubectl
 - jq
 
-Se deberán asegurar los permisos necesarios en el directorio backup de la máquina bastión para que el usuario que ejecuta el script pueda escribir en él (se crea el directorio ./backup/upgrade/).
+Se deberán asegurar los permisos necesarios en el directorio _backup_ de la máquina bastión para que el usuario que ejecuta el _script_ pueda escribir en él (se crea el directorio ./backup/upgrade/).
 
 ==== Ejecución
 
