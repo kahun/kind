@@ -21,7 +21,7 @@ En el caso de los despliegues en AWS no gestionado, se deberá utilizar https://
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
-=== GCP no-gestionado
+=== GCP no gestionado
 
 * Permisos
 +
