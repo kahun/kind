@@ -25,25 +25,25 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Para los despliegues en Google Cloud Platform no-gestionado, se necesitarán principalmente permisos en _compute_ (instancias, discos, imágenes, _routers_, redes, etc.). Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados.
+Para los despliegues en Google Cloud Platform no gestionado se necesitarán principalmente permisos en _compute_ (instancias, discos, imágenes, _routers_, redes, etc.). Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados.
 +
 ** xref:attachment$stratio-gcp-permissions.list[Descargar permisos para GCP]
 
 * Sistemas operativos certificados
 +
-Para los entornos en GCP no-gestionado, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:gcp-image-builder.adoc[guía para GCP].
+Para los entornos en GCP no gestionado se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes consulta la xref:ROOT:gcp-image-builder.adoc[guía para GCP].
 +
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
-=== Azure no-gestionado
+=== Azure no gestionado
 
 * Permisos
 +
-Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un role para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un rol para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
 ** xref:attachment$stratio-azure-role.json[Descargar permisos para Azure]
-** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para workers de Azure]
-** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para control-plane de Azure]
+** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para _workers_ de Azure]
+** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para _control-plane_ de Azure]
 
 * Sistemas operativos certificados
 +
@@ -57,19 +57,19 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Este tipo de clusters se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del cluster (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
 +
 ** xref:attachment$stratio-aks-role.json[Descargar permisos para Azure]
-** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para workers de Azure]
-** xref:attachment$stratio-aks-cp-role.json[Descargar permisos para control-plane de Azure]
+** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para _workers_ de Azure]
+** xref:attachment$stratio-aks-cp-role.json[Descargar permisos para _control-plane_ de Azure]
 
 * Sistemas operativos certificados
 +
-Este flavour no permite especificar ninguna imagen custom, y despliega por defecto Ubuntu 22.04.
+Este _flavour_ no permite especificar ninguna imagen personalizada y despliega por defecto Ubuntu 22.04.
 
 === Consideraciones para imágenes
 
-Si nos referimos al control-plane, y como es evidente, en EKS y AKS no se podrá indicar una imagen, pero en AWS no-gestionado, Azure no-gestionado y en GCP si.
+Refiriéndose al _control-plane_, en EKS y AKS no se podrá indicar una imagen, pero en AWS y Azure no gestionados y en GCP sí.
 
 Tanto para los control-plane como para los nodos workers, es obligatorio indicar las imágenes en GCP no-gestionado para todas las versiones y en AWS no-gestionado para versiones de Kubernetes 1.27 o superiores en el caso de usar ECR como registry.
 
