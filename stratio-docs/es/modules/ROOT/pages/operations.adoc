@@ -389,7 +389,7 @@ root@<cluster_name>-control-plane:/#
 
 === Actualización de _Stratio Cloud Provisioner_
 
-==== Prerequisitos
+==== Prerrequisitos
 
 Los siguientes binarios deberán estar disponibles en la máquina bastión:
 
