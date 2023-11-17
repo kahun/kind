@@ -25,7 +25,7 @@ Durante la fase de instalación, tras desplegar el _chart_ de Helm de _Stratio C
 
 Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos _cloud_, una vez se inicie una operación en el _cluster_ desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
 
-Para ello se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
+Para ello, se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
 == Objetos del proveedor del _Cloud_
 
