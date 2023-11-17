@@ -15,7 +15,7 @@ Para llevar a cabo la creación del _cluster_, _Stratio Cloud Provisioner_ crear
 
 Al finalizar la creación del _cluster_ en esta fase y según un descriptor de _cluster_ indicado, se creará un fichero descriptor (_keos.yaml_) y otro cifrado de credenciales (_secrets.yml_) para la siguiente fase, de instalación de _Stratio KEOS_.
 
-Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura cloud en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del cluster. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_
+Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura _cloud_ en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del _cluster_. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_.
 
 == Objeto _KeosCluster_
 
