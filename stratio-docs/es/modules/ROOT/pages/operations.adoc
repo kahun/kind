@@ -380,7 +380,7 @@ cluster.cluster.x-k8s.io "<cluster_name>" deleted
 root@<cluster_name>-control-plane:/#
 -----
 +
-. Finalmente, se elimina el _cluster_ local.
+. Finalmente, elimina el _cluster_ local.
 +
 [source,bash]
 -----
