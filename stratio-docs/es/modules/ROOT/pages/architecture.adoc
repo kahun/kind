@@ -9,7 +9,7 @@ image::eks-reference-architecture.png[]
 
 image::arq-intro.png[]
 
-_Stratio Cloud Provisioner_ es la fase inicial para la creación de un cluster de _Stratio KEOS_ en un _cloud provider_. Ésta comprende el aprovisionamiento de la infraestructura (máquinas virtuales, red privada, load balancers,  etc. en el _cloud_), la creación de un cluster de Kubernetes, su networking y almacenamiento.
+_Stratio Cloud Provisioner_ es la fase inicial para la creación de un _cluster_ de _Stratio KEOS_ en un _cloud provider_. Esta comprende el aprovisionamiento de la infraestructura (máquinas virtuales, red privada, balanceadores de carga, etc., en el _cloud_), la creación de un _cluster_ de Kubernetes, su _networking_ y almacenamiento.
 
 Para llevar a cabo la creación del _cluster_, _Stratio Cloud Provisioner_ creará un recurso de Kubernetes _KeosCluster_ y el _controller_ encargado de su ciclo de vida, _Stratio Cluster Operator_. Este _KeosCluster_ será el encargado de la generación de los recursos necesarios para la creación y operación del _cluster_.
 
