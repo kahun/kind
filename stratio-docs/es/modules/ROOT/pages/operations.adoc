@@ -382,6 +382,7 @@ e member remove <member-id>
 Antes de eliminar los recursos del proveedor _cloud_ generados por _Stratio Cloud Provisioner_ se deberán eliminar aquellos creados por _keos-installer_ o cualquier automatismo externo (por ejemplo, los _Services_ de tipo _LoadBalancer_).
 
 Además, deberás tener en cuenta que el proceso requiere del binario del _clusterctl_ en la máquina bastión (cualquier ordenador con acceso al _API Server_) en la que se va a ejecutar.
+====
 
 Ejecuta los siguientes pasos para llevar a cabo la eliminación del _cluster_:
 
