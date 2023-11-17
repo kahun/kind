@@ -404,7 +404,7 @@ Se deberán asegurar los permisos necesarios en el directorio _backup_ de la má
 
 ==== Ejecución
 
-Para actualizar la versión de cloud-provisioner (0.2 to 0.3) ejecutaremos el script upgrade-provisioner_v0.3.py. Podemos consultar la ayuda del script con el siguiente comando:
+Para actualizar la versión de _Stratio Cloud Provisioner_ de 0.2 a 0.3 debes ejecutar el _script_ `upgrade-provisioner_v0.3.py`. Puedes consultar la ayuda del _script_ con el siguiente comando:
 
 [source,bash]
 ----
