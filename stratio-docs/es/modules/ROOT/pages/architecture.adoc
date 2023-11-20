@@ -1,4 +1,3 @@
-:caution-caption: ⛔
 = Arquitectura
 
 Arquitectura de referencia:
@@ -15,7 +14,7 @@ Para llevar a cabo la creación del _cluster_, _Stratio Cloud Provisioner_ crear
 
 Al finalizar la creación del _cluster_ en esta fase y según un descriptor de _cluster_ indicado, se creará un fichero descriptor (_keos.yaml_) y otro cifrado de credenciales (_secrets.yml_) para la siguiente fase, de instalación de _Stratio KEOS_.
 
-Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura _cloud_ en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del _cluster_. Estás ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_.
+Una vez finalizada la instalación, todas las operaciones de día 2 sobre la propia infraestructura _cloud_ en la que se ejecuten los distintos servicios se deben realizar mediante la edición de _KeosCluster_ para gestionar los recursos del _cluster_. Estas ediciones serán validadas y aplicadas por el _Stratio Cluster Operator_.
 
 == Objeto _KeosCluster_
 
@@ -23,13 +22,13 @@ Durante la fase de instalación, tras desplegar el _chart_ de Helm de _Stratio C
 
 === Mitigación del error humano
 
-Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos _cloud_, una vez se inicie una operación en el _cluster_ desencadenada por una edición del objeto _KeosCluster_, el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
+Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos _cloud_, una vez se inicie una operación desencadenada por una edición del objeto _KeosCluster_ el controlador _Stratio Cluster Operator_ denegará cualquier otra solicitud hasta que haya finalizado la operación previa.
 
 Para ello, se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
-== Objetos del proveedor del _Cloud_
+== Objetos del proveedor del _cloud_
 
-En un *despliegue por defecto* se crean los siguientes objetos en cada _cloud provider_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
+En un *despliegue por defecto* se crean los siguientes objetos en cada proveedor _cloud_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
 
 === EKS
 

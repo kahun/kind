@@ -57,7 +57,7 @@ El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04
 
 * Permisos
 +
-Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en _spec.security.nodes_identity_) y otro para el _control-plane_ (indicado en el descriptor en _spec.security.control_plane_identity_).
+Este tipo de _clusters_ se deberá desplegar utilizando una identidad con los roles necesarios para la creación de los recursos en Azure así como para los _workers_ del _cluster_ (indicado en el descriptor en "spec.security.nodes_identity") y otro para el _control-plane_ (indicado en el descriptor en "spec.security.control_plane_identity").
 +
 ** xref:attachment$stratio-aks-role.json[Descargar permisos para Azure]
 ** xref:attachment$stratio-aks-nodes-role.json[Descargar permisos para _workers_ de Azure]
@@ -139,57 +139,57 @@ El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
 |===
 ^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
 
-|infra$$_$$provider
+|_infra++_++provider_
 |Nombre del _cloud provider_ (AWS, GCP o Azure).
 |aws
 |No
 
-|<<credentials, credentials>>
+|<<credentials, _credentials_>>
 |Set de credenciales del proveedor _cloud_ usadas en el aprovisionamiento.
 |Ver el <<ejemplo_de_descriptor,Ejemplo de descriptor>>
 |No en 1ª ejecución.
 
-|k8s$$_$$version
+|_k8s++_++version_
 |Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el proveedor _cloud_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la versión _patch_.
 |v1.26.8
 |No
 
-|docker$$_$$registries
+|_docker++_++registries_
 |_Registries_ de Docker accesibles por los nodos.
 |-
 |No
 
-|helm$$_$$repository
+|_helm++_++repository_
 |Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |-
 |No
 
-|region
+|_region_
 |Región del proveedor _cloud_ usada para el aprovisionamiento.
 |eu-west-1
 |No
 
-|external$$_$$domain
+|_external++_++domain_
 |Dominio externo al _cluster_.
 |domain.ext
 |No
 
-|<<keos, keos>>
+|<<keos, _keos_>>
 |Sección de configuraciones para la instalación de _Stratio KEOS_.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |No
 
-|storageclass
+|_storageclass_
 |Configuración de la _StorageClass_ que se creará por defecto en el _cluster_.
 |Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí
 
-|<<networks, networks>>
+|<<networks, _networks_>>
 |Identificadores de la infraestructura creada previamente.
 |Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí
 
-|<<control_plane, control$$_$$plane>>
+|<<control_plane, _control++_++plane_>>
 |Especificaciones para el _control-plane_ de Kubernetes.
 |Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |No
@@ -218,29 +218,29 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |aws
 |Credenciales para acceso a AWS.
 |Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
-|No cuando infra$$_$$provider=aws.
+|No cuando infra++_++provider=aws.
 
 |azure
 |Credenciales para acceso a Azure.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
-|No cuando infra$$_$$provider=azure.
+|No cuando infra++_++provider=azure.
 
 |gcp
 |Credenciales para el acceso a GCP.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
-|No cuando infra$$_$$provider=gcp.
+|No cuando infra++_++provider=gcp.
 
-|github$$_$$token
+|_github++_++token_
 |Token de GitHub. Se puede utilizar un _Fine-grained token_ o un _token_ tipo _classic_ y no necesita ningún permiso. Para generarlo, ve a: 'Settings' → 'Developer settings' → 'Personal access tokens'.
-|github$$_$$pat$$_$$11APW.
+|_github++_++pat++_++11APW_
 |Sí
 
-|docker$$_$$registries
+|_docker++_++registries_
 |_Registries_ de Docker accesibles por los nodos. Para EKS no hace falta autenticación, ya que se hace automáticamente con las credenciales del usuario.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para _registries_ no autenticados.
 
-|helm$$_$$repository
+|_helm++_++repository_
 |Repositorio de Helm para la instalación de los _charts_ de Stratio.
 |ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
 |Sí, para repositorios no autenticados.
@@ -749,7 +749,7 @@ spec:
 
 == Creación del _cluster_
 
-_cloud-provisioner_ es una herramienta que facilita el aprovisionamiento de los elementos necesarios en el _cloud provider_ especificado para la creación de un _cluster_ de Kubernetes según el <<descriptor_del_cluster, descriptor>> especificado.
+_Stratio Cloud Provisioner_ es una herramienta que facilita el aprovisionamiento de los elementos necesarios en el proveedor _clour_ especificado para la creación de un _cluster_ de Kubernetes según el <<descriptor_del_cluster, descriptor>> especificado.
 
 Actualmente, este binario incluye las siguientes opciones:
 

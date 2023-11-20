@@ -1,9 +1,8 @@
-:caution-caption: ⛔
 = Operaciones
 
 == Obtención del _kubeconfig_
 
-Para comunicarse con el APIserver del _cluster_ creado, es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _Cloud_ utilizado y la gestión del control-plane del _cluster_.
+Para comunicarse con el _API Server_ del _cluster_ creado, es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _cloud_ utilizado y la gestión del control-plane del _cluster_.
 
 * Para EKS, se obtendrá de la forma indicada por AWS:
 
@@ -147,7 +146,7 @@ o bien desde:
 
 'Kubernetes services' -> '<aks_name>' -> 'Node pools' -> '<nodepool_name>' -> 'Scale node pool' -> 'Manual' -> '<node_count>'
 
-Las nuevas instancias se pueden ver en 'VM Scale set' -> 'Instances'. Este cambio no se reflejará en el parámetro _quantity_ del grupo de nodos del objeto _KeosCluster_.
+Las nuevas instancias se pueden ver en 'VM Scale set' -> 'Instances'. Este cambio no se reflejará en el parámetro `quantity` del grupo de nodos del objeto _KeosCluster_.
 
 Los tiempos estimados de este proceso son los siguientes:
 
@@ -213,7 +212,7 @@ image::autoescalado.png[]
 
 Para el autoescalado de nodos, se utiliza _cluster-autoscaler_, quien detectará _pods_ pendientes de ejecutar por falta de recursos y escalará el grupo de nodos que considere según los filtros de los despliegues.
 
-Esta operación se realiza en el API Server, siendo los _controllers_ los encargados de crear las VM en el proveedor de _Cloud_ y agregarlas al _cluster_ como nodos _worker_ de Kubernetes.
+Esta operación se realiza en el _API Server_, siendo los _controllers_ los encargados de crear las VM en el proveedor de _cloud_ y agregarlas al _cluster_ como nodos _worker_ de Kubernetes.
 
 Dado que el autoescalado está basado en el _cluster-autoscaler_, se añadirá el mínimo y máximo en el grupo de nodos en el objeto _KeosCluster_:
 
@@ -236,7 +235,7 @@ Durante el aprovisionamiento, en el momento de crear los grupos de nodos se inst
 
 Para verlos en el portal de Azure, se deberá consultar:
 
-_Kubernetes services_ -> <aks_name> -> Node pools -> <nodepool_name> -> Scale node pool -> Autoscale
+'Kubernetes services' -> 'aks_name>' -> 'Node pools' -> '<nodepool_name>' -> 'Scale node pool' -> 'Autoscale'.
 
 ==== Prueba
 
@@ -265,7 +264,7 @@ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-auto
 
 === Actualización de _Stratio Cloud Provisioner_
 
-==== Prerequisitos
+==== Prerrequisitos
 
 Los siguientes binarios deberán estar disponibles en la máquina bastión:
 
@@ -276,11 +275,11 @@ Los siguientes binarios deberán estar disponibles en la máquina bastión:
 - kubectl
 - jq
 
-Se deberán asegurar los permisos necesarios en el directorio backup de la máquina bastión para que el usuario que ejecuta el script pueda escribir en él (se crea el directorio ./backup/upgrade/).
+Se deberán asegurar los permisos necesarios en el directorio _backup_ de la máquina bastión para que el usuario que ejecuta el _script_ pueda escribir en él (se crea el directorio ./backup/upgrade/).
 
 ==== Ejecución
 
-Para actualizar la versión de cloud-provisioner (0.2 to 0.3) ejecutaremos el script upgrade-provisioner_v0.3.py. Podemos consultar la ayuda del script con el siguiente comando:
+Para actualizar la versión de _Stratio Cloud Provisioner_ de 0.2 a 0.3 se debe ejecutar el _script_ _upgrade-provisioner++_++v0.3.py_. Puedes consultar la ayuda del _script_ con el siguiente comando:
 
 [source,bash]
 ----
@@ -296,7 +295,7 @@ python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
 
 === Actualización de Kubernetes
 
-La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes dentro del mismo proceso atómico: primero el _control-plane_ y, una vez que esté en la nueva versión, se procederá a la actualización de los nodos _worker_ iterando por cada grupo y actualizando los nodos uno a uno.
+La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes dentro del mismo proceso atómico: primero, el _control-plane_, y una vez que esté en la nueva versión, los nodos _worker_, iterando por cada grupo y actualizándolos uno a uno.
 
 CAUTION: La actualización de la versión de Kubernetes de los nodos en los _clusters_ donde no se haya especificado la imagen puede implicar una actualización del Sistema Operativo.
 
@@ -335,9 +334,9 @@ aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compati
 
 ===== GCP y Azure no gestionado
 
-La GlobalNetworkPolicy creada para el _control-plane_ en la fase de instalación de KEOS, se deberá modificar de modo que *permita toda la red de los nodos momentáneamente* mientras se ejecuta el upgrade.
+La _GlobalNetworkPolicy_ creada para el _control-plane_ en la fase de instalación de _Stratio KEOS_ se deberá modificar de modo que *permita toda la red de los nodos momentáneamente* mientras se ejecuta la actualización de versión.
 
-Una vez finalizada la actualización, se deberán actualizar las IPs internas de los nodos y las de tunel asignadas a dichos nodos:
+Una vez finalizada, se deberán actualizar las IP internas de los nodos y las de túnel asignadas a dichos nodos:
 
 [source,bash]
 ----
@@ -400,7 +399,7 @@ Ejecuta los siguientes pasos para llevar a cabo la eliminación del _cluster_:
 [bastion]$ kubectl --kubeconfig $KUBECONFIG -n kube-system scale deployment keoscluster-controller-manager --replicas 0
 ----
 +
-. Se mueve la gestión del _cluster_ _worker_ al _cluster_ local, utilizando el _kubeconfig_ correspondiente (para los _control-planes_ gestionados se necesitará el _kubeconfig_ del proveedor). Para asegurar este paso, se buscará el siguiente texto en la salida del comando: *Moving Cluster API objects Clusters=1*.
+. Mueve la gestión del _cluster_ _worker_ al _cluster_ local utilizando el _kubeconfig_ correspondiente (para los _control-planes_ gestionados, se necesitará el _kubeconfig_ del proveedor). Para asegurar este paso, se buscará el siguiente texto en la salida del comando: *Moving Cluster API objects Clusters=1*.
 +
 [source,bash]
 -----
