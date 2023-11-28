@@ -21,6 +21,7 @@
         "Microsoft.ContainerService/managedClusters/listClusterAdminCredential/action",
         "Microsoft.ContainerService/managedClusters/agentPools/read",
         "Microsoft.ContainerService/managedClusters/agentPools/write",
+        "Microsoft.ContainerService/managedClusters/agentPools/delete",
         "Microsoft.ContainerService/managedClusters/delete",
         "Microsoft.Compute/virtualMachineScaleSets/*"
     ],
