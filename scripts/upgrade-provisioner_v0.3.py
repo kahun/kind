@@ -166,8 +166,7 @@ spec:
       k8s-app: kube-dns
 """
 
-    if provider != "aws":
-        capi_kubeadm_pdb = """
+    capi_kubeadm_pdb = """
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
