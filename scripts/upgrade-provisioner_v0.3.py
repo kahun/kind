@@ -351,7 +351,7 @@ spec:
     print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI_VERSION + ":", end =" ", flush=True)
     command = kubectl + " -n " + namespace + " get deploy -o json  | jq -r '.items[0].spec.template.spec.containers[].image' 2>/dev/null | cut -d: -f2"
     status, output = subprocess.getstatusoutput(command)
-    if status == 0 and output == version:
+    if status == 0 and output.split("@")[0] == version:
         print("SKIP")
     elif status == 0:
         command = (env_vars + " clusterctl upgrade apply --kubeconfig " + kubeconfig + " --wait-providers" +
