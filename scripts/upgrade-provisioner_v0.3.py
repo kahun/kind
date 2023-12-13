@@ -132,7 +132,6 @@ def restore_capsule(dry_run):
 
 def add_pdbs(provider, namespace, dry_run):
     pdb = ""
-    capi_kubeadm_pdb = ""
     capi_pdb = """
 ---
 apiVersion: policy/v1
