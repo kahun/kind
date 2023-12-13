@@ -477,6 +477,7 @@ def upgrade_calico(dry_run):
     values = subprocess.getoutput(helm + " -n tigera-operator get values calico -o json")
     values = values.replace("v3.25.1", CALICO_VERSION)
     values = values.replace("v1.29.3", CALICO_NODE_VERSION)
+    values = values.replace('"podAnnotations":{}', '"podAnnotations":{"cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes": "var-lib-calico"}')
 
     # Write calico values to file
     if not dry_run:
