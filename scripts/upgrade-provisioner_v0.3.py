@@ -164,7 +164,6 @@ spec:
     matchLabels:
       k8s-app: kube-dns
 """
-
     capi_kubeadm_pdb = """
 ---
 apiVersion: policy/v1
