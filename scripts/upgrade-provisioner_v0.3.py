@@ -11,7 +11,7 @@
 # Supported providers: EKS, GCP, Azure                       #
 ##############################################################
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import argparse
 import os
@@ -33,12 +33,13 @@ CALICO_NODE_VERSION = "v1.30.5"
 AZUREDISK_CSI_DRIVER_CHART = "v1.28.3"
 AZUREFILE_CSI_DRIVER_CHART = "v1.28.3"
 CLOUD_PROVIDER_AZURE_CHART = "v1.28.0"
-CLUSTER_OPERATOR = "0.1.4"
+CLUSTER_OPERATOR = "0.1.5-27a310c"
+CLOUD_PROVISIONER = "0.17.0-0.3.5"
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='''This script upgrades a cluster installed using cloud-provisioner:0.17.0-0.2.0 to
-                        0.17.0-0.3.3 by upgrading CAPX and Calico and installing cluster-operator.
+                        ''' + CLOUD_PROVISIONER + ''' by upgrading CAPX and Calico and installing cluster-operator.
                         It requires kubectl, helm and jq binaries in $PATH.
                         A component (or all) must be selected for upgrading.
                         By default, the process will wait for confirmation for every component selected for upgrade.''',
@@ -54,11 +55,13 @@ def parse_args():
     parser.add_argument("--helm-password", help="Set the helm repository password for installing cluster-operator")
     parser.add_argument("--disable-backup", action="store_true", help="Disable backing up files before upgrading (enabled by default)")
     parser.add_argument("--disable-prepare-capsule", action="store_true", help="Disable preparing capsule for the upgrade process (enabled by default)")
-    parser.add_argument("--only-capx", action="store_true", help="Upgrade only CAPx components")
-    parser.add_argument("--only-calico", action="store_true", help="Upgrade only Calico components")
-    parser.add_argument("--only-drivers", action="store_true", help="Upgrade only Azure drivers")
-    parser.add_argument("--only-cluster-operator", action="store_true", help="Install only Cluster Operator")
-    parser.add_argument("--only-cluster-operator-descriptor", action="store_true", help="Create only Cluster Operator descriptor")
+    parser.add_argument("--only-pdbs", action="store_true", help="Only add PodDisruptionBudgets")
+    parser.add_argument("--only-annotations", action="store_true", help="Only add annotations to evict local volumes")
+    parser.add_argument("--only-capx", action="store_true", help="Only upgrade CAPx components")
+    parser.add_argument("--only-calico", action="store_true", help="Only upgrade Calico components")
+    parser.add_argument("--only-drivers", action="store_true", help="Only upgrade Azure drivers")
+    parser.add_argument("--only-cluster-operator", action="store_true", help="Only install Cluster Operator")
+    parser.add_argument("--only-cluster-operator-descriptor", action="store_true", help="Only create Cluster Operator descriptor")
     parser.add_argument("--dry-run", action="store_true", help="Do not upgrade components. This invalidates all other options")
     args = parser.parse_args()
     return vars(args)
@@ -127,9 +130,7 @@ def restore_capsule(dry_run):
                "| " + kubectl + " apply -f -")
     execute_command(command, dry_run)
 
-def upgrade_capx(kubeconfig, provider, namespace, version, env_vars, dry_run):
-    replicas = "2"
-    gnp = ""
+def add_pdbs(provider, namespace, dry_run):
     pdb = ""
     capi_kubeadm_pdb = ""
     capi_pdb = """
@@ -148,6 +149,21 @@ spec:
     matchLabels:
       control-plane: controller-manager
       cluster.x-k8s.io/provider: cluster-api
+"""
+    core_dns_pdb = """
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns
+  labels:
+    k8s-app: kube-dns
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns
 """
 
     if provider != "aws":
@@ -185,25 +201,6 @@ spec:
 """
 
     if provider == "aws":
-        gnp = """
----
-apiVersion: crd.projectcalico.org/v1
-kind: GlobalNetworkPolicy
-metadata:
-  name: allow-traffic-to-aws-imds-capa
-spec:
-  egress:
-  - action: Allow
-    destination:
-      nets:
-      - 169.254.169.254/32
-    protocol: TCP
-  order: 0
-  namespaceSelector: kubernetes.io/metadata.name in { 'kube-system', 'capa-system' }
-  selector: app.kubernetes.io/name == 'aws-ebs-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-aws' || k8s-app == 'aws-cloud-controller-manager'
-  types:
-  - Egress
-"""
         pdb = """
 ---
 apiVersion: policy/v1
@@ -223,25 +220,6 @@ spec:
 """
 
     if provider == "gcp":
-        gnp = """
----
-apiVersion: crd.projectcalico.org/v1
-kind: GlobalNetworkPolicy
-metadata:
-  name: allow-traffic-to-gcp-imds-capg
-spec:
-  egress:
-  - action: Allow
-    destination:
-      nets:
-      - 169.254.169.254/32
-    protocol: TCP
-  order: 0
-  namespaceSelector: kubernetes.io/metadata.name in { 'kube-system', 'capg-system' }
-  selector: app == 'gcp-compute-persistent-disk-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-gcp'
-  types:
-  - Egress
-"""
         pdb = """
 ---
 apiVersion: policy/v1
@@ -279,11 +257,6 @@ spec:
       cluster.x-k8s.io/provider: infrastructure-azure
 """
 
-    if provider != "azure":
-        print("[INFO] Updating GlobalNetworkPolicy:", end =" ", flush=True)
-        command = "cat <<EOF | " + kubectl + " apply -f -" + gnp + "EOF"
-        execute_command(command, dry_run)
-
     print("[INFO] Adding PodDisruptionBudget to " + namespace.split("-")[0] + ":", end =" ", flush=True)
     command = "cat <<EOF | " + kubectl + " apply -f -" + pdb + "EOF"
     execute_command(command, dry_run)
@@ -297,9 +270,85 @@ spec:
         command = "cat <<EOF | " + kubectl + " apply -f -" + capi_kubeadm_pdb + "EOF"
         execute_command(command, dry_run)
 
+    print("[INFO] Adding PodDisruptionBudget to coredns:", end =" ", flush=True)
+    command = "cat <<EOF | " + kubectl + " apply -f -" + core_dns_pdb + "EOF"
+    execute_command(command, dry_run)
+
+def add_cluster_autoscaler_annotations(provider, namespace, dry_run):
+    ca_annotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
+
+    if provider == "aws":
+        print("[INFO] Adding cluster-autoscaler annotations to coredns:", end =" ", flush=True)
+        command = kubectl + " -n kube-system patch deploy coredns -p {\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+ca_annotation+"\": \"tmp\"}}}}}"
+        execute_command(command, dry_run)
+
+        print("[INFO] Adding cluster-autoscaler annotations to ebs-csi-controller:", end =" ", flush=True)
+        command = kubectl + " -n kube-system patch deploy ebs-csi-controller -p {\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+ca_annotation+"\": \"socket-dir\"}}}}}"
+        execute_command(command, dry_run)
+
+    if provider == "azure":
+        print("[INFO] Adding cluster-autoscaler annotations to cloud-controller-manager:", end =" ", flush=True)
+        command = kubectl + " -n kube-system patch deploy cloud-controller-manager -p {\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+ca_annotation+"\": \"etc-kubernetes,ssl-mount,msi\"}}}}}"
+        execute_command(command, dry_run)
+
+    if provider == "gcp":
+        print("[INFO] Adding cluster-autoscaler annotations to csi-gce-pd-controller:", end =" ", flush=True)
+        command = kubectl + " -n kube-system patch deploy csi-gce-pd-controller -p {\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+ca_annotation+"\": \"socket-dir\"}}}}}"
+        execute_command(command, dry_run)
+
+def upgrade_capx(kubeconfig, provider, namespace, version, env_vars, dry_run):
+    replicas = "2"
+    gnp = ""
+
+    if provider == "aws":
+        gnp = """
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-traffic-to-aws-imds-capa
+spec:
+  egress:
+  - action: Allow
+    destination:
+      nets:
+      - 169.254.169.254/32
+    protocol: TCP
+  order: 0
+  namespaceSelector: kubernetes.io/metadata.name in { 'kube-system', 'capa-system' }
+  selector: app.kubernetes.io/name == 'aws-ebs-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-aws' || k8s-app == 'aws-cloud-controller-manager'
+  types:
+  - Egress
+"""
+
+    if provider == "gcp":
+        gnp = """
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-traffic-to-gcp-imds-capg
+spec:
+  egress:
+  - action: Allow
+    destination:
+      nets:
+      - 169.254.169.254/32
+    protocol: TCP
+  order: 0
+  namespaceSelector: kubernetes.io/metadata.name in { 'kube-system', 'capg-system' }
+  selector: app == 'gcp-compute-persistent-disk-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-gcp'
+  types:
+  - Egress
+"""
+
     if provider == "azure":
         print("[INFO] Setting priorityClass system-node-critical to capz-nmi:", end =" ", flush=True)
         command = kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
+        execute_command(command, dry_run)
+    else:
+        print("[INFO] Updating GlobalNetworkPolicy:", end =" ", flush=True)
+        command = "cat <<EOF | " + kubectl + " apply -f -" + gnp + "EOF"
         execute_command(command, dry_run)
 
     print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI_VERSION + ":", end =" ", flush=True)
@@ -347,6 +396,7 @@ def upgrade_drivers(dry_run):
     else:
         command = (helm + " -n kube-system upgrade azuredisk-csi-driver azuredisk-csi-driver" +
                    " --wait --reset-values --version " + AZUREDISK_CSI_DRIVER_CHART +
+                   " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                    " --repo https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts")
         execute_command(command, dry_run)
 
@@ -360,12 +410,14 @@ def upgrade_drivers(dry_run):
         else:
             command = (helm + " -n kube-system upgrade azurefile-csi-driver azurefile-csi-driver" +
                        " --wait --reset-values --version " + AZUREFILE_CSI_DRIVER_CHART +
+                       " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                        " --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts")
             execute_command(command, dry_run)
     else:
         print("[INFO] Installing Azurefile CSI driver " + AZUREFILE_CSI_DRIVER_CHART + ":", end =" ", flush=True)
         command = (helm + " -n kube-system install azurefile-csi-driver azurefile-csi-driver" +
                    " --wait --version " + AZUREFILE_CSI_DRIVER_CHART +
+                   " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                    " --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts")
         execute_command(command, dry_run)
 
@@ -679,6 +731,11 @@ if __name__ == '__main__':
         if not config["yes"]:
             request_confirmation()
 
+    if config["all"] or config["only_pdbs"]:
+        add_pdbs(provider, namespace, config["dry_run"])
+        if not config["yes"]:
+            request_confirmation()
+
     if config["all"] or config["only_capx"]:
         upgrade_capx(kubeconfig, provider, namespace, version, env_vars, config["dry_run"])
         if not config["yes"]:
@@ -691,6 +748,11 @@ if __name__ == '__main__':
 
     if config["all"] or config["only_calico"]:
         upgrade_calico(config["dry_run"])
+        if not config["yes"]:
+            request_confirmation()
+
+    if config["all"] or config["only_annotations"]:
+        add_cluster_autoscaler_annotations(provider, namespace, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
