@@ -180,7 +180,7 @@ func validateVolumeType(t string, supportedTypes []string) error {
 }
 
 func validateLabel(l string) error {
-	var isLabel = regexp.MustCompile(`^(\w+.*\w+=\w+.*\w+)(\s,\s\w+.*\w+=\w+.*\w+)*$`).MatchString
+	var isLabel = regexp.MustCompile(`^([\w,\.\/-]+=[\w,\.\/-]+)(\s?,\s?[\w,\.\/-]+=[\w,\.\/-]+)*$`).MatchString
 	if !isLabel(l) {
 		return errors.New("incorrect format. Must have the format 'key1=value1,key2=value2,...'")
 	}
