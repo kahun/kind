@@ -83,6 +83,16 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 		}
 	}
 
+	for _, tag := range spec.ControlPlane.Tags {
+		for k, v := range tag {
+			label := k + "=" + v
+			fmt.Println(label)
+			if err = validateAWSLabel(label); err != nil {
+				return errors.Wrap(err, "spec.control_plane.tags: Invalid value")
+			}
+		}
+	}
+
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage != "" {
 			if !isAWSNodeImage(spec.ControlPlane.NodeImage) {
@@ -364,9 +374,17 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 	}
 	// Validate labels
 	if sc.Parameters.Labels != "" {
-		if err = validateLabel(sc.Parameters.Labels); err != nil {
+		if err = validateAWSLabel(sc.Parameters.Labels); err != nil {
 			return errors.Wrap(err, "invalid labels")
 		}
+	}
+	return nil
+}
+
+func validateAWSLabel(l string) error {
+	var isLabel = regexp.MustCompile(`^([\w\.\/-]+=[\w\.\/-]+)(\s?,\s?[\w\.\/-]+=[\w\.\/-]+)*$`).MatchString
+	if !isLabel(l) {
+		return errors.New("incorrect format. Must have the format 'key1=value1,key2=value2'")
 	}
 	return nil
 }

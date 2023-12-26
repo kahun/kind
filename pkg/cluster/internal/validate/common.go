@@ -186,11 +186,3 @@ func validateVolumeType(t string, supportedTypes []string) error {
 	}
 	return nil
 }
-
-func validateLabel(l string) error {
-	var isLabel = regexp.MustCompile(`^(\w+=\w+),?(\s*\w+=\w+)+$`).MatchString
-	if !isLabel(l) {
-		return errors.New("incorrect format. Must have the format 'key1=value1,key2=value2'")
-	}
-	return nil
-}
