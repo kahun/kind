@@ -189,6 +189,21 @@ func (p *Provider) Create(name string, vaultPassword string, descriptorPath stri
 	return internalcreate.Cluster(p.logger, p.provider, opts)
 }
 
+// Upgrades a cluster
+func (p *Provider) Upgrade(name string, vaultPassword string, descriptorPath string, avoidUpgrade bool, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials) error { // apply options
+	opts := &internalcreate.ClusterOptions{
+		NameOverride:       name,
+		VaultPassword:      vaultPassword,
+		DescriptorPath:     descriptorPath,
+		AvoidUpgrade:       avoidUpgrade,
+		AvoidCreation:      true,
+		UpgradeCluster:     true,
+		KeosCluster:        keosCluster,
+		ClusterCredentials: clusterCredentials,
+	}
+	return internalcreate.Cluster(p.logger, p.provider, opts)
+}
+
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
 	return internaldelete.Cluster(p.logger, p.provider, defaultName(name), explicitKubeconfigPath)

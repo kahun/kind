@@ -62,6 +62,8 @@ type ClusterOptions struct {
 	DescriptorPath     string
 	MoveManagement     bool
 	AvoidCreation      bool
+	AvoidUpgrade       bool
+	UpgradeCluster     bool
 	KeosCluster        commons.KeosCluster
 	ClusterCredentials commons.ClusterCredentials
 

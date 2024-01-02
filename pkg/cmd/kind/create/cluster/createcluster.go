@@ -52,8 +52,10 @@ type flagpole struct {
 	DescriptorPath string
 	MoveManagement bool
 	AvoidCreation  bool
+	AvoidUpgrade   bool
 	ForceDelete    bool
 	ValidateOnly   bool
+	UpgradeCluster bool
 }
 
 const clusterDefaultPath = "./cluster.yaml"
@@ -136,6 +138,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"by setting this flag the worker cluster won't be created",
 	)
 	cmd.Flags().BoolVar(
+		&flags.AvoidUpgrade,
+		"avoid-upgrade",
+		false,
+		"by setting this flag the worker cluster won't be upgraded",
+	)
+	cmd.Flags().BoolVar(
 		&flags.ForceDelete,
 		"delete-previous",
 		false,
@@ -198,27 +206,41 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 
-	// create the cluster
-	if err = provider.Create(
-		flags.Name,
-		flags.VaultPassword,
-		flags.DescriptorPath,
-		flags.MoveManagement,
-		flags.AvoidCreation,
-		*keosCluster,
-		clusterCredentials,
-		withConfig,
-		cluster.CreateWithNodeImage(flags.ImageName),
-		cluster.CreateWithRetain(flags.Retain),
-		cluster.CreateWithMove(flags.MoveManagement),
-		cluster.CreateWithAvoidCreation(flags.AvoidCreation),
-		cluster.CreateWithForceDelete(flags.ForceDelete),
-		cluster.CreateWithWaitForReady(flags.Wait),
-		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
-		cluster.CreateWithDisplayUsage(true),
-		cluster.CreateWithDisplaySalutation(true),
-	); err != nil {
-		return errors.Wrap(err, "failed to create cluster")
+	if !flags.UpgradeCluster {
+		// create the cluster
+		if err = provider.Create(
+			flags.Name,
+			flags.VaultPassword,
+			flags.DescriptorPath,
+			flags.MoveManagement,
+			flags.AvoidCreation,
+			*keosCluster,
+			clusterCredentials,
+			withConfig,
+			cluster.CreateWithNodeImage(flags.ImageName),
+			cluster.CreateWithRetain(flags.Retain),
+			cluster.CreateWithMove(flags.MoveManagement),
+			cluster.CreateWithAvoidCreation(flags.AvoidCreation),
+			cluster.CreateWithForceDelete(flags.ForceDelete),
+			cluster.CreateWithWaitForReady(flags.Wait),
+			cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
+			cluster.CreateWithDisplayUsage(true),
+			cluster.CreateWithDisplaySalutation(true),
+		); err != nil {
+			return errors.Wrap(err, "failed to create cluster")
+		}
+	} else {
+		// upgrade the cluster
+		if err = provider.Upgrade(
+			flags.Name,
+			flags.VaultPassword,
+			flags.DescriptorPath,
+			flags.AvoidUpgrade,
+			*keosCluster,
+			clusterCredentials,
+		); err != nil {
+			return errors.Wrap(err, "failed to upgrade cluster")
+		}
 	}
 
 	return nil
