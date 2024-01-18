@@ -60,7 +60,7 @@ func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]inter
 	return outputMap
 }
 
-func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials ClusterCredentials) error {
+func EnsureSecretsFile(spec KeosSpec, vaultPassword string, clusterCredentials ClusterCredentials) error {
 	var err error
 
 	edited := false
@@ -163,16 +163,23 @@ func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials Clust
 	return nil
 }
 
+// func RewriteDescriptorFile(descriptorPath string, keosCluster KeosCluster, resources ...interface{}) error {
 func RewriteDescriptorFile(descriptorPath string) error {
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
-
-	if err != nil {
-		return err
+	manifests := strings.Split(string(descriptorRAW), "---\n")
+	keosClusterIndex := -1
+	for i, m := range manifests {
+		if strings.Contains(m, "kind: KeosCluster") {
+			keosClusterIndex = i
+		}
+	}
+	if keosClusterIndex == -1 {
+		return errors.New("KeosCluster manifest not found.")
 	}
 
 	var data yaml.Node
-	err = yaml.Unmarshal(descriptorRAW, &data)
+	err = yaml.Unmarshal([]byte(manifests[keosClusterIndex]), &data)
 	if err != nil {
 		return err
 	}
@@ -183,8 +190,11 @@ func RewriteDescriptorFile(descriptorPath string) error {
 	if err != nil {
 		return err
 	}
+	descriptor := append(manifests[:keosClusterIndex], string(b))
+	descriptor = append(descriptor, manifests[keosClusterIndex+1:]...)
+	descriptorRewrited := strings.Join(descriptor, "---\n")
 
-	err = os.WriteFile(descriptorPath, []byte(b), 0644)
+	err = os.WriteFile(descriptorPath, []byte(descriptorRewrited), 0644)
 	if err != nil {
 		return err
 	}

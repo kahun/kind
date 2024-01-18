@@ -1,0 +1,17 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+nodes:
+- role: control-plane
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry]
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+      {{- $host := hostname .Url}}
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ $host }}"]
+        endpoint = ["https://{{ $host }}"]
+      [plugins."io.containerd.grpc.v1.cri".registry.configs]
+          [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $host }}".auth]
+            username = "{{ .User }}"
+            password = "{{ .Pass }}"

@@ -86,7 +86,7 @@ func validateProviderCredentials(secrets interface{}, params ValidateParams) (ma
 	return resultCreds, nil
 }
 
-func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) (map[string]string, []map[string]interface{}, error) {
+func validateRegistryCredentials(secrets commons.Secrets, spec commons.KeosSpec) (map[string]string, []map[string]interface{}, error) {
 	var dockerRegistries []commons.DockerRegistryCredentials
 	var resultKeosRegistry map[string]string
 	var resultDockerRegistries = []map[string]interface{}{}
@@ -147,7 +147,7 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) (ma
 	return resultKeosRegistry, resultDockerRegistries, nil
 }
 
-func validateHelmCredentials(secrets commons.Secrets, spec commons.Spec) (map[string]string, error) {
+func validateHelmCredentials(secrets commons.Secrets, spec commons.KeosSpec) (map[string]string, error) {
 	var helmRepository commons.HelmRepositoryCredentials
 	var resultHelmRepository map[string]string
 
@@ -175,7 +175,7 @@ func validateHelmCredentials(secrets commons.Secrets, spec commons.Spec) (map[st
 	return resultHelmRepository, nil
 }
 
-func validateGithubToken(secrets commons.Secrets, spec commons.Spec) (string, error) {
+func validateGithubToken(secrets commons.Secrets, spec commons.KeosSpec) (string, error) {
 	var githubToken string
 	var isGithubToken = regexp.MustCompile(`^(github_pat_|ghp_)\w+$`).MatchString
 

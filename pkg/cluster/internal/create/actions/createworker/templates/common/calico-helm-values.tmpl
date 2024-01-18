@@ -2,8 +2,13 @@
 apiServer:
   enabled: false
 calicoctl:
+{{- if $.Private }}
+  image: {{ $.KeosRegUrl }}/calico/ctl
+  tag: v3.26.1
+{{- else }}
   image: docker.io/calico/ctl
   tag: v3.26.1
+{{- end }}
 certs:
   node:
     cert:
@@ -17,17 +22,17 @@ certs:
 imagePullSecrets: {}
 installation:
   calicoNetwork:
-    bgp: {{- if or ($.ControlPlane.Managed) (eq $.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
-  {{- if not $.ControlPlane.Managed }}
-    {{- if eq $.InfraProvider "azure" }}
+    bgp: {{- if or ($.Spec.ControlPlane.Managed) (eq $.Spec.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
+  {{- if not $.Spec.ControlPlane.Managed }}
+    {{- if eq $.Spec.InfraProvider "azure" }}
     mtu: 1350
     {{- end }}
     ipPools:
-      - cidr: {{- if $.Networks.PodsCidrBlock }} {{ $.Networks.PodsCidrBlock }} {{- else }} 192.168.0.0/16 {{- end }}
-        encapsulation: {{- if eq $.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
+      - cidr: {{- if $.Spec.Networks.PodsCidrBlock }} {{ $.Spec.Networks.PodsCidrBlock }} {{- else }} 192.168.0.0/16 {{- end }}
+        encapsulation: {{- if eq $.Spec.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
   {{- end }}
   cni:
-  {{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }}
+  {{- if and ($.Spec.ControlPlane.Managed) (eq $.Spec.InfraProvider "aws") }}
     ipam:
       type: AmazonVPC
     type: AmazonVPC
@@ -37,9 +42,13 @@ installation:
     type: Calico
   {{- end }}
   enabled: true
-  kubernetesProvider: {{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }} EKS {{- else }} "" {{- end }}
+  kubernetesProvider: {{- if and ($.Spec.ControlPlane.Managed) (eq $.Spec.InfraProvider "aws") }} EKS {{- else }} "" {{- end }}
   nodeMetricsPort: 9191
+  {{- if $.Private }}
+  registry: {{ $.KeosRegUrl }}
+  {{- else }}
   registry: docker.io
+  {{- end }}
   typhaMetricsPort: 9093
 # NodeSelector for the tigera/operator pod.
 nodeSelector:
@@ -52,8 +61,12 @@ podLabels: {}
 resources: {}
 # Image and registry configuration for the tigera/operator pod.
 tigeraOperator:
-  image: tigera/operator
+{{- if $.Private }}
+  registry: {{ $.KeosRegUrl }}
+{{- else }}
   registry: quay.io
+{{- end }}
+  image: tigera/operator
   version: v1.30.5
 # Tolerations for the tigera/operator pod.
 tolerations:

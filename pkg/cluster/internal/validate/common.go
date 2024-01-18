@@ -34,7 +34,7 @@ const (
 
 var k8sVersionSupported = []string{"1.24", "1.25", "1.26", "1.27", "1.28"}
 
-func validateCommon(spec commons.Spec) error {
+func validateCommon(spec commons.KeosSpec) error {
 	var err error
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
@@ -152,7 +152,7 @@ func validateWorkersType(wns commons.WorkerNodes) error {
 	return nil
 }
 
-func validateVolumes(spec commons.Spec) error {
+func validateVolumes(spec commons.KeosSpec) error {
 	if !spec.ControlPlane.Managed {
 		for i, ev := range spec.ControlPlane.ExtraVolumes {
 			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {

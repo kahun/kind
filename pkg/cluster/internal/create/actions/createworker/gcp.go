@@ -34,7 +34,10 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-//go:embed files/gcp/gcp-compute-persistent-disk-csi-driver.yaml
+// //go:embed files/gcp/gcp-compute-persistent-disk-csi-driver.yaml
+// var csiManifest string
+//
+//go:embed templates/gcp/gcp-compute-persistent-disk-csi-driver.tmpl
 var csiManifest string
 
 //go:embed files/gcp/internal-ingress-nginx.yaml
@@ -124,11 +127,11 @@ func (b *GCPBuilder) getProvider() Provider {
 	}
 }
 
-func (b *GCPBuilder) installCloudProvider(n nodes.Node, k string, keosCluster commons.KeosCluster) error {
+func (b *GCPBuilder) installCloudProvider(n nodes.Node, k string, privateParams PrivateParams) error {
 	return nil
 }
 
-func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
+func (b *GCPBuilder) installCSI(n nodes.Node, k string, privateParams PrivateParams) error {
 	var c string
 	var err error
 	var cmd exec.Cmd
@@ -141,9 +144,11 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
 	}
 
+	csiManifests, err := getManifest(privateParams.KeosCluster.Spec.InfraProvider, "gcp-compute-persistent-disk-csi-driver.tmpl", privateParams)
+
 	// Deploy CSI driver
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(csiManifest)).Run(); err != nil {
+	if err = cmd.SetStdin(strings.NewReader(csiManifests)).Run(); err != nil {
 		return errors.Wrap(err, "failed to deploy CSI driver")
 	}
 

@@ -19,7 +19,6 @@ package docker
 import (
 	_ "embed"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -35,18 +34,22 @@ import (
 
 var (
 	//go:embed stratio/Dockerfile
-	stratioDockerfile []byte
+	stratioDockerfile   []byte
+	stratioImageVersion = "v1.27.0"
 )
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) error {
+func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster, dockerRegUrl string) error {
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
-		friendlyImageName, image := sanitizeImage(image)
+		if dockerRegUrl != "" {
+			image = strings.Join([]string{dockerRegUrl, image}, "/")
+		}
+		friendlyImageName, _ := sanitizeImage(image)
 		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
-		if _, err := pullIfNotPresent(logger, image, 4); err != nil {
+		if _, err := pullIfNotPresent(logger, friendlyImageName, 4); err != nil {
 			status.End(false)
 			return err
 		}
@@ -58,8 +61,18 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 			status.End(false)
 			return err
 		}
-
-		err = buildStratioImage(logger, "stratio-capi-image:"+strings.Split(friendlyImageName, ":")[1], dockerfileDir)
+		stratioImage := "stratio-capi-image:" + strings.Split(friendlyImageName, ":")[1]
+		// if dockerRegUrl != "" {
+		// 	cmd := exec.Command("docker", "inspect", "--type=image", stratioImage)
+		// 	if err := cmd.Run(); err == nil {
+		// 		logger.V(1).Infof("stratioImage: %s present locally", image)
+		// 	} else {
+		// 		err = buildStratioImage(logger, stratioImage, dockerfileDir)
+		// 	}
+		// } else {
+		// 	err = buildStratioImage(logger, stratioImage, dockerfileDir)
+		// }
+		err = buildStratioImage(logger, stratioImage, dockerfileDir)
 		if err != nil {
 			status.End(false)
 			return err
@@ -87,7 +100,7 @@ func pullIfNotPresent(logger log.Logger, image string, retries int) (pulled bool
 // ensureStratioImageFiles creates a temporary directory
 // with the Dockerfile required to build the Stratio image
 func ensureStratioImageFiles(logger log.Logger) (dir string, err error) {
-	dir, err = ioutil.TempDir("", "stratio-")
+	dir, err = os.MkdirTemp("", "stratio-")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create the temp directory")
 	}

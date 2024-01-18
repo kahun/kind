@@ -20,7 +20,6 @@ package cluster
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"syscall"
@@ -157,6 +156,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if err != nil {
 		return err
 	}
+
 	if flags.DescriptorPath == "" {
 		flags.DescriptorPath = clusterDefaultPath
 	}
@@ -168,7 +168,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	keosCluster, err := commons.GetClusterDescriptor(flags.DescriptorPath)
+	keosCluster, clusterConfig, err := commons.GetClusterDescriptor(flags.DescriptorPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
@@ -185,6 +185,20 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate cluster")
+	}
+
+	dockerRegUrl := ""
+	if clusterConfig.Spec.Private {
+		configFile, err := getConfigFile(keosCluster, clusterCredentials)
+		if err != nil {
+			return errors.Wrap(err, "Error getting private kubeadm config")
+		}
+		flags.Config = configFile
+		for _, dockerReg := range keosCluster.Spec.DockerRegistries {
+			if dockerReg.KeosRegistry {
+				dockerRegUrl = dockerReg.URL
+			}
+		}
 	}
 
 	if flags.ValidateOnly {
@@ -205,6 +219,8 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.DescriptorPath,
 		flags.MoveManagement,
 		flags.AvoidCreation,
+		dockerRegUrl,
+		*clusterConfig,
 		*keosCluster,
 		clusterCredentials,
 		withConfig,
@@ -232,7 +248,7 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
 	}
 	// otherwise read from stdin
-	raw, err := ioutil.ReadAll(stdin)
+	raw, err := io.ReadAll(stdin)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}

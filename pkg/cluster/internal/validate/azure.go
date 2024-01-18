@@ -46,7 +46,7 @@ var isAzureIdentity = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resource
 var AzureIdentityFormat = "/subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/userAssignedIdentities/[IDENTITY_NAME]"
 var isPremium = regexp.MustCompile(`^(Premium|Ultra).*$`).MatchString
 
-func validateAzure(spec commons.Spec, providerSecrets map[string]string, clusterName string) error {
+func validateAzure(spec commons.KeosSpec, providerSecrets map[string]string, clusterName string) error {
 	var err error
 
 	creds, err := validateAzureCredentials(providerSecrets)
@@ -256,7 +256,7 @@ func validateAzureTag(t string) error {
 	return nil
 }
 
-func validateAzureNetwork(network commons.Networks, spec commons.Spec, creds *azidentity.ClientSecretCredential, subscription string, clusterName string) error {
+func validateAzureNetwork(network commons.Networks, spec commons.KeosSpec, creds *azidentity.ClientSecretCredential, subscription string, clusterName string) error {
 	rg := clusterName
 	if network.VPCID != "" {
 
@@ -320,7 +320,7 @@ func validateAzureNetwork(network commons.Networks, spec commons.Spec, creds *az
 	return nil
 }
 
-func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredential, subscription string) error {
+func validateAKSVersion(spec commons.KeosSpec, creds *azidentity.ClientSecretCredential, subscription string) error {
 	var availableVersions []string
 	ctx := context.Background()
 	clientFactory, err := armcontainerservice.NewClientFactory(subscription, creds, nil)
