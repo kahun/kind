@@ -3,6 +3,8 @@
 | Script Name | Description |
 |-------------|-------------|
 | aws_images_vpc.py | Vpc creation for images building (if no default vpc exists) |
+| upgrade-provisioner.py | Stratio Cloud Provisioner upgrade |
+| upload-images.py | Upload keos images to the cloud-provisioner |
 
 ## aws_images_vpc.py
 
@@ -32,3 +34,42 @@ session = boto3.Session(profile_name='default')
 ec2 = session.client('ec2')
 ```
 > In this example, we are creating a session using the default profile, which is the profile created by the aws configure command. We are then using the session to create an EC2 client, which can be used to create and manage EC2 instances in AWS.  
+
+## upgrade-provisioner.py
+
+> Related documentation is on stratio-docs folder.
+
+## upload-images.py
+
+### Pre-requisites and considerations
+    # Local requirements:
+        # Python3
+        # Install boto3
+            # pip3 install boto3
+        # Install awscli
+            # pip3 install awscli
+        # Install azure-cli
+            # pip3 install azure-cli
+        # Install gcloud client
+            # https://cloud.google.com/sdk/docs/install
+    # VPN connection to Stratio network (Sometimes queries to providers fail, just try again).
+    # Do not use Chartmuseum.
+    # Check keos.yaml and secrets.yml if needed.
+        #Example:
+        # keos.yaml
+            # docker_registry: 963353511234.dkr.ecr.eu-west-1.amazonaws.com
+            # helm_repository: https://repo.stratio.com/repository/helm-14.0-devel
+        # secrets.yml
+            # helm_repository: https://repo.stratio.com/repository/helm-14.0-devel
+    # Modify aws_registry, azure_registry and gcp_registry variables if needed, but take care on splits
+
+### Usage
+    # Example: python3 upload-images.py  -w /home/jnovoa/org/Work/workspace/gcp/unmanaged/0.3.6 -p gcp -k 1.0.4 -v 123456
+    # keos version 1.0.4:
+        # Copy get-keos-docker-images-list.yml on your home directory.
+        # Helm repo: helm-14.0-devel
+    # keos version 1.1.0:
+        # Remove 'deploy_tigera_operator' property on keos.yaml.
+        # Do not copy get-keos-docker-images-list.yml on your home directory.
+        # Remove bind_mount_var (variable) and bind mount (volume) on docker run command.
+        # Helm repo: helm-15.0-devel
