@@ -449,7 +449,22 @@ def upgrade_drivers(dry_run):
     if status == 0:
         chart_version = output.split()[9]
         chart_namespace = output.split()[1]
-        chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values azurefile-csi-driver -o json")
+        chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values azurefile-csi-driver -o yaml")
+        output = subprocess.getoutput(kubectl + " get csidrivers file.csi.azure.com -o yaml")
+        fsGroupPolicy = yaml.safe_load(output)["spec"]["fsGroupPolicy"]
+        if chart_values == "null":
+            chartValuesYaml = {"feature": {}}
+        else:
+            chartValuesYaml = yaml.safe_load(chart_values)
+            if "feature" not in chartValuesYaml:
+                chartValuesYaml["feature"] = {}
+        if "fsGroupPolicy" in chartValuesYaml["feature"]:
+            if chartValuesYaml["feature"]["fsGroupPolicy"] != fsGroupPolicy:
+                chartValuesYaml["feature"]["fsGroupPolicy"] = fsGroupPolicy
+                chart_values = yaml.dump(chartValuesYaml)
+        elif fsGroupPolicy != "ReadWriteOnceWithFSType":
+            chartValuesYaml["feature"]["fsGroupPolicy"] = fsGroupPolicy
+            chart_values = yaml.dump(chartValuesYaml)
         if not dry_run:
             f = open('./azurefilecsidriver.values', 'w')
             f.write(chart_values)
