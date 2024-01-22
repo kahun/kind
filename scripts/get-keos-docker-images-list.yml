@@ -1,0 +1,169 @@
+---
+- hosts: localhost
+  vars:
+    keos_docker_images: []
+    keos_docker_images_all: []
+    keos_docker_images_kubespray: []
+    keos_docker_images_file_path: "{{ workspace_path }}/keos-docker-images.txt"
+    keos_docker_images_all_file_path: "{{ workspace_path }}/keos-docker-images-all.txt"
+    keos_docker_images_kubespray_file_path: "{{ workspace_path }}/keos-docker-images-kubespray.txt"
+    source_helm_chart_repo_name: "keos-docker-images"
+    source_helm_chart_repo_url: ""
+    source_helm_chart_repo_user: ""
+    source_helm_chart_repo_pass: ""
+  tasks:
+    # yamllint disable rule:line-length
+    - name: Fail if {{ source_helm_chart_repo_url }} is not defined
+      fail:
+        msg: |
+          You need to define a Helm source repo in source_helm_chart_repo_url variable to get the charts from:
+          `keos play /stratio/ansible/playbooks/utils/get-keos-docker-images-list.yml -e source_helm_chart_repo_url=http://qa.int.stratio.com/repository/helm-1.0`.
+      when: not source_helm_chart_repo_url | length
+    # yamllint enable rule:line-length
+
+    - name: Login to {{ source_helm_chart_repo_url }} helm repository
+      include_role:
+        name: utils
+        tasks_from: helm-login
+      vars:
+        helm_repository_url: "{{ source_helm_chart_repo_url }}"
+        helm_repository_name: "{{ source_helm_chart_repo_name }}"
+        helm_repository_pass: "{{ source_helm_chart_repo_pass }}"
+        helm_repository_user: "{{ source_helm_chart_repo_user }}"
+
+    - name: Get default offline versions for kubespray
+      import_role:
+        name: prepare-offline
+        tasks_from: get-default-versions
+
+    - name: Create KEOS all docker images data structure
+      set_fact:
+        # yamllint disable-line rule:line-length
+        keos_docker_images_all: "{{ keos_docker_images_all | union([item.original_image + ':' + item.tag + ' ' + item.image + ':' + item.tag]) }}"
+      with_items: "{{ all_offline_installation_images }}"
+
+    - name: Generate KEOS all docker images data file in {{ keos_docker_images_all_file_path }}
+      # noqa template-instead-of-copy
+      copy:
+        content: "{{ keos_docker_images_all | unique | sort | join('\n') }}"
+        dest: "{{ keos_docker_images_all_file_path }}"
+
+    - name: Create KEOS docker images data structure
+      set_fact:
+        # yamllint disable-line rule:line-length
+        keos_docker_images: "{{ keos_docker_images | union([item.original_image + ':' + item.tag + ' ' + item.image + ':' + item.tag]) }}"
+      with_items: "{{ offline_installation_images }}"
+
+    - name: Generate KEOS docker images data file in {{ keos_docker_images_file_path }}
+      # noqa template-instead-of-copy
+      copy:
+        content: "{{ keos_docker_images | unique | sort | join('\n') }}"
+        dest: "{{ keos_docker_images_file_path }}"
+
+    - name: Create KEOS kubespray docker images data structure
+      set_fact:
+        # yamllint disable-line rule:line-length
+        keos_docker_images_kubespray: "{{ keos_docker_images_kubespray | union([(item.image if docker_registry_unique else item.original_image) + ':' + item.tag + ' ' + kubespray_cache_dir + '/' + (item.image if docker_registry_unique else item.original_image) | replace('/','_') + '_' + item.tag + '.tar']) }}"
+      with_items: "{{ kubespray_offline_installation_images }}"
+
+    - name: Generate KEOS docker images data file in {{ keos_docker_images_kubespray_file_path }}
+      # noqa template-instead-of-copy
+      copy:
+        content: "{{ keos_docker_images_kubespray | unique | sort | join('\n') }}"
+        dest: "{{ keos_docker_images_kubespray_file_path }}"
+
+    - name: Get decoupled docker images versions for agents
+      # yamllint disable rule:line-length
+      shell: "helm show values {{ source_helm_chart_repo_name }}/{{ helm_chart_ref }} --version {{ image_version }} --devel | grep 'agent:' || true"
+      register: docker_images_data_agent
+      with_items: "{{ all_offline_installation_images }}"
+      vars:
+        # yamllint disable rule:line-length
+        image_version: "{{ lookup('get_helm_chart_version', chart_ref=helm_chart_ref, chart_repo_url=source_helm_chart_repo_url, chart_repo_username=source_helm_chart_repo_user, chart_repo_password=source_helm_chart_repo_pass) }}"
+        helm_chart_ref: >-
+          {{ 'postgres-operator' if 'postgres-agent' in item.original_image
+            else 'opensearch-operator' if 'opensearch-agent' in item.original_image }}
+      when: "'postgres-agent' in item.original_image or 'opensearch-agent' in item.original_image"
+
+    - name: Replace decoupled images versions of agents in {{ keos_docker_images_all_file_path }}
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_all_file_path }}"
+        regexp: '^(.*)({{ image_name }}:<version>)(.*)({{ image_name }}:<version>)$'
+        replace: '\g<1>{{ image_name }}:{{ image_version }}\g<3>{{ image_name }}:{{ image_version }}'
+      with_items: "{{ docker_images_data_agent.results | map(attribute='stdout_lines', default=[]) | flatten | list }}"
+      vars:
+        image_name: "{{ (item.split(': ')[1]).split(':')[:-1] | join(':') | regex_replace('^\"', '') }}"
+        image_version: "{{ (item.split(': ')[1]).split(':') | last | regex_replace('\"$', '') }}"
+
+    - name: Replace decoupled images versions of agents in {{ keos_docker_images_file_path }}
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_file_path }}"
+        regexp: '^(.*)({{ image_name }}:<version>)(.*)({{ image_name }}:<version>)$'
+        replace: '\g<1>{{ image_name }}:{{ image_version }}\g<3>{{ image_name }}:{{ image_version }}'
+      with_items: "{{ docker_images_data_agent.results | map(attribute='stdout_lines', default=[]) | flatten | list }}"
+      vars:
+        image_name: "{{ (item.split(': ')[1]).split(':')[:-1] | join(':') | regex_replace('^\"', '') }}"
+        image_version: "{{ (item.split(': ')[1]).split(':') | last | regex_replace('\"$', '') }}"
+
+    - name: Get decoupled docker images versions
+      # yamllint disable rule:line-length
+      shell: "helm template {{ source_helm_chart_repo_name }}/{{ item.name }} --version {{ lookup('get_helm_chart_version', chart_ref=item.name, chart_repo_url=source_helm_chart_repo_url, chart_repo_username=source_helm_chart_repo_user, chart_repo_password=source_helm_chart_repo_pass) }} | grep 'image:' || true"
+      register: docker_images_data
+      with_items: "{{ helm_charts }}"
+      when: item.version | length == 0
+
+    - name: Replace decoupled images versions in {{ keos_docker_images_all_file_path }}
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_all_file_path }}"
+        regexp: '^(.*)({{ image_name }}:<version>)(.*)({{ image_name }}:<version>)$'
+        replace: '\g<1>{{ image_name }}:{{ image_version }}\g<3>{{ image_name }}:{{ image_version }}'
+      with_items: "{{ docker_images_data.results | map(attribute='stdout_lines', default=[]) | flatten | list }}"
+      vars:
+        image_name: "{{ (item.split('/') | last).split(':')[:-1] | join(':') }}"
+        image_version: "{{ (item.split('/') | last).split(':') | last | regex_replace('\"$', '') }}"
+
+    - name: Replace decoupled images versions in {{ keos_docker_images_file_path }}
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_file_path }}"
+        regexp: '^(.*)({{ image_name }}:<version>)(.*)({{ image_name }}:<version>)$'
+        replace: '\g<1>{{ image_name }}:{{ image_version }}\g<3>{{ image_name }}:{{ image_version }}'
+      with_items: "{{ docker_images_data.results | map(attribute='stdout_lines', default=[]) | flatten | list }}"
+      vars:
+        image_name: "{{ (item.split('/') | last).split(':')[:-1] | join(':') }}"
+        image_version: "{{ (item.split('/') | last).split(':') | last | regex_replace('\"$', '') }}"
+
+    - name: Replace decoupled images versions in {{ keos_docker_images_all_file_path }} for undefined versions
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_all_file_path }}"
+        regexp: '^(.*)({{ item.original_image }}:<version>)(.*)({{ item.image }}:<version>)$'
+        replace: '\g<1>{{ item.original_image }}:{{ image_version }}\g<3>{{ item.image }}:{{ image_version }}'
+      with_items: "{{ all_offline_installation_images }}"
+      vars:
+        # yamllint disable rule:line-length
+        image_version: "{{ lookup('get_helm_chart_version', chart_ref=helm_chart_ref, chart_repo_url=source_helm_chart_repo_url, chart_repo_username=source_helm_chart_repo_user, chart_repo_password=source_helm_chart_repo_pass) }}"
+        helm_chart_ref: >-
+          {{ 'hdfs-operator' if 'hdfs' in item.original_image
+            else 'postgres-operator' if 'postgres' in item.original_image
+            else 'postgres-operator' if 'pgbouncer' in item.original_image
+            else 'kafka-operator' if 'kafka' in item.original_image
+            else 'opensearch-operator' if 'opensearch' in item.original_image
+            else 'azure-synchr' if 'azure-synchr' in item.original_image }}
+      when: "'hdfs' in item.original_image or 'postgres' in item.original_image or 'pgbouncer' in item.original_image or 'kafka' in item.original_image or 'opensearch' in item.original_image or 'azure-synchr' in item.original_image"
+
+    - name: Replace decoupled images versions in {{ keos_docker_images_file_path }} for undefined versions
+      ansible.builtin.replace:
+        path: "{{ keos_docker_images_file_path }}"
+        regexp: '^(.*)({{ item.original_image }}:<version>)(.*)({{ item.image }}:<version>)$'
+        replace: '\g<1>{{ item.original_image }}:{{ image_version }}\g<3>{{ item.image }}:{{ image_version }}'
+      with_items: "{{ offline_installation_images }}"
+      vars:
+        # yamllint disable rule:line-length
+        image_version: "{{ lookup('get_helm_chart_version', chart_ref=helm_chart_ref, chart_repo_url=source_helm_chart_repo_url, chart_repo_username=source_helm_chart_repo_user, chart_repo_password=source_helm_chart_repo_pass) }}"
+        helm_chart_ref: >-
+          {{ 'hdfs-operator' if 'hdfs' in item.original_image
+            else 'postgres-operator' if 'postgres' in item.original_image
+            else 'postgres-operator' if 'pgbouncer' in item.original_image
+            else 'kafka-operator' if 'kafka' in item.original_image
+            else 'opensearch-operator' if 'opensearch' in item.original_image
+            else 'azure-synchr' if 'azure-synchr' in item.original_image }}
+      when: "'hdfs' in item.original_image or 'postgres' in item.original_image or 'pgbouncer' in item.original_image or 'kafka' in item.original_image or 'opensearch' in item.original_image or 'azure-synchr' in item.original_image"
