@@ -568,16 +568,11 @@ def upgrade_calico(dry_run):
             calico_values.write(values)
             calico_values.close()
         command = (helm + " -n tigera-operator upgrade calico tigera-operator" +
-                   " --wait --version " + CALICO_VERSION + " --values ./calico.values" +
+                   " --wait --wait-for-jobs --version " + CALICO_VERSION + " --values ./calico.values" +
                    " --repo https://docs.projectcalico.org/charts")
         execute_command(command, dry_run)
         if not dry_run:
             os.remove("./calico.values")
-        command = kubectl + " -n calico-system rollout status daemonset calico-node --timeout 300s"
-        status, output = subprocess.getstatusoutput(command)
-        if status != 0:
-            print("[Error] Calico node daemonset failed to rollout:\n" + output)
-            sys.exit(1)
 
 def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
     print("[INFO] Creating keoscluster-registries secret:", end =" ", flush=True)
