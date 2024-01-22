@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# TODO: Don't prepare capsule if doesn't exist
-
 ##############################################################
 # Author: Stratio Clouds <clouds-integration@stratio.com>    #
 # Date: 14/11/2023                                           #
@@ -34,7 +32,7 @@ AZUREDISK_CSI_DRIVER_CHART = "v1.28.3"
 AZUREFILE_CSI_DRIVER_CHART = "v1.28.3"
 CLOUD_PROVIDER_AZURE_CHART = "v1.28.0"
 CLUSTER_OPERATOR = "0.1.6"
-CLOUD_PROVISIONER = "0.17.0-0.3.6"
+CLOUD_PROVISIONER = "0.17.0-0.3.X"
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -92,43 +90,85 @@ def backup(backup_dir, namespace, cluster_name):
 
     # Backup capsule files
     os.makedirs(backup_dir + "/capsule", exist_ok=True)
-    command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-mutating-webhook-configuration.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up capsule files failed:\n" + output)
-        sys.exit(1)
-    command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-validating-webhook-configuration.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up capsule files failed:\n" + output)
-        sys.exit(1)
+    command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration"
+    status, _ = subprocess.getstatusoutput(command)
+    if status == 0:
+        command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-mutating-webhook-configuration.yaml"
+        status, output = subprocess.getstatusoutput(command)
+        if status != 0:
+            print("[ERROR] Backing up capsule files failed:\n" + output)
+            sys.exit(1)
+    command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration"
+    status, _ = subprocess.getstatusoutput(command)
+    if status == 0:
+        command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-validating-webhook-configuration.yaml"
+        status, output = subprocess.getstatusoutput(command)
+        if status != 0:
+            print("[ERROR] Backing up capsule files failed:\n" + output)
+            sys.exit(1)
 
 def prepare_capsule(dry_run):
     print("[INFO] Preparing capsule-mutating-webhook-configuration for the upgrade process:", end =" ", flush=True)
-    command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
-               '''jq -r '.webhooks[0].objectSelector |= {"matchExpressions":[{"key":"name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
-               namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
-               namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]}]}' | ''' + kubectl + " apply -f -")
-    execute_command(command, dry_run)
+    command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration"
+    status, output = subprocess.getstatusoutput(command)
+    if status != 0:
+        if "NotFound" in output:
+            print("SKIP")
+        else:
+            print("[ERROR] Preparing capsule-mutating-webhook-configuration failed:\n" + output)
+            sys.exit(1)
+    else:
+        command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
+                '''jq -r '.webhooks[0].objectSelector |= {"matchExpressions":[{"key":"name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
+                namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["kube-system","tigera-operator","calico-system","cert-manager","capi-system","''' +
+                namespace + '''","capi-kubeadm-bootstrap-system","capi-kubeadm-control-plane-system"]}]}' | ''' + kubectl + " apply -f -")
+        execute_command(command, dry_run)
 
     print("[INFO] Preparing capsule-validating-webhook-configuration for the upgrade process:", end =" ", flush=True)
-    command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
-               '''jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= ({"matchExpressions":[{"key":"name","operator":"NotIn","values":["''' +
-               namespace + '''","tigera-operator","calico-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["''' +
-               namespace + '''","tigera-operator","calico-system"]}]}))' | ''' + kubectl + " apply -f -")
-    execute_command(command, dry_run)
+    command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration"
+    status, _ = subprocess.getstatusoutput(command)
+    if status != 0:
+        if "NotFound" in output:
+            print("SKIP")
+        else:
+            print("[ERROR] Preparing capsule-validating-webhook-configuration failed:\n" + output)
+            sys.exit(1)
+    else:
+        command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
+                '''jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= ({"matchExpressions":[{"key":"name","operator":"NotIn","values":["''' +
+                namespace + '''","tigera-operator","calico-system"]},{"key":"kubernetes.io/metadata.name","operator":"NotIn","values":["''' +
+                namespace + '''","tigera-operator","calico-system"]}]}))' | ''' + kubectl + " apply -f -")
+        execute_command(command, dry_run)
 
 def restore_capsule(dry_run):
     print("[INFO] Restoring capsule-mutating-webhook-configuration:", end =" ", flush=True)
-    command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
-               "jq -r '.webhooks[0].objectSelector |= {}' | " + kubectl + " apply -f -")
-    execute_command(command, dry_run)
+    command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration"
+    status, output = subprocess.getstatusoutput(command)
+    if status != 0:
+        if "NotFound" in output:
+            print("SKIP")
+        else:
+            print("[ERROR] Restoring capsule-mutating-webhook-configuration failed:\n" + output)
+            sys.exit(1)
+    else:
+        command = (kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o json | " +
+                "jq -r '.webhooks[0].objectSelector |= {}' | " + kubectl + " apply -f -")
+        execute_command(command, dry_run)
 
     print("[INFO] Restoring capsule-validating-webhook-configuration:", end =" ", flush=True)
-    command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
-               """jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= {})' """ +
-               "| " + kubectl + " apply -f -")
-    execute_command(command, dry_run)
+    command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration"
+    status, _ = subprocess.getstatusoutput(command)
+    if status != 0:
+        if "NotFound" in output:
+            print("SKIP")
+        else:
+            print("[ERROR] Restoring capsule-validating-webhook-configuration failed:\n" + output)
+            sys.exit(1)
+    else:
+        command = (kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o json | " +
+                """jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= {})' """ +
+                "| " + kubectl + " apply -f -")
+        execute_command(command, dry_run)
 
 def add_pdbs(provider, namespace, dry_run):
     pdb = ""
@@ -426,7 +466,7 @@ def upgrade_drivers(dry_run):
             execute_command(command, dry_run)
         else:
             print("[INFO] Upgrading Azurefile CSI driver to " + AZUREFILE_CSI_DRIVER_CHART + ":", end =" ", flush=True)
-            if chart_version == AZUREFILE_CSI_DRIVER_CHART[1:]:
+            if chart_version == AZUREFILE_CSI_DRIVER_CHART:
                 print("SKIP")
             else:
                 command = (helm + " -n kube-system upgrade azurefile-csi-driver azurefile-csi-driver" +
@@ -479,7 +519,7 @@ def upgrade_drivers(dry_run):
     else:
             print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
             command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
-                        " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
+                        " --wait --version " + CLOUD_PROVIDER_AZURE_CHART +
                         " --set cloudControllerManager.configureCloudRoutes=false" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             execute_command(command, dry_run)
@@ -497,29 +537,32 @@ def upgrade_calico(dry_run):
         print("FAILED (" + output + ")")
         sys.exit(1)
 
-    # Get the current calico values
-    values = subprocess.getoutput(helm + " -n tigera-operator get values calico -o json")
-    values = values.replace("v3.25.1", CALICO_VERSION)
-    values = values.replace("v1.29.3", CALICO_NODE_VERSION)
-    values = values.replace('"podAnnotations":{}', '"podAnnotations":{"cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes": "var-lib-calico"}')
-
-    # Write calico values to file
-    if not dry_run:
-        calico_values = open('./calico.values', 'w')
-        calico_values.write(values)
-        calico_values.close()
-
     print("[INFO] Upgrading Calico to " + CALICO_VERSION + ":", end =" ", flush=True)
     if chart_version == CALICO_VERSION:
         print("SKIP")
     else:
+        # Get the current calico values
+        values = subprocess.getoutput(helm + " -n tigera-operator get values calico -o json")
+        values = values.replace("v3.25.1", CALICO_VERSION)
+        values = values.replace("v1.29.3", CALICO_NODE_VERSION)
+        values = values.replace('"podAnnotations":{}', '"podAnnotations":{"cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes": "var-lib-calico"}')
+
+        # Write calico values to file
+        if not dry_run:
+            calico_values = open('./calico.values', 'w')
+            calico_values.write(values)
+            calico_values.close()
         command = (helm + " -n tigera-operator upgrade calico tigera-operator" +
                    " --wait --version " + CALICO_VERSION + " --values ./calico.values" +
                    " --repo https://docs.projectcalico.org/charts")
         execute_command(command, dry_run)
-
-    if not dry_run:
-        os.remove("./calico.values")
+        if not dry_run:
+            os.remove("./calico.values")
+        command = kubectl + " -n calico-system rollout status daemonset calico-node --timeout 300s"
+        status, output = subprocess.getstatusoutput(command)
+        if status != 0:
+            print("[Error] Calico node daemonset failed to rollout:\n" + output)
+            sys.exit(1)
 
 def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
     print("[INFO] Creating keoscluster-registries secret:", end =" ", flush=True)
