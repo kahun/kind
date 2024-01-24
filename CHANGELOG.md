@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.0-0.3.7 (2024-01-23)
+
+* [Core] HotFix: Disable Azure cloud routes and fix Azure csi drivers in upgrade script
+* [Core] HotFix: Remove Azure cloud route table maintenance
+* [Docs] Fix: EFS permissions
+* [Docs] Add AWS details
+
 ## 0.17.0-0.3.6 (2023-12-21)
 
 * [Core] HotFix: storageclass.parameters.label validation
