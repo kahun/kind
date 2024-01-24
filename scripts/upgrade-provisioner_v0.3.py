@@ -424,7 +424,7 @@ spec:
     command = kubectl + " -n capi-kubeadm-bootstrap-system scale --replicas " + replicas + " deploy capi-kubeadm-bootstrap-controller-manager"
     execute_command(command, dry_run)
 
-def upgrade_drivers(dry_run):
+def upgrade_drivers(cluster, cluster_name, dry_run):
     # Azuredisk CSI driver
     print("[INFO] Upgrading Azuredisk CSI driver to " + AZUREDISK_CSI_DRIVER_CHART + ":", end =" ", flush=True)
     chart_version = subprocess.getstatusoutput(helm + " list -A | grep azuredisk-csi-driver")[1].split()[9]
@@ -432,17 +432,15 @@ def upgrade_drivers(dry_run):
         print("SKIP")
     else:
         chart_values = subprocess.getoutput(helm + " -n kube-system get values azuredisk-csi-driver -o json")
-        if not dry_run:
-            f = open('./azurediskcsidriver.values', 'w')
-            f.write(chart_values)
-            f.close()
+        f = open('./azurediskcsidriver.values', 'w')
+        f.write(chart_values)
+        f.close()
         command = (helm + " -n kube-system upgrade azuredisk-csi-driver azuredisk-csi-driver" +
                    " --wait --version " + AZUREDISK_CSI_DRIVER_CHART + " --values ./azurediskcsidriver.values" +
                    " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                    " --repo https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts")
         execute_command(command, dry_run)
-        if not dry_run:
-            os.remove("./azurediskcsidriver.values")
+        os.remove("./azurediskcsidriver.values")
 
     # Azurefile CSI driver
     status, output = subprocess.getstatusoutput(helm + " list -A | grep azurefile-csi-driver")
@@ -465,17 +463,16 @@ def upgrade_drivers(dry_run):
         elif fsGroupPolicy != "ReadWriteOnceWithFSType":
             chartValuesYaml["feature"]["fsGroupPolicy"] = fsGroupPolicy
             chart_values = yaml.dump(chartValuesYaml)
-        if not dry_run:
-            f = open('./azurefilecsidriver.values', 'w')
-            f.write(chart_values)
-            f.close()
+        f = open('./azurefilecsidriver.values', 'w')
+        f.write(chart_values)
+        f.close()
         if chart_namespace != "kube-system":
             print("[INFO] Uninstalling Azurefile CSI driver:", end =" ", flush=True)
             command = helm + " -n " + chart_namespace + " uninstall azurefile-csi-driver"
             execute_command(command, dry_run)
             print("[INFO] Installing Azurefile CSI driver " + AZUREFILE_CSI_DRIVER_CHART + " in kube-system namespace:", end =" ", flush=True)
             command = (helm + " -n kube-system install azurefile-csi-driver azurefile-csi-driver" +
-                       " --wait --version " + AZUREFILE_CSI_DRIVER_CHART +
+                       " --wait --version " + AZUREFILE_CSI_DRIVER_CHART + " --values ./azurefilecsidriver.values" +
                        " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                        " --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts")
             execute_command(command, dry_run)
@@ -489,15 +486,17 @@ def upgrade_drivers(dry_run):
                         " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts")
                 execute_command(command, dry_run)
-        if not dry_run:
-            os.remove("./azurefilecsidriver.values")
     else:
         print("[INFO] Installing Azurefile CSI driver " + AZUREFILE_CSI_DRIVER_CHART + ":", end =" ", flush=True)
         command = (helm + " -n kube-system install azurefile-csi-driver azurefile-csi-driver" +
                    " --wait --version " + AZUREFILE_CSI_DRIVER_CHART +
                    " --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\\,azure-cred\"" +
                    " --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts")
+        if os.path.isfile('./azurefilecsidriver.values'):
+            command += " --values ./azurefilecsidriver.values"
         execute_command(command, dry_run)
+    if os.path.isfile('./azurefilecsidriver.values'):
+        os.remove("./azurefilecsidriver.values")
 
     # Cloud provider Azure
     status, output = subprocess.getstatusoutput(helm + " list -A | grep cloud-provider-azure")
@@ -505,10 +504,9 @@ def upgrade_drivers(dry_run):
         chart_version = output.split()[8].split("-")[3]
         chart_namespace = output.split()[1]
         chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
-        if not dry_run:
-            f = open('./cloudproviderazure.values', 'w')
-            f.write(chart_values)
-            f.close()
+        f = open('./cloudproviderazure.values', 'w')
+        f.write(chart_values)
+        f.close()
         if chart_namespace != "kube-system":
             print("[INFO] Uninstalling Cloud Provider Azure:", end =" ", flush=True)
             command = helm + " -n " + chart_namespace + " uninstall cloud-provider-azure"
@@ -528,16 +526,24 @@ def upgrade_drivers(dry_run):
                             " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
                             " --set cloudControllerManager.configureCloudRoutes=false" +
                             " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
-                execute_command(command, dry_run)
-        if not dry_run:
-            os.remove("./cloudproviderazure.values")
+            execute_command(command, dry_run)
     else:
             print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
             command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
                         " --wait --version " + CLOUD_PROVIDER_AZURE_CHART +
                         " --set cloudControllerManager.configureCloudRoutes=false" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
+            if os.path.isfile('./cloudproviderazure.values'):
+                command += " --values ./cloudproviderazure.values"
+            else:
+                podsCidrBlock = "192.168.0.0/16"
+                if "networks" in cluster["spec"]:
+                    if "pods_cidr" in cluster["spec"]["networks"]:
+                        podsCidrBlock = cluster["spec"]["networks"]["pods_cidr"]
+                command += " --set infra.clusterName=" + cluster_name + " --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
             execute_command(command, dry_run)
+    if os.path.isfile('./cloudproviderazure.values'):
+        os.remove("./cloudproviderazure.values")
 
 def upgrade_calico(dry_run):
     print("[INFO] Applying new Calico CRDs:", end =" ", flush=True)
@@ -563,16 +569,14 @@ def upgrade_calico(dry_run):
         values = values.replace('"podAnnotations":{}', '"podAnnotations":{"cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes": "var-lib-calico"}')
 
         # Write calico values to file
-        if not dry_run:
-            calico_values = open('./calico.values', 'w')
-            calico_values.write(values)
-            calico_values.close()
+        calico_values = open('./calico.values', 'w')
+        calico_values.write(values)
+        calico_values.close()
         command = (helm + " -n tigera-operator upgrade calico tigera-operator" +
                    " --wait --wait-for-jobs --version " + CALICO_VERSION + " --values ./calico.values" +
                    " --repo https://docs.projectcalico.org/charts")
         execute_command(command, dry_run)
-        if not dry_run:
-            os.remove("./calico.values")
+        os.remove("./calico.values")
 
 def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
     print("[INFO] Creating keoscluster-registries secret:", end =" ", flush=True)
@@ -781,6 +785,7 @@ if __name__ == '__main__':
     if "github_token" in data["secrets"]:
         env_vars += " GITHUB_TOKEN=" + data["secrets"]["github_token"]
         helm = "GITHUB_TOKEN=" + data["secrets"]["github_token"] + " " + helm
+        kubectl = "GITHUB_TOKEN=" + data["secrets"]["github_token"] + " " + kubectl
 
     # Set helm repo
     helm_repo["url"] = config["helm_repo"]
@@ -820,7 +825,7 @@ if __name__ == '__main__':
             request_confirmation()
 
     if (config["all"] or config["only_drivers"]) and provider == "azure":
-        upgrade_drivers(config["dry_run"])
+        upgrade_drivers(cluster, cluster_name, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
