@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0-0.3.7 (2024-01-23)
+## 0.17.0-0.3.7 (2024-01-29)
 
 * [Docs] Fix: EFS permissions
 * [Docs] Add AWS details
