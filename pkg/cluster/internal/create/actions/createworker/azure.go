@@ -139,7 +139,6 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, k string, keosCluster 
 		" --kubeconfig " + k +
 		" --namespace kube-system" +
 		" --set infra.clusterName=" + keosCluster.Metadata.Name +
-		" --set cloudControllerManager.configureCloudRoutes=false" +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
 	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
