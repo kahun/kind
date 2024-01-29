@@ -24,7 +24,9 @@
 ** Node groups.
 ** Information required for the _Stratio KEOS_ installation.
 
-NOTE: For Kubernetes versions higher than 1.26, the installation requires a custom Ubuntu 22.04 image with necessary parameters for Elasticsearch and the ECR plugin for the _kubelet_.
+NOTE: For Kubernetes versions higher than 1.26, the installation requires a custom image with necessary parameters for Elasticsearch and the ECR plugin for the _kubelet_.
+
+NOTE: In case the _cloudformation_ stack has not been previously created in the account, the `spec:security:aws:create_iam` parameter must be set to "true". Otherwise, to "false".
 
 ==== _control-plane_ nodes
 
@@ -279,7 +281,7 @@ Next, proceed to deploy _Stratio KEOS_ *using _keos-installer_*.
 ** Node groups.
 ** Information required for the _Stratio KEOS_ installation.
 
-NOTE: The installation requires a custom Ubuntu 22.04 image with parameters needed for Elasticsearch.
+NOTE: The installation requires a custom image with parameters needed for Elasticsearch.
 
 ==== _control-plane_ nodes
 
@@ -408,7 +410,7 @@ Next, proceed to deploy _Stratio KEOS_ *using _keos-installer_*.
 ** Node groups.
 ** Information required for the _Stratio KEOS_ installation.
 
-NOTE: The installation requires a custom Ubuntu 22.04 image with parameters needed for Elasticsearch.
+NOTE: The installation requires a custom image with parameters needed for Elasticsearch.
 
 ==== _control-plane_ nodes
 
@@ -536,7 +538,7 @@ Next, proceed to deploy _Stratio KEOS_ *using _keos-installer_*.
 ** Node groups.
 ** Information required for the _Stratio KEOS_ installation.
 
-NOTE: The installation requires a custom Ubuntu 22.04 image with parameters needed for Elasticsearch.
+NOTE: The installation requires a custom image with parameters needed for Elasticsearch.
 
 Regarding the _control-plane_, in the cluster descriptor it can be indicated that it is a *managed_control-plane* and the tier of AKS to be instantiated.
 
