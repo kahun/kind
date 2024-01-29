@@ -2,16 +2,13 @@
 
 ## 0.17.0-0.3.7 (2024-01-23)
 
-* [Core] HotFix: Disable Azure cloud routes and fix Azure csi drivers in upgrade script
-* [Core] HotFix: Remove Azure cloud route table maintenance
 * [Docs] Fix: EFS permissions
 * [Docs] Add AWS details
+* [Core] Fix: check if coredns pdb already exists before deploying
 
 ## 0.17.0-0.3.6 (2023-12-21)
 
 * [Core] HotFix: storageclass.parameters.label validation
-* [Core] Fix: check if coredns pdb already exists before deploying
-* [Core] Restrict the maximum number of unhealthy CP nodes in MachineHealthCheck
 
 ## 0.17.0-0.3.5 (2023-12-19)
 
