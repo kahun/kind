@@ -515,6 +515,7 @@ def upgrade_drivers(cluster, cluster_name, dry_run):
             command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
                         " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
                         " --set cloudControllerManager.configureCloudRoutes=false" +
+                        " --set cloudControllerManager.replicas=2" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             execute_command(command, dry_run)
         else:
@@ -525,6 +526,7 @@ def upgrade_drivers(cluster, cluster_name, dry_run):
                 command = (helm + " -n kube-system upgrade cloud-provider-azure cloud-provider-azure" +
                             " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
                             " --set cloudControllerManager.configureCloudRoutes=false" +
+                            " --set cloudControllerManager.replicas=2" +
                             " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             execute_command(command, dry_run)
     else:
@@ -532,6 +534,7 @@ def upgrade_drivers(cluster, cluster_name, dry_run):
             command = (helm + " -n kube-system install cloud-provider-azure cloud-provider-azure" +
                         " --wait --version " + CLOUD_PROVIDER_AZURE_CHART +
                         " --set cloudControllerManager.configureCloudRoutes=false" +
+                        " --set cloudControllerManager.replicas=2" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             if os.path.isfile('./cloudproviderazure.values'):
                 command += " --values ./cloudproviderazure.values"
