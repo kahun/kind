@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.17.0-0.3.7 (2024-01-23)
+## 0.17.0-0.3.7 (2024-01-31)
 
+* [Core] HotFix: Disable Azure cloud routes and fix Azure csi drivers in upgrade script
+* [Core] HotFix: Remove Azure cloud route table maintenance
+* [Core] Downgrade CCM to match k8s version 1.26
+* [Core] Disable nodes CIDR in Azure
+* [Internal] Add utility to upload keos installer docker images
 * [Docs] Fix: EFS permissions
 * [Docs] Add AWS details
+* [Core] Restrict the maximum number of unhealthy CP nodes in MachineHealthCheck
 * [Core] Fix: check if coredns pdb already exists before deploying
 
 ## 0.17.0-0.3.6 (2023-12-21)
