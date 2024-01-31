@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.17.0-0.3.7 (2024-01-29)
+## 0.17.0-0.3.7 (upcoming)
 
+* [Azure] Fix: Azure cloud-controller-manager deployment
 * [Docs] Fix: EFS permissions
 * [Docs] Add AWS details
 * [Core] Fix: check if coredns pdb already exists before deploying
