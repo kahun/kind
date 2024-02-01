@@ -464,6 +464,9 @@ spec:
       auth_required: false
       type: ecr
       keos_registry: true
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
   storageclass:
     parameters:
       type: gp3
@@ -482,29 +485,29 @@ spec:
         api_server: true
     managed: true
   worker_nodes:
-  - name: eks-prod-xlarge
-    quantity: 6
-    max_size: 18
-    min_size: 6
-    size: m6i.xlarge
-    labels:
-      disktype: standard
-    root_volume:
-      size: 50
-      type: gp3
-      encrypted: true
-    ssh_key: stg-key
-  - name: eks-prod-medium-spot
-    quantity: 4
-    zone_distribution: unbalanced
-    size: t3.medium
-    spot: true
-    labels:
-      disktype: standard
-  - name: eks-prod-medium-az
-    quantity: 3
-    size: t3.medium
-    az: eu-west-1c
+    - name: eks-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: eks-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: eks-prod-medium-az
+      quantity: 3
+      size: t3.medium
+      az: eu-west-1c
 ----
 
 ==== AWS no gestionado
@@ -563,6 +566,9 @@ spec:
       auth_required: false
       type: ecr
       keos_registry: true
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
   storageclass:
     parameters:
       type: gp3
@@ -584,32 +590,32 @@ spec:
       size: 50
       type: gp3
   worker_nodes:
-  - name: aws-prod-xlarge
-    quantity: 6
-    max_size: 18
-    min_size: 6
-    size: m6i.xlarge
-    node_image: ami-0de933c15c9b49fb5
-    labels:
-      disktype: standard
-    root_volume:
-      size: 50
-      type: gp3
-      encrypted: true
-    ssh_key: stg-key
-  - name: aws-prod-medium-spot
-    quantity: 4
-    node_image: ami-0de933c15c9b49fb5
-    zone_distribution: unbalanced
-    size: t3.medium
-    spot: true
-    labels:
-      disktype: standard
-  - name: aws-prod-medium-az
-    quantity: 3
-    node_image: ami-0de933c15c9b49fb5
-    size: t3.medium
-    az: eu-west-1c
+    - name: aws-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      node_image: ami-0de933c15c9b49fb5
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: aws-prod-medium-spot
+      quantity: 4
+      node_image: ami-0de933c15c9b49fb5
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: aws-prod-medium-az
+      quantity: 3
+      node_image: ami-0de933c15c9b49fb5
+      size: t3.medium
+      az: eu-west-1c
 ----
 
 ==== GCP
@@ -659,10 +665,13 @@ spec:
   k8s_version: v1.26.8
   region: europe-west4
   docker_registries:
-    - url: eosregistry.azurecr.io/keos
+      - url: eosregistry.azurecr.io/keos
+        auth_required: true
+        type: generic
+        keos_registry: true
+  helm_repository:
       auth_required: false
-      type: acr
-      keos_registry: true
+      url: http://charts.stratio.com
   dns:
     manage_zone: false
   external_domain: domain.ext
@@ -751,14 +760,17 @@ spec:
       auth_required: false
       type: acr
       keos_registry: true
-  networks:
-    pods_cidr: 172.16.0.0/20
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
   storageclass:
     parameters:
-      type: Standard_LRS
+      type: StandardSSD_LRS
       fsType: ext4
       tags: "owner=stratio"
   external_domain: domain.ext
+  dns:
+    manage_zone: false
   keos:
     flavour: production
     version: 1.0.4
@@ -768,11 +780,12 @@ spec:
   control_plane:
     managed: false
     size: Standard_D8_v3
+    node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
     root_volume:
       size: 100
-      type: Standard_LRS
+      type: StandardSSD_LRS
   worker_nodes:
-    - name: azure-prod-std
+    - name: worker1
       quantity: 3
       max_size: 18
       min_size: 3
@@ -782,7 +795,7 @@ spec:
         backup: "false"
       root_volume:
         size: 100
-        type: Standard_LRS
+        type: StandardSSD_LRS
 ----
 
 ==== AKS
@@ -817,36 +830,38 @@ spec:
   region: westeurope
   docker_registries:
     - url: eosregistry.azurecr.io/keos
-    auth_required: false
-    type: acr
-    keos_registry: true
+      auth_required: false
+      type: acr
+      keos_registry: true
   helm_repository:
     auth_required: false
     url: http://charts.stratio.com
   networks:
     pods_cidr: 172.16.0.0/20
   storageclass:
-    encryption_key: myKey
     class: premium
   external_domain: domain.ext
   keos:
     flavour: production
     version: 1.0.4
+  security:
+    control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
+    nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
   control_plane:
     azure:
       tier: Paid
     managed: true
   worker_nodes:
-    - name: aks-prod-prem
-    quantity: 3
-    max_size: 18
-    min_size: 3
-    size: Standard_D8s_v3
-    labels:
-      premium_sc: "true"
-    root_volume:
-      size: 50
-      type: Managed
+    - name: worker1
+      quantity: 3
+      max_size: 18
+      min_size: 3
+      size: Standard_D8s_v3
+      labels:
+        premium_sc: "true"
+      root_volume:
+        size: 50
+        type: Managed
 ----
 
 == Creación del _cluster_
