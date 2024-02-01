@@ -230,6 +230,10 @@ func validateGCPNetwork(network commons.Networks, credentialsJson string, region
 			return errors.New("\"subnet_id\": required")
 		}
 	}
+	if network.VPCCIDRBlock != "" {
+		return errors.New("\"vpc_cidr\": is not supported")
+	}
+
 	return nil
 }
 

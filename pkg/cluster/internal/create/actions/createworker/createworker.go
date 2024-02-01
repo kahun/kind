@@ -38,7 +38,7 @@ type action struct {
 	avoidCreation      bool
 	keosCluster        commons.KeosCluster
 	clusterCredentials commons.ClusterCredentials
-	clusterConfig      commons.ClusterConfig
+	clusterConfig      *commons.ClusterConfig
 }
 
 type keosRegistry struct {
@@ -73,7 +73,7 @@ var allowCommonEgressNetPol string
 var rbacInternalLoadBalancing string
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, clusterConfig commons.ClusterConfig) actions.Action {
+func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, clusterConfig *commons.ClusterConfig) actions.Action {
 	return &action{
 		vaultPassword:      vaultPassword,
 		descriptorPath:     descriptorPath,
@@ -121,13 +121,22 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	awsEKSEnabled := a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed
 	isMachinePool := a.keosCluster.Spec.InfraProvider != "aws" && a.keosCluster.Spec.ControlPlane.Managed
 
-	privateParams := PrivateParams{
-		KeosCluster: a.keosCluster,
-		KeosRegUrl:  keosRegistry.url,
-		Private:     a.clusterConfig.Spec.Private,
+	var privateParams PrivateParams
+	if a.clusterConfig != nil {
+		privateParams = PrivateParams{
+			KeosCluster: a.keosCluster,
+			KeosRegUrl:  keosRegistry.url,
+			Private:     a.clusterConfig.Spec.Private,
+		}
+	} else {
+		privateParams = PrivateParams{
+			KeosCluster: a.keosCluster,
+			KeosRegUrl:  keosRegistry.url,
+			Private:     false,
+		}
 	}
 
-	if a.clusterConfig.Spec.Private {
+	if privateParams.Private {
 		ctx.Status.Start("Installing Private CNI 🎖️")
 		defer ctx.Status.End(false)
 		c = `sed -i 's/@sha256:[[:alnum:]_-].*$//g' ` + cniDefaultFile
@@ -222,7 +231,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	if a.clusterConfig.Spec.Private {
+	if privateParams.Private {
 		err = provider.deployCertManager(n, keosRegistry.url, "")
 		if err != nil {
 			return err
@@ -295,7 +304,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing keos cluster operator 💻")
 	defer ctx.Status.End(false)
 
-	err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, "", true)
+	err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", true)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster operator")
 	}
@@ -317,11 +326,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
 
+		if a.clusterConfig != nil {
+			// Apply cluster manifests
+			c = "kubectl apply -f " + manifestsPath + "/clusterconfig.yaml"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to apply clusterconfig manifests")
+			}
+		}
+
 		// Apply cluster manifests
 		c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to apply manifests")
+			return errors.Wrap(err, "failed to apply keoscluster manifests")
 		}
 
 		time.Sleep(20 * time.Second)
@@ -498,7 +516,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
-		if a.clusterConfig.Spec.Private {
+		if privateParams.Private {
 			err = provider.deployCertManager(n, keosRegistry.url, kubeconfigPath)
 			if err != nil {
 				return err
@@ -592,7 +610,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				" --set clusterAPIMode=incluster-incluster" +
 				" --set replicaCount=2"
 
-			if a.clusterConfig.Spec.Private {
+			if privateParams.Private {
 				c += " --set image.repository=" + keosRegistry.url + "/autoscaling/cluster-autoscaler"
 			}
 
@@ -607,7 +625,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
 		defer ctx.Status.End(false)
 
-		err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, kubeconfigPath, true)
+		err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, kubeconfigPath, true)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
 		}
@@ -690,6 +708,30 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to wait for keoscluster controller ready")
 			}
 
+			if a.clusterConfig != nil {
+
+				c = "kubectl -n " + capiClustersNamespace + " patch clusterconfig " + a.clusterConfig.Metadata.Name + " -p '{\"metadata\":{\"ownerReferences\":null,\"finalizers\":null}}' --type=merge"
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to remove clusterconfig ownerReferences and finalizers")
+				}
+
+				// Move clusterConfig to workload cluster
+				c = "kubectl -n " + capiClustersNamespace + " get clusterconfig " + a.clusterConfig.Metadata.Name + " -o json | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to move clusterconfig to workload cluster")
+				}
+
+				// Delete clusterconfig in management cluster
+				c = "kubectl -n " + capiClustersNamespace + " delete clusterconfig " + a.clusterConfig.Metadata.Name
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to delete clusterconfig in management cluster")
+				}
+
+			}
+
 			// Move keoscluster to workload cluster
 			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o json | jq 'del(.status)' | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
 			_, err = commons.ExecuteCommand(n, c)
@@ -710,7 +752,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to delete keoscluster in management cluster")
 			}
 
-			err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, "", false)
+			err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", false)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy cluster operator")
 			}
@@ -718,6 +760,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Moving the cluster-operator
 		}
 	}
+
+	ctx.Status.Start("Executing post-install steps 🎖️")
+	defer ctx.Status.End(false)
+
+	err = infra.postInstallPhase(n, kubeconfigPath)
+	if err != nil {
+		return err
+	}
+
+	ctx.Status.End(true)
 
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)

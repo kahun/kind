@@ -17,7 +17,7 @@ To ensure the functionalities supported by the EKS-managed _control-plane_, you 
 +
 The https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMIs optimized for Amazon EKS] are built on the Amazon Linux 2 operating system.
 +
-For deployments on unmanaged AWS, you should use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows you to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder:aws-image-builder.adoc[guide for AWS].
+For deployments on unmanaged AWS, you should use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows you to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder/aws-image-builder.adoc[guide for AWS].
 +
 The currently recommended operating system for this provider is Ubuntu 22.04.
 
@@ -31,7 +31,7 @@ For deployments on the Google Cloud Platform, you will require permissions on co
 
 * Certified operating systems
 +
-For unmanaged GCP environments use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder:gcp-image-builder.adoc[guide for GCP].
+For unmanaged GCP environments use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder/gcp-image-builder.adoc[guide for GCP].
 +
 The currently recommended operating system for this provider is Ubuntu 22.04.
 
@@ -47,7 +47,7 @@ As with other supported providers, provisioning requires an account with all the
 
 * Certified operating systems
 +
-For environments in Azure it will be possible to use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder:azure-image-builder.adoc[guide for Azure].
+For environments in Azure it will be possible to use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder/azure-image-builder.adoc[guide for Azure].
 +
 The currently recommended operating system for this provider is Ubuntu 22.04, being the one that creates by default the controller of this cloud provider.
 

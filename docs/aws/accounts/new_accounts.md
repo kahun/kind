@@ -82,5 +82,12 @@ Es recomenable crear varias lambdas:
 
 - Comprobar el estado del stack de CloudFormation y notificar si hay algún error.
 - Borrar los posibles volúmenes de despliegues de test que se nos queden pendientes.
+    > Periodicidad: 0 23 ? * MON-FRI * (Lunes a Viernes a las 23:00)  
+    > script: [deleteUnusedEBS](../../../scripts/deleteUnusedEBS.py)  
 - Borrar los Provedores de identidad del tipo "OpenID Connect (OIDC)" que no estén en uso.
-- Revisión de clusters con más de 'n' días desplegado.
+    > Periodicidad: 0 23 ? * MON-FRI * (Lunes a Viernes a las 23:00)  
+    > script: [deleteoldOIDC](../../../scripts/delete_oidc.py)
+- Revisión de clusters con más de '3' días desplegado.  
+    > Periodicidad: 0 23 ? * MON-FRI * (Lunes a Viernes a las 23:00)  
+    > script: [ClustersWatch](../../../scripts/ClustersWatch.py)  
+    > Para evitar mensajes sobre una vpc deberíamos añadir el tag "Custom" en la misma.   

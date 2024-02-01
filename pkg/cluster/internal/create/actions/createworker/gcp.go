@@ -254,3 +254,8 @@ func (b *GCPBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 	}
 	return overrideVars, nil
 }
+
+func (b *GCPBuilder) postInstallPhase(n nodes.Node, k string) error {
+
+	return nil
+}

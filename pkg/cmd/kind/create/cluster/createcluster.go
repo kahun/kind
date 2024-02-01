@@ -188,7 +188,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	}
 
 	dockerRegUrl := ""
-	if clusterConfig.Spec.Private {
+	if clusterConfig != nil && clusterConfig.Spec.Private {
 		configFile, err := getConfigFile(keosCluster, clusterCredentials)
 		if err != nil {
 			return errors.Wrap(err, "Error getting private kubeadm config")
@@ -220,7 +220,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.MoveManagement,
 		flags.AvoidCreation,
 		dockerRegUrl,
-		*clusterConfig,
+		clusterConfig,
 		*keosCluster,
 		clusterCredentials,
 		withConfig,

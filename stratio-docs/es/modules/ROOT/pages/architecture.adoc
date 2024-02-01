@@ -453,7 +453,7 @@ spec:
       efs:
           name: fs-015ea5e2ba5fe7fa5
           id: fs-015ea5e2ba5fe7fa5
-          permissions: 640
+          permissions: 700
 ----
 
 Con estos datos, se renderizará el _keos.yaml_ de forma que en la ejecución del _keos-installer_ se despliegue el _driver_ y se configure la _StorageClass_ correspondiente.

@@ -63,7 +63,7 @@ type ClusterOptions struct {
 	MoveManagement     bool
 	AvoidCreation      bool
 	KeosCluster        commons.KeosCluster
-	ClusterConfig      commons.ClusterConfig
+	ClusterConfig      *commons.ClusterConfig
 	ClusterCredentials commons.ClusterCredentials
 	DockerRegUrl       string
 

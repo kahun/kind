@@ -54,7 +54,10 @@ installation:
 nodeSelector:
   kubernetes.io/os: linux
 # Custom annotations for the tigera/operator pod.
-podAnnotations: {}
+podAnnotations:
+{{- range $key, $value := $.Annotations }}
+  {{ $key }}: {{ $value }}
+{{- end }}
 # Custom labels for the tigera/operator pod.
 podLabels: {}
 # Resource requests and limits for the tigera/operator pod.

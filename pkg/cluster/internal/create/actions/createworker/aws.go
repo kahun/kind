@@ -141,7 +141,8 @@ func (b *AWSBuilder) installCloudProvider(n nodes.Node, k string, privateParams 
 func (b *AWSBuilder) installCSI(n nodes.Node, k string, privateParams PrivateParams) error {
 	c := "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
 		" --kubeconfig " + k +
-		" --namespace " + b.csiNamespace
+		" --namespace " + b.csiNamespace +
+		" --set controller.podAnnotations.\"cluster-autoscaler\\.kubernetes\\.io/safe-to-evict-local-volumes=socket-dir\""
 
 	if privateParams.Private {
 		c += " --set image.repository=" + privateParams.KeosRegUrl + "/ebs-csi-driver/aws-ebs-csi-driver" +
@@ -314,4 +315,20 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 		overrideVars = addOverrideVar("storage-class.yaml", []byte("storage_class_pvc_size: 125Gi"), overrideVars)
 	}
 	return overrideVars, nil
+}
+
+func (b *AWSBuilder) postInstallPhase(n nodes.Node, k string) error {
+	if b.capxManaged {
+		err := patchDeploy(n, k, "kube-system", "coredns", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"tmp\"}}}}}")
+		if err != nil {
+			return errors.Wrap(err, "failed to add podAnnotation to coredns")
+		}
+
+		err = patchDeploy(n, k, "kube-system", "ebs-csi-controller", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"socket-dir\"}}}}}")
+		if err != nil {
+			return errors.Wrap(err, "failed to add podAnnotation to ebs-csi-controller")
+		}
+	}
+
+	return nil
 }

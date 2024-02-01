@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/apparentlymart/go-cidr/cidr"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -259,7 +261,6 @@ func validateAzureTag(t string) error {
 func validateAzureNetwork(network commons.Networks, spec commons.KeosSpec, creds *azidentity.ClientSecretCredential, subscription string, clusterName string) error {
 	rg := clusterName
 	if network.VPCID != "" {
-
 		if spec.Networks.ResourceGroup != "" {
 			rg = spec.Networks.ResourceGroup
 		}
@@ -273,19 +274,30 @@ func validateAzureNetwork(network commons.Networks, spec commons.KeosSpec, creds
 		if len(network.Subnets) == 0 {
 			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
 		}
-		if spec.ControlPlane.Managed && network.VPCCidrBlock == "" {
+		if spec.ControlPlane.Managed && network.VPCCIDRBlock == "" {
 			return errors.New("\"vpc_cidr\": is required when \"vpc_id\" is set")
 		}
 	} else {
 		if len(network.Subnets) > 0 {
 			return errors.New("\"vpc_id\": is required when \"subnets\" is set")
 		}
-		if network.VPCCidrBlock != "" {
+		if network.VPCCIDRBlock != "" {
 			if spec.ControlPlane.Managed {
 				return errors.New("\"vpc_id\": is required when \"vpc_cidr\" is set")
 			} else {
 				return errors.New("\"vpc_cidr\": is only supported in azure managed clusters")
 			}
+		}
+	}
+	if spec.ControlPlane.Managed && network.VPCCIDRBlock != "" {
+		const cidrSizeMin = 256
+		_, ipv4Net, err := net.ParseCIDR(network.VPCCIDRBlock)
+		if err != nil {
+			return errors.New("\"pods_cidr\": CIDR block must be a valid IPv4 CIDR block")
+		}
+		cidrSize := cidr.AddressCount(ipv4Net)
+		if cidrSize < cidrSizeMin {
+			return errors.New("\"vpc_cidr\": CIDR block size must be at least /24 netmask")
 		}
 	}
 	if len(network.Subnets) > 0 {
