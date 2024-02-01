@@ -444,40 +444,43 @@ metadata:
 spec:
   infra_provider: aws
   credentials:
-  aws:
-    region: eu-west-1
-    access_key: AKIAT4..
-    account_id: '3683675..'
-    secret_key: wq3/Vsc..
-  github_token: github_pat_11APW..
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
   k8s_version: v1.26.7
   region: eu-west-1
   external_domain: domain.ext
   networks:
-  vpc_id: vpc-02698..
-  subnets:
-    - subnet_id: subnet-0416d..
-    - subnet_id: subnet-0b2f8..
-    - subnet_id: subnet-0df75..
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
   docker_registries:
-  - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
-    auth_required: false
-    type: ecr
-    keos_registry: true
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
   storageclass:
-  parameters:
-    type: gp3
-    fsType: ext4
-    encrypted: "true"
-    labels: "owner=stratio"
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
   keos:
-  flavour: production
-  version: 1.0.2
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
   control_plane:
-  aws:
-    logging:
-    api_server: true
-  managed: true
+    aws:
+      logging:
+        api_server: true
+    managed: true
   worker_nodes:
   - name: eks-prod-xlarge
     quantity: 6
@@ -485,11 +488,11 @@ spec:
     min_size: 6
     size: m6i.xlarge
     labels:
-    disktype: standard
+      disktype: standard
     root_volume:
-    size: 50
-    type: gp3
-    encrypted: true
+      size: 50
+      type: gp3
+      encrypted: true
     ssh_key: stg-key
   - name: eks-prod-medium-spot
     quantity: 4
@@ -497,7 +500,7 @@ spec:
     size: t3.medium
     spot: true
     labels:
-    disktype: standard
+      disktype: standard
   - name: eks-prod-medium-az
     quantity: 3
     size: t3.medium
@@ -532,12 +535,12 @@ metadata:
 spec:
   infra_provider: aws
   credentials:
-  aws:
-    region: eu-west-1
-    access_key: AKIAT4..
-    account_id: '3683675..'
-    secret_key: wq3/Vsc..
-  github_token: github_pat_11APW..
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
   k8s_version: v1.26.7
   region: eu-west-1
   external_domain: domain.ext
@@ -556,27 +559,30 @@ spec:
       - subnet_id: subnet-0df75..
     pods_cidr: 100.64.0.0/16
   docker_registries:
-  - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
-    auth_required: false
-    type: ecr
-    keos_registry: true
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
   storageclass:
-  parameters:
-    type: gp3
-    fsType: ext4
-    encrypted: "true"
-    labels: "owner=stratio"
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
   keos:
-  flavour: production
-  version: 1.0.2
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
   control_plane:
-  managed: false
-  name: aws-prod-cp
-  size: m6i.xlarge
-  node_image: ami-0de933c15c9b49fb5
-  root_volume:
-    size: 50
-    type: gp3
+    managed: false
+    name: aws-prod-cp
+    size: m6i.xlarge
+    node_image: ami-0de933c15c9b49fb5
+    root_volume:
+      size: 50
+      type: gp3
   worker_nodes:
   - name: aws-prod-xlarge
     quantity: 6
@@ -585,11 +591,11 @@ spec:
     size: m6i.xlarge
     node_image: ami-0de933c15c9b49fb5
     labels:
-    disktype: standard
+      disktype: standard
     root_volume:
-    size: 50
-    type: gp3
-    encrypted: true
+      size: 50
+      type: gp3
+      encrypted: true
     ssh_key: stg-key
   - name: aws-prod-medium-spot
     quantity: 4
@@ -598,7 +604,7 @@ spec:
     size: t3.medium
     spot: true
     labels:
-    disktype: standard
+      disktype: standard
   - name: aws-prod-medium-az
     quantity: 3
     node_image: ami-0de933c15c9b49fb5
@@ -668,7 +674,7 @@ spec:
       labels: "owner=stratio"
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   control_plane:
     managed: false
     highly_available: true
@@ -755,7 +761,7 @@ spec:
   external_domain: domain.ext
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   security:
     control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
     nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
@@ -825,7 +831,7 @@ spec:
   external_domain: domain.ext
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   control_plane:
     azure:
       tier: Paid
