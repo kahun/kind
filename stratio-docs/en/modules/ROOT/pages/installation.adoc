@@ -785,7 +785,7 @@ spec:
       size: 100
       type: StandardSSD_LRS
   worker_nodes:
-    - name: worker1
+    - name: azure-prod-std
       quantity: 3
       max_size: 18
       min_size: 3
