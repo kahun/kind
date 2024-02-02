@@ -503,11 +503,13 @@ def upgrade_drivers(cluster, cluster_name, dry_run):
     if status == 0:
         chart_version = output.split()[8].split("-")[3]
         chart_namespace = output.split()[1]
-        chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
-        f = open('./cloudproviderazure.values', 'w')
-        f.write(chart_values)
-        f.close()
-        if chart_namespace != "kube-system":
+        if chart_version == CLOUD_PROVIDER_AZURE_CHART[1:] and chart_namespace == "kube-system":
+            print("SKIP")
+        else:
+            chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
+            f = open('./cloudproviderazure.values', 'w')
+            f.write(chart_values)
+            f.close()
             print("[INFO] Uninstalling Cloud Provider Azure:", end =" ", flush=True)
             command = helm + " -n " + chart_namespace + " uninstall cloud-provider-azure"
             execute_command(command, dry_run)
@@ -517,17 +519,6 @@ def upgrade_drivers(cluster, cluster_name, dry_run):
                         " --set cloudControllerManager.configureCloudRoutes=false" +
                         " --set cloudControllerManager.replicas=2" +
                         " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
-            execute_command(command, dry_run)
-        else:
-            print("[INFO] Upgrading Cloud Provider Azure to " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
-            if chart_version == CLOUD_PROVIDER_AZURE_CHART[1:]:
-                print("SKIP")
-            else:
-                command = (helm + " -n kube-system upgrade cloud-provider-azure cloud-provider-azure" +
-                            " --wait --version " + CLOUD_PROVIDER_AZURE_CHART + " --values ./cloudproviderazure.values" +
-                            " --set cloudControllerManager.configureCloudRoutes=false" +
-                            " --set cloudControllerManager.replicas=2" +
-                            " --repo https://raw.githubusercontent.com/kubernetes-sigs/cloud-provider-azure/master/helm/repo")
             execute_command(command, dry_run)
     else:
             print("[INFO] Installing Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + ":", end =" ", flush=True)
