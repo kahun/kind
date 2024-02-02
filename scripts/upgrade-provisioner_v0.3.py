@@ -31,7 +31,6 @@ CALICO_NODE_VERSION = "v1.30.5"
 AZUREDISK_CSI_DRIVER_CHART = "v1.28.3"
 AZUREFILE_CSI_DRIVER_CHART = "v1.28.3"
 CLOUD_PROVIDER_AZURE_CHART = "v1.26.7"
-#CLOUD_PROVIDER_AZURE_CHART = {"1.26": "v1.26.7"}
 CLUSTER_OPERATOR = "0.1.7"
 CLOUD_PROVISIONER = "0.17.0-0.3.7"
 
@@ -107,21 +106,6 @@ def backup(backup_dir, namespace, cluster_name):
         if status != 0:
             print("[ERROR] Backing up capsule files failed:\n" + output)
             sys.exit(1)
-
-def get_capz_leader():
-    command = kubectl + " -n capz-system get pods | grep capz-controller-manager"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Getting capz-controller-manager pods failed:\n" + output)
-        sys.exit(1)
-    print("DEBUG: " + output)
-    for pod in output.split("\n"):
-        print("DEBUG: " + pod)
-        command = kubectl + " -n capz-system logs pod " + pod + " | grep 'successfully acquired lease'"
-        status, output = subprocess.getstatusoutput(command)
-        if status == 0:
-            return pod.split()[0]
-    return output
 
 def prepare_capsule(dry_run):
     print("[INFO] Preparing capsule-mutating-webhook-configuration for the upgrade process:", end =" ", flush=True)
