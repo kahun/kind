@@ -57,7 +57,7 @@ const (
 
 	certManagerVersion   = "v1.12.3"
 	clusterOperatorChart = "0.2.0-SNAPSHOT"
-	clusterOperatorImage = "0.2.0-SNAPSHOT"
+	clusterOperatorImage = "0.2.0-PR161-SNAPSHOT"
 
 	postInstallAnnotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
 )
