@@ -156,7 +156,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string, privateParams PrivatePar
 }
 
 func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
-	var registryUser = "_json_key_base64"
+	var registryUser = "oauth2accesstoken"
 	var ctx = context.Background()
 	scope := "https://www.googleapis.com/auth/cloud-platform"
 	key, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
@@ -169,6 +169,7 @@ func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string,
 		return "", "", err
 	}
 	return registryUser, token.AccessToken, nil
+	// var registryUser = "_json_key_base64"
 	// creds := strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1]
 	// return registryUser, creds, nil
 }
