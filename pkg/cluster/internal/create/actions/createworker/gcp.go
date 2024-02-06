@@ -61,8 +61,8 @@ func newGCPBuilder() *GCPBuilder {
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.4.0"
-	b.capxImageVersion = "v1.4.0"
+	b.capxVersion = "v1.5.1"
+	b.capxImageVersion = "v1.5.1"
 	b.capxName = "capg"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"

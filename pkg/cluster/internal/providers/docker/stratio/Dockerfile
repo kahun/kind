@@ -24,7 +24,7 @@ ENV CERT_MANAGER_CHART_VERSION=v1.12.3
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.2.1
-ENV CAPG=v1.4.0
+ENV CAPG=v1.5.1
 ENV CAPZ=v1.11.4
 
 # Install vim
