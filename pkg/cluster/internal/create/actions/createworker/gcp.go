@@ -169,9 +169,6 @@ func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string,
 		return "", "", err
 	}
 	return registryUser, token.AccessToken, nil
-	// var registryUser = "_json_key_base64"
-	// creds := strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1]
-	// return registryUser, creds, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
