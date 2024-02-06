@@ -213,7 +213,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Create docker-registry secret in provider-system namespace
 		c = "kubectl create secret docker-registry regcred" +
-			" --docker-server=" + keosRegistry.url +
+			" --docker-server=" + strings.Split(keosRegistry.url, "/")[0] +
 			" --docker-username=" + keosRegistry.user +
 			" --docker-password=" + keosRegistry.pass +
 			" --namespace=" + provider.capxName + "-system"
