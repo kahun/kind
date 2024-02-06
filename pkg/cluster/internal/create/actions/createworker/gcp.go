@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"strings"
 
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gopkg.in/yaml.v3"
@@ -156,19 +155,9 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string, privateParams PrivatePar
 }
 
 func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
-	var registryUser = "oauth2accesstoken"
-	var ctx = context.Background()
-	scope := "https://www.googleapis.com/auth/cloud-platform"
-	key, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
-	creds, err := google.CredentialsFromJSON(ctx, key, scope)
-	if err != nil {
-		return "", "", err
-	}
-	token, err := creds.TokenSource.Token()
-	if err != nil {
-		return "", "", err
-	}
-	return registryUser, token.AccessToken, nil
+	var registryUser = "_json_key_base64"
+	creds := strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1]
+	return registryUser, creds, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
