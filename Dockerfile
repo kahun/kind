@@ -1,4 +1,4 @@
-FROM alpine:3.19.1
+FROM stratio/cloud-testing-suite:0.1.0-PR97-SNAPSHOT
 
 ADD bin/cloud-provisioner.tar.gz /CTS/resources/
 
