@@ -34,12 +34,6 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// //go:embed files/gcp/gcp-compute-persistent-disk-csi-driver.yaml
-// var csiManifest string
-//
-//go:embed templates/gcp/gcp-compute-persistent-disk-csi-driver.tmpl
-var csiManifest string
-
 //go:embed files/gcp/internal-ingress-nginx.yaml
 var gcpInternalIngress []byte
 
@@ -145,6 +139,9 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string, privateParams PrivatePar
 	}
 
 	csiManifests, err := getManifest(privateParams.KeosCluster.Spec.InfraProvider, "gcp-compute-persistent-disk-csi-driver.tmpl", privateParams)
+	if err != nil {
+		return errors.Wrap(err, "failed to get CSI driver manifests")
+	}
 
 	// Deploy CSI driver
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
