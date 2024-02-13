@@ -68,6 +68,11 @@ ec2 = session.client('ec2')
     # keos version 1.0.4:
         # Copy get-keos-docker-images-list.yml on your home directory.
         # Helm repo: helm-14.0-devel
+    # keos version 1.0.5:
+        # Remove 'deploy_tigera_operator' property on keos.yaml.
+        # Do not copy get-keos-docker-images-list.yml on your home directory.
+        # Remove bind_mount_var (variable) and bind mount (volume) on docker run command.
+        # Helm repo: helm-14.0-devel
     # keos version 1.1.0:
         # Remove 'deploy_tigera_operator' property on keos.yaml.
         # Do not copy get-keos-docker-images-list.yml on your home directory.
