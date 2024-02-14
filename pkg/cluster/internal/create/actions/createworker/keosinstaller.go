@@ -151,7 +151,7 @@ func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) 
 	if err != nil {
 		return err
 	}
-	if keosVersion > 1 {
+	if keosVersion < 1.1 {
 		keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 	}
 
