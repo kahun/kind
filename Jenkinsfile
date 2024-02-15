@@ -1,10 +1,10 @@
 @Library('libpipelines') _
 
 hose {
-    EMAIL = 'eos'
+    EMAIL = 'clouds-integration@stratio.com'
     BUILDTOOL = 'make'
     DEVTIMEOUT = 30
-    BUILDTOOL_IMAGE = 'golang:1.19.8'
+    BUILDTOOL_IMAGE = 'golang:1.20'
     ANCHORE_POLICY = "production"
     VERSIONING_TYPE = 'stratioVersion-3-3'
     UPSTREAM_VERSION = '0.17.0'
