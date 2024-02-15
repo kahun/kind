@@ -4,7 +4,7 @@ hose {
     EMAIL = 'clouds-integration@stratio.com'
     BUILDTOOL = 'make'
     DEVTIMEOUT = 30
-    BUILDTOOL_IMAGE = 'golang:1.20'
+    BUILDTOOL_IMAGE = 'qa.int.stratio.com:8443/stratio/cloud-testing-suite:0.1.0-PR99-SNAPSHOT'
     VERSIONING_TYPE = 'stratioVersion-3-3'
     UPSTREAM_VERSION = '0.17.0'
     DEPLOYONPRS = true
