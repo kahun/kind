@@ -21,7 +21,6 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -532,6 +531,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 		return errors.Wrap(err, "failed to assigned priorityClass to "+p.capxName+"-controller-manager")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
@@ -543,6 +543,7 @@ func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowA
 		return errors.Wrap(err, "failed to scale CAPX in workload cluster")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status deploy " + p.capxName + "-controller-manager --timeout 60s"
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for "+p.capxName+"-controller-manager")
 	}
@@ -619,6 +620,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 			return errors.Wrap(err, "failed to assigned priorityClass to nmi")
 		}
 		c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 60s"
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to check rollout status for nmi")
 		}
@@ -631,6 +633,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 		return errors.Wrap(err, "failed to scale the CAPI Deployment")
 	}
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system rollout status deploy capi-controller-manager --timeout 60s"
+	_, err = commons.ExecuteCommand(n, c, 5)
 	if err != nil {
 		return errors.Wrap(err, "failed to check rollout status for capi-controller-manager")
 	}
@@ -643,7 +646,8 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 			if err != nil {
 				return errors.Wrap(err, "failed to scale the "+deployment.name+" deployment")
 			}
-			c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system rollout status deploy " + deployment.name + " --timeout 60s"
+			c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + deployment.namespace + " rollout status deploy " + deployment.name + " --timeout 60s"
+			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
 				return errors.Wrap(err, "failed to check rollout status for "+deployment.name)
 			}
@@ -688,41 +692,6 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 	return nil
 }
 
-func (p *Provider) configHACAPI(n nodes.Node, kubeconfigPath string) error {
-	var c string
-	var err error
-	var capiKubeadmReplicas int
-
-	// Determine the number of replicas for capi-kubeadm deployments
-	if p.capxManaged {
-		capiKubeadmReplicas = 0
-	} else {
-		capiKubeadmReplicas = 2
-	}
-
-	// Scale capi-controller-manager to 2 replicas
-	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-system scale --replicas 2 deploy capi-controller-manager", kubeconfigPath)
-	_, err = commons.ExecuteCommand(n, c, 5)
-	if err != nil {
-		return errors.Wrap(err, "failed to scale the CAPI Deployment")
-	}
-
-	// Scale capi-kubeadm-control-plane to 2 replicas
-	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-control-plane-system scale --replicas %d deploy capi-kubeadm-control-plane-controller-manager", kubeconfigPath, capiKubeadmReplicas)
-	_, err = commons.ExecuteCommand(n, c, 5)
-	if err != nil {
-		return errors.Wrap(err, "failed to scale the capi-kubeadm-control-plane Deployment")
-	}
-
-	// Scale capi-kubeadm-bootstrap to 2 replicas
-	c = fmt.Sprintf("kubectl --kubeconfig %s -n capi-kubeadm-bootstrap-system scale --replicas %d deploy capi-kubeadm-bootstrap-controller-manager", kubeconfigPath, capiKubeadmReplicas)
-	_, err = commons.ExecuteCommand(n, c, 5)
-	if err != nil {
-		return errors.Wrap(err, "failed to scale the capi-kubeadm-bootstrap Deployment")
-	}
-	return nil
-}
-
 // installCAPXLocal installs CAPX in the local cluster
 func (p *Provider) installCAPXLocal(n nodes.Node) error {
 	var c string
@@ -762,6 +731,7 @@ func (p *Provider) installCAPXLocal(n nodes.Node) error {
 			return errors.Wrap(err, "failed to assigned priorityClass to nmi")
 		}
 		c = "kubectl -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 30s"
+		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to check rollout status for nmi")
 		}

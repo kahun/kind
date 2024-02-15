@@ -662,9 +662,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return err
 		}
-	}
 
-	ctx.Status.End(true)
+		ctx.Status.End(true)
+	}
 
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
