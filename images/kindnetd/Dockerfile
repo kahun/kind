@@ -14,7 +14,7 @@
 
 # first stage build kindnetd binary
 # NOTE: tentatively follow upstream kubernetes go version based on k8s in go.mod
-FROM golang:1.20
+FROM golang:1.18
 WORKDIR /go/src
 # make deps fetching cacheable
 COPY go.mod go.sum ./
