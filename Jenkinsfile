@@ -17,6 +17,7 @@ hose {
     DEV = { config ->
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
+        doGrypeScan(conf: config, artifactsList: [[path: './']])
         doAT(conf: config, buildToolOverride: ['BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
     }
     INSTALL = { config ->
