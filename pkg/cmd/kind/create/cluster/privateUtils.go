@@ -5,13 +5,21 @@ import (
 	"context"
 	"embed"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"golang.org/x/oauth2/google"
 	"sigs.k8s.io/kind/pkg/commons"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 //go:embed privatefiles/*
@@ -41,21 +49,58 @@ func getConfigFile(keosCluster *commons.KeosCluster, clusterCredentials commons.
 	for _, registry := range keosCluster.Spec.DockerRegistries {
 		if registry.KeosRegistry {
 			registryParams.Url = registry.URL
-			if keosCluster.Spec.InfraProvider != "aws" {
-				registryParams.User = clusterCredentials.KeosRegistryCredentials["User"]
-				registryParams.Pass = clusterCredentials.KeosRegistryCredentials["Pass"]
-			} else {
-				user, pass, err := getRegistryCredentials(clusterCredentials, registry.URL)
+			switch registry.Type {
+			case "ecr":
+				user, pass, err := getECRCredentials(clusterCredentials, registry.URL)
 				if err != nil {
 					return "", err
 				}
 				registryParams.User = user
 				registryParams.Pass = pass
+			case "acr":
+				user, pass, err := getACRCredentials(clusterCredentials, registry.URL)
+				if err != nil {
+					return "", err
+				}
+				registryParams.User = user
+				registryParams.Pass = pass
+			case "gcr":
+				user, pass, err := getGARCredentials(clusterCredentials, registry.URL)
+				if err != nil {
+					return "", err
+				}
+				registryParams.User = user
+				registryParams.Pass = pass
+			case "gar":
+				user, pass, err := getGARCredentials(clusterCredentials, registry.URL)
+				if err != nil {
+					return "", err
+				}
+				registryParams.User = user
+				registryParams.Pass = pass
+			default:
+				if registry.AuthRequired {
+					registryParams.User = clusterCredentials.KeosRegistryCredentials["User"]
+					registryParams.Pass = clusterCredentials.KeosRegistryCredentials["Pass"]
+				}
 			}
 
 			break
 		}
 	}
+
+	if registryParams.Url != "" {
+		c := "docker"
+		args := []string{"login", "-u", registryParams.User, "-p", registryParams.Pass, registryParams.Url}
+
+		cmd := exec.Command(c, args...)
+		_, err := cmd.CombinedOutput()
+		if err != nil {
+			errors.Wrap(err, "Failed in docker login: ")
+			return "", err
+		}
+	}
+
 	err = t.ExecuteTemplate(&tpl, "privateconfig.tmpl", registryParams)
 	if err != nil {
 		return "", err
@@ -73,7 +118,7 @@ func getConfigFile(keosCluster *commons.KeosCluster, clusterCredentials commons.
 	return tempFile.Name(), nil
 }
 
-func getRegistryCredentials(clusterCredentials commons.ClusterCredentials, keosRegUrl string) (string, string, error) {
+func getECRCredentials(clusterCredentials commons.ClusterCredentials, keosRegUrl string) (string, string, error) {
 	var registryUser = "AWS"
 	var registryPass string
 	var ctx = context.Background()
@@ -99,4 +144,71 @@ func getRegistryCredentials(clusterCredentials commons.ClusterCredentials, keosR
 	}
 	registryPass = strings.SplitN(string(data), ":", 2)[1]
 	return registryUser, registryPass, nil
+}
+
+func getACRCredentials(clusterCredentials commons.ClusterCredentials, keosRegUrl string) (string, string, error) {
+	var registryUser = "00000000-0000-0000-0000-000000000000"
+	var registryPass string
+	var ctx = context.Background()
+	var response map[string]interface{}
+
+	cfg, err := commons.AzureGetConfig(clusterCredentials.ProviderCredentials)
+	if err != nil {
+		return "", "", err
+	}
+	aadToken, err := cfg.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
+	if err != nil {
+		return "", "", err
+	}
+	acrService := strings.Split(keosRegUrl, "/")[0]
+	formData := url.Values{
+		"grant_type":   {"access_token"},
+		"service":      {acrService},
+		"tenant":       {clusterCredentials.ProviderCredentials["TenantID"]},
+		"access_token": {aadToken.Token},
+	}
+	jsonResponse, err := http.PostForm(fmt.Sprintf("https://%s/oauth2/exchange", acrService), formData)
+	if err != nil {
+		return "", "", err
+	} else if jsonResponse.StatusCode == http.StatusUnauthorized {
+		return "", "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+	}
+	json.NewDecoder(jsonResponse.Body).Decode(&response)
+	if response["access_token"] != nil {
+		registryPass = response["access_token"].(string)
+	} else if response["refresh_token"] != nil {
+		registryPass = response["refresh_token"].(string)
+	} else {
+		return "", "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+	}
+	return registryUser, registryPass, nil
+}
+
+func getGARCredentials(clusterCredentials commons.ClusterCredentials, keosRegUrl string) (string, string, error) {
+	var registryUser = "oauth2accesstoken"
+	var ctx = context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	data := map[string]interface{}{
+		"type":                        "service_account",
+		"project_id":                  clusterCredentials.ProviderCredentials["ProjectID"],
+		"private_key_id":              clusterCredentials.ProviderCredentials["PrivateKeyID"],
+		"private_key":                 clusterCredentials.ProviderCredentials["PrivateKey"],
+		"client_email":                clusterCredentials.ProviderCredentials["ClientEmail"],
+		"client_id":                   clusterCredentials.ProviderCredentials["ClientID"],
+		"auth_uri":                    "https://accounts.google.com/o/oauth2/auth",
+		"token_uri":                   "https://accounts.google.com/o/oauth2/token",
+		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(clusterCredentials.ProviderCredentials["ClientEmail"]),
+	}
+	jsonData, _ := json.Marshal(data)
+
+	creds, err := google.CredentialsFromJSON(ctx, jsonData, scope)
+	if err != nil {
+		return "", "", err
+	}
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		return "", "", err
+	}
+	return registryUser, token.AccessToken, nil
 }

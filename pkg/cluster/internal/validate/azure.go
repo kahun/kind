@@ -98,7 +98,11 @@ func validateAzure(spec commons.KeosSpec, providerSecrets map[string]string, clu
 		}
 	}
 
+	firstRegistryType := spec.DockerRegistries[0].Type
 	for i, dr := range spec.DockerRegistries {
+		if firstRegistryType != dr.Type {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": inconsistent registry types, the types among the defined registries must be the same")
+		}
 		if dr.Type != "acr" && spec.ControlPlane.Managed {
 			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr is supported in azure managed clusters")
 		}

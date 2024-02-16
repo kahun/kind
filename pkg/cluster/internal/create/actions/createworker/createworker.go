@@ -41,11 +41,18 @@ type action struct {
 	clusterConfig      *commons.ClusterConfig
 }
 
-type keosRegistry struct {
+type KeosRegistry struct {
 	url          string
 	user         string
 	pass         string
 	registryType string
+}
+
+type HelmRegistry struct {
+	URL  string
+	User string
+	Pass string
+	Type string
 }
 
 const (
@@ -89,7 +96,8 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 func (a *action) Execute(ctx *actions.ActionContext) error {
 	var c string
 	var err error
-	var keosRegistry keosRegistry
+	var keosRegistry KeosRegistry
+	var helmRegistry HelmRegistry
 
 	// Get the target node
 	n, err := ctx.GetNode()
@@ -106,6 +114,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		StorageClass: a.keosCluster.Spec.StorageClass,
 	}
 
+	providerBuilder := getBuilder(a.keosCluster.Spec.InfraProvider)
+	infra := newInfra(providerBuilder)
+	provider := infra.buildProvider(providerParams)
+
 	for _, registry := range a.keosCluster.Spec.DockerRegistries {
 		if registry.KeosRegistry {
 			keosRegistry.url = registry.URL
@@ -114,9 +126,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	providerBuilder := getBuilder(a.keosCluster.Spec.InfraProvider)
-	infra := newInfra(providerBuilder)
-	provider := infra.buildProvider(providerParams)
+	if keosRegistry.registryType != "generic" {
+		keosRegistry.user, keosRegistry.pass, err = infra.getRegistryCredentials(providerParams, keosRegistry.url)
+		if err != nil {
+			return errors.Wrap(err, "failed to get docker registry credentials")
+		}
+	} else {
+		keosRegistry.user = a.clusterCredentials.KeosRegistryCredentials["User"]
+		keosRegistry.pass = a.clusterCredentials.KeosRegistryCredentials["Pass"]
+	}
 
 	awsEKSEnabled := a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed
 	isMachinePool := a.keosCluster.Spec.InfraProvider != "aws" && a.keosCluster.Spec.ControlPlane.Managed
@@ -139,6 +157,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if privateParams.Private {
 		ctx.Status.Start("Installing Private CNI 🎖️")
 		defer ctx.Status.End(false)
+
 		c = `sed -i 's/@sha256:[[:alnum:]_-].*$//g' ` + cniDefaultFile
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
@@ -174,6 +193,19 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
+
+	helmRegistry.Type = a.keosCluster.Spec.HelmRepository.Type
+	helmRegistry.URL = a.keosCluster.Spec.HelmRepository.URL
+	if a.keosCluster.Spec.HelmRepository.Type != "generic" {
+		urlLogin := strings.Split(strings.Split(helmRegistry.URL, "//")[1], "/")[0]
+		helmRegistry.User, helmRegistry.Pass, err = infra.getRegistryCredentials(providerParams, urlLogin)
+		if err != nil {
+			return errors.Wrap(err, "failed to get helm registry credentials")
+		}
+	} else {
+		helmRegistry.User = a.clusterCredentials.HelmRepositoryCredentials["User"]
+		helmRegistry.Pass = a.clusterCredentials.HelmRepositoryCredentials["Pass"]
+	}
 
 	for _, registry := range a.keosCluster.Spec.DockerRegistries {
 		if registry.KeosRegistry {
@@ -307,7 +339,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing keos cluster operator 💻")
 	defer ctx.Status.End(false)
 
-	err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", true)
+	err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", true, helmRegistry)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster operator")
 	}
@@ -628,7 +660,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
 		defer ctx.Status.End(false)
 
-		err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, kubeconfigPath, true)
+		err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, kubeconfigPath, true, helmRegistry)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
 		}
@@ -755,7 +787,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to delete keoscluster in management cluster")
 			}
 
-			err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", false)
+			err = provider.deployClusterOperator(n, privateParams, a.clusterCredentials, keosRegistry, a.clusterConfig, "", false, helmRegistry)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy cluster operator")
 			}
@@ -777,7 +809,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
 
-	err = createKEOSDescriptor(a.keosCluster, scName)
+	err = createKEOSDescriptor(a.keosCluster, scName, a.clusterCredentials)
 	if err != nil {
 		return err
 	}

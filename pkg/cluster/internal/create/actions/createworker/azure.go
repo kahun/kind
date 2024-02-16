@@ -323,7 +323,10 @@ func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networ
 }
 
 func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
+	var coreDNSPDBName = "coredns-pdb"
 	if b.capxManaged {
+		coreDNSPDBName = "coredns-pdb"
+
 		err := patchDeploy(n, k, "kube-system", "coredns", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"tmp\"}}}}}")
 		if err != nil {
 			return errors.Wrap(err, "failed to add podAnnotation to coredns")
@@ -341,6 +344,15 @@ func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
 		err := patchDeploy(n, k, "kube-system", "cloud-controller-manager", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"etc-kubernetes,ssl-mount,msi\"}}}}}")
 		if err != nil {
 			return errors.Wrap(err, "failed to add podAnnotation to cloud-controller-manager")
+		}
+	}
+
+	c := "kubectl --kubeconfig " + kubeconfigPath + " get pdb " + coreDNSPDBName + " -n kube-system"
+	_, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		err = installCorednsPdb(n, k)
+		if err != nil {
+			return errors.Wrap(err, "failed to add core dns PDB")
 		}
 	}
 	return nil

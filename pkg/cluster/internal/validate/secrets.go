@@ -17,6 +17,7 @@ limitations under the License.
 package validate
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -158,6 +159,9 @@ func validateHelmCredentials(secrets commons.Secrets, spec commons.KeosSpec) (ma
 	}
 
 	if spec.HelmRepository.AuthRequired {
+		if spec.HelmRepository.Type != "generic" {
+			return nil, errors.New("Helm repository type: " + spec.HelmRepository.Type + " cannot be auth_required: " + fmt.Sprint(spec.HelmRepository.AuthRequired))
+		}
 		existCredentials := false
 		if helmRepository.URL == spec.HelmRepository.URL {
 			existCredentials = true

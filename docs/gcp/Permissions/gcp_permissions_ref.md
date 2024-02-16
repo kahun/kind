@@ -47,7 +47,8 @@ compute.instances.setLabels
 compute.instances.setMetadata  
 compute.instances.setServiceAccount  
 compute.instances.setTags  
-compute.instances.use  
+compute.instances.use
+compute.machineTypes.list
 compute.networks.create  
 compute.networks.get  
 compute.networks.updatePolicy  
