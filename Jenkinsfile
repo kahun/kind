@@ -17,8 +17,8 @@ hose {
     DEV = { config ->
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
-        doCustomStage(conf:config, buildToolOverride: [CUSTOM_COMMAND: 'pwd ; ls -lhR ; mkdir -p /home/jenkins/agent/workspace/CTS/resources; tar zxvf bin/cloud-provisioner.tar.gz -C /home/jenkins/agent/workspace/CTS/resources/; chmod -R 0700 /home/jenkins/agent/workspace/CTS/resources/bin/cloud-provisioner'], stageName: "Extract cloud-provisioner binary")
-        doGrypeScan(conf: config, artifactsList: [[path: '/home/jenkins/agent/workspace/CTS/resources/bin/cloud-provisioner', name: 'cloud-provisioner']])
+        doCustomStage(conf:config, buildToolOverride: [CUSTOM_COMMAND: 'mkdir -p CTS/resources; tar zxvf bin/cloud-provisioner.tar.gz -C CTS/resources/; chmod -R 0700 CTS/resources/bin/cloud-provisioner'], stageName: "Extract cloud-provisioner binary")
+        doGrypeScan(conf: config, artifactsList: [[path: 'CTS/resources/bin/cloud-provisioner', name: 'cloud-provisioner']])
         doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'stratio/cloud-testing-suite:0.1.0-SNAPSHOT', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
     }
     INSTALL = { config ->
