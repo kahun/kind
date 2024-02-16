@@ -4,7 +4,7 @@ hose {
     EMAIL = 'clouds-integration@stratio.com'
     BUILDTOOL = 'make'
     DEVTIMEOUT = 30
-    BUILDTOOL_IMAGE = 'qa.int.stratio.com:8443/stratio/cloud-testing-suite:0.1.0-PR99-SNAPSHOT'
+    BUILDTOOL_IMAGE = 'golang:1.20'
     VERSIONING_TYPE = 'stratioVersion-3-3'
     UPSTREAM_VERSION = '0.17.0'
     DEPLOYONPRS = true
@@ -18,9 +18,9 @@ hose {
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
         doGrypeScan(conf: config, artifactsList: [[path: './']])
-        doAT(conf: config, buildToolOverride: ['BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
+        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'stratio/cloud-testing-suite:0.1.0-SNAPSHOT', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
     }
     INSTALL = { config ->
-        doAT(conf: config, buildToolOverride: ['BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
+        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'stratio/cloud-testing-suite:0.1.0-SNAPSHOT', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
     }
 }
