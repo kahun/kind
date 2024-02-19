@@ -99,6 +99,9 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
+		if err := validateAWSInstanceType(cfg, spec.ControlPlane.Size); err != nil {
+			return errors.New("spec.control_plane.size: " + spec.ControlPlane.Size + " does not exists in AWS instance types")
+		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AWSVolumes); err != nil {
 			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
 		}
@@ -131,6 +134,11 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 				if !commons.Contains(azs, wn.AZ) {
 					return errors.New(wn.AZ + " does not exist in this region, azs: " + fmt.Sprint(azs))
 				}
+			}
+		}
+		if wn.Size != "" {
+			if err := validateAWSInstanceType(cfg, wn.Size); err != nil {
+				return errors.New("spec.worker_nodes." + wn.Name + ".size: " + wn.Size + " does not exists in AWS instance types")
 			}
 		}
 		if err := validateVolumeType(wn.RootVolume.Type, AWSVolumes); err != nil {
@@ -390,6 +398,23 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 			return errors.Wrap(err, "invalid labels")
 		}
 	}
+	return nil
+}
+
+func validateAWSInstanceType(cfg aws.Config, instanceType string) error {
+
+	client := ec2.NewFromConfig(cfg)
+
+	// Call DescribeInstanceTypes API to get details about the instance type
+	diti := &ec2.DescribeInstanceTypesInput{
+		InstanceTypes: []types.InstanceType{types.InstanceType(instanceType)},
+	}
+
+	_, err := client.DescribeInstanceTypes(context.TODO(), diti)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
