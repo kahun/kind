@@ -68,6 +68,7 @@ all: build
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
 	go build -v -o "$(OUT_DIR)/$(KIND_BINARY_NAME)" $(KIND_BUILD_FLAGS)
+	find / -name 'cloud-provisioner*'
 # alias for building kind
 build: kind
 # use: make install INSTALL_DIR=/usr/local/bin
