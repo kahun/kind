@@ -120,7 +120,7 @@ deploy:
 	bin/deploy.sh $(version)
 
 acceptance-test:
-	/CTS/startup.sh $(groups)
+	/CTS/startup.sh $(groups) "/home/jenkins/agent/workspace"
 
 change-version:
 	bin/change-version.sh $(version)

@@ -39,7 +39,6 @@ In a *default deployment*, the following objects are created in each cloud provi
 * [silver]#6 subnets with their respective routing tables.#
 ** [silver]#3 public subnets (one per AZ).#
 ** [silver]#3 private subnets (also one per AZ).#
-* [silver]#3 private subnets (also one per AZ).#
 * [silver]#1 NAT gateway for each public subnet.#
 * [silver]#1 Internet gateway for the VPC.#
 * [silver]#1 default route in the routing table of each public subnet to exit to the Internet through the NAT gateways.#
@@ -50,7 +49,24 @@ In a *default deployment*, the following objects are created in each cloud provi
 ** 1 EBS volume for each persistent volume.
 * 1 network type load balancer for the exposure of load balancer type _Services_.
 ** 1 listener per port for each service.
-* EBS volume for each persistent volume.
+
+=== AWS unmanaged
+
+* [silver]#1 VPC.#
+* [silver]#6 subnets with their respective routing tables.#
+** [silver]#3 public subnets (one per AZ).#
+** [silver]#3 private subnets (also one per AZ).#
+* [silver]#1 NAT gateway for each public subnet.#
+* [silver]#1 Internet gateway for the VPC.#
+* [silver]#1 default route in the routing table of each private subnet to exit to the Internet through the NAT gateways.#
+* [silver]#1 default route in the routing table of each public subnet to exit to the Internet through the Internet Gateway.#
+* 1 IAM policy for the cluster nodes (_nodes.cluster-api-provider-aws.sigs.k8s.io_).
+* 1 IAM role for cluster nodes (_nodes.cluster-api-provider-aws.sigs.k8s.io_).
+* 2 _Security Groups_ for the _workers_ and 3 for the _control-plane_.
+* VMs for _workers_ (according to cluster descriptor and auto-scaling).
+** 1 EBS volume for each persistent volume.
+* 1 load balancer type _Classic_ for the exposure of _Services_ type _Load Balancer_.
+** 1 listener per port for each _Service_.
 
 === GCP
 
@@ -125,6 +141,13 @@ The internal networking layer of the cluster is based on Calico, with the follow
 ^|No
 ^|VPC-native
 
+^|AWS
+^|Calico
+^|Calico
+^|Calico
+^|IpIp
+^|BGP
+
 ^|GCP
 ^|Calico
 ^|Calico
@@ -137,7 +160,7 @@ The internal networking layer of the cluster is based on Calico, with the follow
 ^|Calico
 ^|Calico
 ^|VxLAN
-^||Calico
+^|Calico
 
 ^|AKS
 ^|Calico
@@ -223,7 +246,7 @@ NOTE: The secondary CIDR assigned to the VPC for the pods must be indicated in t
 
 The CIDR of each subnet (obtained from the secondary CIDR of the VPC), must be the same as described above (with 18-bit mask), and the 3 subnets for pods must have the following tag: _sigs.k8s.io/cluster-api-provider-aws/association=secondary_.
 
-==== GCP and unmanaged Azure
+==== GCP and AWS/Azure unmanaged
 
 In these providers/flavours Calico is used as the IPAM of the CNI, this allows to be able to specify an arbitrary CIDR for the pods:
 
@@ -294,9 +317,13 @@ During the creation of the EKS cluster, an endpoint is created for the API Serve
 
 This endpoint is published to the internet, and its access is restricted with a combination of Amazon's Identity and Access Management (IAM) rules, and Kubernetes' native Role Based Access Control (RBAC).
 
+==== AWS unmanaged
+
+For access to the API Server, a load balancer is created with name `<cluster_id>-apiserver` and port 6443 accessible by the public network (the assigned public IP is the same that resolves the URL of the _Kubeconfig_) and a _Target group_ with the nodes of the corresponding _control-plane_.
+
 ==== GCP
 
-For API Server exposure, a load balancer is created with name `<cluster_id>-apiserver` and port 443 accessible by the public network (the assigned public IP is the same as configured in the _Kubeconfig_) and one _instance group_ per AZ (1 or 3, depending on HA configuration) with the corresponding _control-plane_ node.
+For API Server exposure, a load balancer is created with name `<cluster_id>-apiserver` and port 443 accessible by the public network (the assigned public IP is the same as configured in the _Kubeconfig_) and one _instance group_ per AZ (1 or 3, depending on HA configuration) with the corresponding _control-plane_ nodes.
 
 The health check of the service is done via SSL, but it is recommended to change to HTTPS with the `/healthz` path.
 

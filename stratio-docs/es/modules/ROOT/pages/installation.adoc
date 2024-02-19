@@ -11,7 +11,8 @@ Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones
 ** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
 ** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
 
-Para el despliegue de EKS se deberá de crear de forma manual el role: "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy".
++
+Para el despliegue de EKS se deberá crear de forma manual el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
 
 * Sistemas operativos certificados
 +
@@ -24,8 +25,8 @@ En el caso de los despliegues en AWS no gestionado, se deberá utilizar https://
 El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
 
 * CloudFormation
-
-En caso de no haber creado el stack de cloudformation con anterioridad en la cuenta, se deberá de poner el parámetro spec:security:aws:create_iam a true, en caso contrario false.
++
+WARNING: Si no has creado el _stack_ de CloudFormation o no has creado manualmente los requisitos de IAM previamente en la cuenta, debes establecer el parámetro `spec:security:aws:create_iam` como _true_ (por defecto es _false_).
 
 === GCP no gestionado
 
@@ -443,64 +444,178 @@ metadata:
 spec:
   infra_provider: aws
   credentials:
-  aws:
-    region: eu-west-1
-    access_key: AKIAT4..
-    account_id: '3683675..'
-    secret_key: wq3/Vsc..
-  github_token: github_pat_11APW..
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
   k8s_version: v1.26.7
   region: eu-west-1
   external_domain: domain.ext
   networks:
-  vpc_id: vpc-02698..
-  subnets:
-    - subnet_id: subnet-0416d..
-    - subnet_id: subnet-0b2f8..
-    - subnet_id: subnet-0df75..
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
   docker_registries:
-  - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
+  helm_repository:
     auth_required: false
-    type: ecr
-    keos_registry: true
+    url: http://charts.stratio.com
   storageclass:
-  parameters:
-    type: gp3
-    fsType: ext4
-    encrypted: "true"
-    labels: "owner=stratio"
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
   keos:
-  flavour: production
-  version: 1.0.2
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
   control_plane:
-  aws:
-    logging:
-    api_server: true
-  managed: true
+    aws:
+      logging:
+        api_server: true
+    managed: true
   worker_nodes:
-  - name: eks-prod-xlarge
-    quantity: 6
-    max_size: 18
-    min_size: 6
+    - name: eks-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: eks-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: eks-prod-medium-az
+      quantity: 3
+      size: t3.medium
+      az: eu-west-1c
+----
+
+==== AWS no gestionado
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en AWS con _control-plane_ no gestionado.
+* Kubernetes versión 1.26.x.
+* Uso de ECR como _Docker registry_ (no necesita credenciales).
+* Uso de VPC y _subnets_ personalizadas (creadas anteriormente). Este apartado es opcional.
+* Definición de una _StorageClass_ por defecto. Este apartado es opcional.
+* Grupos de nodos _worker_ con múltiples casuísticas:
+** Diferentes tipos de instancia.
+** Con clave SSH.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** En una zona fija.
+** Con personalizaciones en el disco.
+** Con instancias tipo _spot_.
+** Casos de distribución en AZs: balanceado y desbalanceado.
+
+[source,yaml]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+metadata:
+  name: aws-prod
+spec:
+  infra_provider: aws
+  credentials:
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
+  k8s_version: v1.26.7
+  region: eu-west-1
+  external_domain: domain.ext
+  networks:
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
+      - subnet_id: subnet-88789..
+      - subnet_id: subnet-89785..
+      - subnet_id: subnet-84281..
+    pods_subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
+    pods_cidr: 100.64.0.0/16
+  docker_registries:
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
+  storageclass:
+    parameters:
+      type: gp3
+      fsType: ext4
+      encrypted: "true"
+      labels: "owner=stratio"
+  keos:
+    flavour: production
+    version: 1.0.4
+  security:
+    aws:
+      create_iam: false
+  control_plane:
+    managed: false
+    name: aws-prod-cp
     size: m6i.xlarge
-    labels:
-    disktype: standard
+    node_image: ami-0de933c15c9b49fb5
     root_volume:
-    size: 50
-    type: gp3
-    encrypted: true
-    ssh_key: stg-key
-  - name: eks-prod-medium-spot
-    quantity: 4
-    zone_distribution: unbalanced
-    size: t3.medium
-    spot: true
-    labels:
-    disktype: standard
-  - name: eks-prod-medium-az
-    quantity: 3
-    size: t3.medium
-    az: eu-west-1c
+      size: 50
+      type: gp3
+  worker_nodes:
+    - name: aws-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      node_image: ami-0de933c15c9b49fb5
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: aws-prod-medium-spot
+      quantity: 4
+      node_image: ami-0de933c15c9b49fb5
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: aws-prod-medium-az
+      quantity: 3
+      node_image: ami-0de933c15c9b49fb5
+      size: t3.medium
+      az: eu-west-1c
 ----
 
 ==== GCP
@@ -550,10 +665,13 @@ spec:
   k8s_version: v1.26.8
   region: europe-west4
   docker_registries:
-    - url: eosregistry.azurecr.io/keos
+      - url: eosregistry.azurecr.io/keos
+        auth_required: true
+        type: generic
+        keos_registry: true
+  helm_repository:
       auth_required: false
-      type: acr
-      keos_registry: true
+      url: http://charts.stratio.com
   dns:
     manage_zone: false
   external_domain: domain.ext
@@ -565,7 +683,7 @@ spec:
       labels: "owner=stratio"
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   control_plane:
     managed: false
     highly_available: true
@@ -642,26 +760,30 @@ spec:
       auth_required: false
       type: acr
       keos_registry: true
-  networks:
-    pods_cidr: 172.16.0.0/20
+  helm_repository:
+    auth_required: false
+    url: http://charts.stratio.com
   storageclass:
     parameters:
-      type: Standard_LRS
+      type: StandardSSD_LRS
       fsType: ext4
       tags: "owner=stratio"
   external_domain: domain.ext
+  dns:
+    manage_zone: false
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
   security:
     control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
     nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
   control_plane:
     managed: false
     size: Standard_D8_v3
+    node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
     root_volume:
       size: 100
-      type: Standard_LRS
+      type: StandardSSD_LRS
   worker_nodes:
     - name: azure-prod-std
       quantity: 3
@@ -673,7 +795,7 @@ spec:
         backup: "false"
       root_volume:
         size: 100
-        type: Standard_LRS
+        type: StandardSSD_LRS
 ----
 
 ==== AKS
@@ -708,36 +830,38 @@ spec:
   region: westeurope
   docker_registries:
     - url: eosregistry.azurecr.io/keos
-    auth_required: false
-    type: acr
-    keos_registry: true
+      auth_required: false
+      type: acr
+      keos_registry: true
   helm_repository:
     auth_required: false
     url: http://charts.stratio.com
   networks:
     pods_cidr: 172.16.0.0/20
   storageclass:
-    encryption_key: myKey
     class: premium
   external_domain: domain.ext
   keos:
     flavour: production
-    version: 1.0.2
+    version: 1.0.4
+  security:
+    control_plane_identity: "/subscriptions/6e2a38cd-../stratio-control-plane"
+    nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
   control_plane:
     azure:
       tier: Paid
     managed: true
   worker_nodes:
-    - name: aks-prod-prem
-    quantity: 3
-    max_size: 18
-    min_size: 3
-    size: Standard_D8s_v3
-    labels:
-      premium_sc: "true"
-    root_volume:
-      size: 50
-      type: Managed
+    - name: worker1
+      quantity: 3
+      max_size: 18
+      min_size: 3
+      size: Standard_D8s_v3
+      labels:
+        premium_sc: "true"
+      root_volume:
+        size: 50
+        type: Managed
 ----
 
 == Creación del _cluster_
