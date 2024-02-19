@@ -18,7 +18,7 @@ hose {
     DEV = { config ->
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
-        doCustomStage(conf:config, buildToolOverride: [CUSTOM_COMMAND: 'mkdir -p CTS/resources; tar zxvf bin/cloud-provisioner.tar.gz -C CTS/resources/; chmod -R 0700 CTS/resources/bin/cloud-provisioner'], stageName: "Extract binary")
+        doCustomStage(conf:config, buildToolOverride: [CUSTOM_COMMAND: 'mkdir -p CTS/resources; cp -a bin CTS/resources/; chmod -R 0700 CTS/resources/bin/cloud-provisioner'], stageName: "Extract binary")
         doGrypeScan(conf: config, artifactsList: [[path: 'CTS/resources/bin/cloud-provisioner', name: 'cloud-provisioner']])
         doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE': 'stratio/cloud-testing-suite:0.1.0-SNAPSHOT', 'BUILDTOOL_PRIVILEGED': true, 'BUILDTOOL_RUNASUSER': "0"],  configFiles: [[fileId: "clouds-credentials.yaml", variable: "credentials"]], runOnPR: true)
     }
