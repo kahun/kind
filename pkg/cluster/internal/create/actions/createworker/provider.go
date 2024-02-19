@@ -730,7 +730,7 @@ func (p *Provider) installCAPXLocal(n nodes.Node) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to assigned priorityClass to nmi")
 		}
-		c = "kubectl -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 30s"
+		c = "kubectl -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 60s"
 		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to check rollout status for nmi")
