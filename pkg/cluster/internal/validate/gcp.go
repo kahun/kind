@@ -85,6 +85,9 @@ func validateGCP(spec commons.KeosSpec, providerSecrets map[string]string) error
 		if spec.ControlPlane.NodeImage == "" || !isGCPNodeImage(spec.ControlPlane.NodeImage) {
 			return errors.New("spec.control_plane: Invalid value: \"node_image\": is required and have the format " + GCPNodeImageFormat)
 		}
+		if err := validateGCPInstanceType(spec.ControlPlane.Size, credentialsJson, spec.Region, azs, ""); err != nil {
+			return errors.New("spec.control_plane.size: " + spec.ControlPlane.Size + " does not exist as a GCP instance types in region " + spec.Region)
+		}
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, GCPVolumes); err != nil {
 			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
 		}
@@ -116,9 +119,56 @@ func validateGCP(spec commons.KeosSpec, providerSecrets map[string]string) error
 				}
 			}
 		}
+		if wn.Size != "" {
+			if err := validateGCPInstanceType(wn.Size, credentialsJson, spec.Region, azs, wn.AZ); err != nil {
+				return errors.New("spec.worker_nodes." + wn.Name + ".size: " + wn.Size + " does not exist as a GCP instance types in region " + spec.Region)
+			}
+		}
 	}
 
 	return nil
+}
+
+func validateGCPInstanceType(instanceType string, credentialsJson string, region string, azs []string, azWorker string) error {
+	var iterateAZs []string
+	var ctx = context.Background()
+
+	gcpCreds := map[string]string{}
+	err := json.Unmarshal([]byte(credentialsJson), &gcpCreds)
+	if err != nil {
+		return err
+	}
+
+	cfg := option.WithCredentialsJSON([]byte(credentialsJson))
+	computeService, err := compute.NewService(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	if azWorker != "" {
+		iterateAZs = append(iterateAZs, azWorker)
+	} else {
+		iterateAZs = azs
+	}
+
+	instanceTypeListCall := computeService.MachineTypes.AggregatedList(string(gcpCreds["project_id"])).Filter("(zone eq " + region + ".*) (name eq " + instanceType + ")")
+	instanceTypes, err := instanceTypeListCall.Do()
+	if err != nil {
+		return err
+	}
+
+	for _, iterateAZ := range iterateAZs {
+		// Check if instance type exists
+		for zonesAZ, machineTypesScopedList := range instanceTypes.Items {
+			az := strings.Split(zonesAZ, "/")[1]
+			if iterateAZ == az && len(machineTypesScopedList.MachineTypes) == 0 {
+				return errors.New("nonexistent instance type: " + instanceType + " in region " + region)
+			}
+		}
+	}
+
+	return nil
+
 }
 
 func validateGCPStorageClass(spec commons.KeosSpec) error {

@@ -239,7 +239,7 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	return newNodes
 }
 
-func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, error) {
+func ExecuteCommand(n nodes.Node, command string, timeout int, envVars ...[]string) (string, error) {
 	var err error
 	var raw bytes.Buffer
 	cmd := n.Command("sh", "-c", command)
@@ -249,10 +249,15 @@ func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, 
 	for i := 0; i < 3; i++ {
 		raw = bytes.Buffer{}
 		err = cmd.SetStdout(&raw).SetStderr(&raw).Run()
-		if err == nil || !strings.Contains(command, "--kubeconfig") || !strings.Contains(raw.String(), "timeout") {
+		timeoutErrorPresent := strings.Contains(raw.String(), "timeout")
+		provisionCommands := strings.Contains(command, "kubectl") || strings.Contains(command, "helm")
+		notFoundErrorPresent := strings.Contains(raw.String(), "NotFound")
+
+		if err == nil || !provisionCommands || !(provisionCommands && (timeoutErrorPresent || notFoundErrorPresent)) {
 			break
 		}
-		time.Sleep(5 * time.Second)
+
+		time.Sleep(time.Duration(timeout) * time.Second)
 	}
 	if strings.Contains(raw.String(), "Error:") {
 		return "", errors.Wrap(err, "Command Output: "+raw.String())

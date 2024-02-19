@@ -6,6 +6,7 @@
 * [Azure] Bump cluster-api-provider-azure to v1.11.3: Add priority class to NMI
 * [Core] Add PDB and PriorityClass to capx components
 * [Core] Bump cluster api to v1.5.3
+* [Core] Enable scale from zero
 * [Core] Add core dns PDB if required
 * [Core] Add keos 1.1.x support
 

@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterapi-cluster-autoscaler
+  name: cluster-autoscaler-clusterapi-cluster-autoscaler
+  namespace: cluster-{{ $.Metadata.Name }}
+rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    resources:
+    - {{ $.Spec.InfraProvider }}machinetemplates
+    verbs:
+    - get
+    - list
+    - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterapi-cluster-autoscaler
+  name: cluster-autoscaler-clusterapi-cluster-autoscaler
+  namespace: cluster-{{ $.Metadata.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-autoscaler-clusterapi-cluster-autoscaler
+subjects:
+- kind: ServiceAccount
+  name: cluster-autoscaler-clusterapi-cluster-autoscaler
+  namespace: kube-system
