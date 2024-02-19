@@ -619,7 +619,7 @@ func (p *Provider) configCAPIWorker(n nodes.Node, keosCluster commons.KeosCluste
 		if err != nil {
 			return errors.Wrap(err, "failed to assigned priorityClass to nmi")
 		}
-		c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 60s"
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system rollout status ds capz-nmi --timeout 90s"
 		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return errors.Wrap(err, "failed to check rollout status for nmi")
