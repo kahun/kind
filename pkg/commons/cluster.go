@@ -95,10 +95,7 @@ type KeosSpec struct {
 
 	Security Security `yaml:"security,omitempty"`
 
-	Keos struct {
-		Flavour string `yaml:"flavour,omitempty"`
-		Version string `yaml:"version,omitempty"`
-	} `yaml:"keos,omitempty"`
+	Keos Keos `yaml:"keos,omitempty"`
 
 	ControlPlane struct {
 		Managed         bool                `yaml:"managed" validate:"boolean"`
@@ -115,6 +112,11 @@ type KeosSpec struct {
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 
 	ClusterConfigRef ClusterConfigRef `yaml:"cluster_config_ref,omitempty" validate:"dive"`
+}
+
+type Keos struct {
+	Flavour string `yaml:"flavour,omitempty"`
+	Version string `yaml:"version,omitempty"`
 }
 
 type Networks struct {
@@ -260,6 +262,7 @@ type HelmRepositoryCredentials struct {
 type HelmRepository struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	URL          string `yaml:"url" validate:"required"`
+	Type         string `yaml:"type,omitempty" validate:"oneof='ecr' 'acr' 'gar' 'generic'"`
 }
 
 type AWS struct {
@@ -366,7 +369,8 @@ func (s KeosSpec) Init() KeosSpec {
 	s.ControlPlane.AWS.Logging.Scheduler = false
 
 	// Helm
-	s.HelmRepository.AuthRequired = true
+	s.HelmRepository.AuthRequired = false
+	s.HelmRepository.Type = "generic"
 
 	// Managed zones
 	s.Dns.ManageZone = true

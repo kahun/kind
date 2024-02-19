@@ -318,6 +318,16 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 }
 
 func (b *AWSBuilder) postInstallPhase(n nodes.Node, k string) error {
+	var coreDNSPDBName = "coredns"
+
+	c := "kubectl --kubeconfig " + kubeconfigPath + " get pdb " + coreDNSPDBName + " -n kube-system"
+	_, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		err = installCorednsPdb(n, k)
+		if err != nil {
+			return errors.Wrap(err, "failed to add core dns PDB")
+		}
+	}
 	if b.capxManaged {
 		err := patchDeploy(n, k, "kube-system", "coredns", "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\""+postInstallAnnotation+"\": \"tmp\"}}}}}")
 		if err != nil {
