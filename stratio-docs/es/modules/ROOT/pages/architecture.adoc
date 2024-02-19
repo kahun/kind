@@ -49,7 +49,24 @@ En un *despliegue por defecto* se crean los siguientes objetos en cada proveedor
 ** 1 Volumen EBS para cada volumen persistente.
 * 1 Balanceador de carga tipo _Network_ para la exposición de _Services_ tipo Load Balancer.
 ** 1 _Listener_ por puerto para cada _Service_.
-* Volumen EBS para cada volumen persistente.
+
+=== AWS no gestionado
+
+* [silver]#1 VPC.#
+* [silver]#6 _subnets_ con sus respectivas tablas de rutas.#
+** [silver]#3 _subnets_ públicas (una por AZ).#
+** [silver]#3 _subnets_ privadas (también una por AZ).#
+* [silver]#1 _NAT gateway_ por cada _subnet_ pública.#
+* [silver]#1 _Internet gateway_ para la VPC.#
+* [silver]#1 ruta por defecto en la tabla de rutas de cada _subnet_ privada para salir a internet a través de los _NAT gateways_.#
+* [silver]#1 ruta por defecto en la tabla de rutas de cada _subnet_ pública para salir a internet a través del _Internet Gateway_.#
+* 1 política de IAM para los nodos del _cluster_ (_nodes.cluster-api-provider-aws.sigs.k8s.io_).
+* 1 rol de IAM para los nodos del _cluster_ (_nodes.cluster-api-provider-aws.sigs.k8s.io_).
+* 2 _Security Groups_ para los _workers_ y 3 para el _control-plane_.
+* Máquinas virtuales para _Workers_ (según descriptor del _cluster_ y autoescalado).
+** 1 volumen EBS para cada volumen persistente.
+* 1 balanceador de carga tipo _Classic_ para la exposición de _Services_ tipo _Load Balancer_.
+** 1 _Listener_ por puerto para cada _Service_.
 
 === GCP
 
@@ -123,6 +140,13 @@ La capa interna de _networking_ del _cluster_ está basada en Calico, con las si
 ^|AWS
 ^|No
 ^|VPC-native
+
+^|AWS
+^|Calico
+^|Calico
+^|Calico
+^|IpIp
+^|BGP
 
 ^|GCP
 ^|Calico
@@ -222,7 +246,7 @@ NOTE: El CIDR secundario asignado al VPC para los _pods_ debe indicarse en el pa
 
 El CIDR de cada subnet (obtenido del CIDR secundario del VPC), deberá ser el mismo que el descrito más arriba (con máscara de 18 bits), y las 3 _subnets_ para _pods_ deberán tener el siguiente tag: _sigs.k8s.io/cluster-api-provider-aws/association=secondary_.
 
-==== GCP y Azure no gestionado
+==== GCP y AWS/Azure no gestionado
 
 En estos proveedores/_flavours_ se utiliza Calico como IPAM del CNI, esto permite poder especificar un CIDR arbitrario para los _pods_:
 
@@ -292,6 +316,10 @@ A su vez, en EKS se habilita el proveedor OIDC para permitir el uso de roles de 
 Durante la creación del _cluster_ de EKS, se crea un _endpoint_ para el _API Server_ que se utilizará para el acceso al _cluster_ desde el instalador y operaciones del ciclo de vida.
 
 Este _endpoint_ se publica a internet, y su acceso se restringe con una combinación de reglas del _Identity and Access Management_ (IAM) de Amazon y el _Role Based Access Control_ (RBAC) nativo de Kubernetes.
+
+==== AWS no gestionado
+
+Para el acceso al _API Server_ se crea un balanceador de carga con nombre `<cluster_id>-apiserver` y puerto 6443 accesible por red pública (la IP pública asignada es la misma que resuelve la URL del _Kubeconfig_) y un _Target group_ con los nodos del _control-plane_ correspondiente.
 
 ==== GCP
 
