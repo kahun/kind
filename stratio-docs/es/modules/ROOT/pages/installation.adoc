@@ -882,7 +882,6 @@ Para crear un _cluster_, basta con un simple comando (consulta las particularida
 -----
 sudo ./cloud-provisioner create cluster --name stratio-pre --descriptor cluster-gcp.yaml
 Vault Password:
-Rewrite Vault Password:
 Creating temporary cluster "stratio-pre" ...
  ✓ Ensuring node image (kindest/node:v1.27.0) 🖼
  ✓ Building Stratio image (stratio-capi-image:v1.27.0) 📸
@@ -892,11 +891,14 @@ Creating temporary cluster "stratio-pre" ...
  ✓ Installing CNI 🔌
  ✓ Installing StorageClass 💾
  ✓ Installing CAPx 🎖️
- ✓ Generating workload cluster manifests 📝
  ✓ Generating secrets file 📝🗝️
  ✓ Installing keos cluster operator 💻
+ ✓ [CAPA] Ensuring IAM security 👮
  ✓ Creating the workload cluster 💥
  ✓ Saving the workload cluster kubeconfig 📝
+ ✓ Installing cloud-provider in workload cluster ☁️
+ ✓ Installing Calico in workload cluster 🔌
+ ✓ Installing CSI in workload cluster 💾
  ✓ Preparing nodes in workload cluster 📦
  ✓ Installing StorageClass in workload cluster 💾
  ✓ Enabling workload cluster's self-healing 🏥
@@ -906,9 +908,11 @@ Creating temporary cluster "stratio-pre" ...
  ✓ Installing keos cluster operator in workload cluster 💻
  ✓ Creating cloud-provisioner Objects backup 🗄️
  ✓ Moving the management role 🗝️
+ ✓ Executing post-install steps 🎖️
  ✓ Generating the KEOS descriptor 📝
+ ✓ Cleaning up temporary cluster 🧹
 
-The cluster has been installed, please refer to _Stratio KEOS_ documentation on how to proceed.
+The cluster has been installed, please refer to Stratio KEOS documentation on how to proceed.
 -----
 
 Una vez finalizado el proceso, tendrás los ficheros necesarios (_keos.yaml_ y _secrets.yml_) para instalar _Stratio KEOS_.
