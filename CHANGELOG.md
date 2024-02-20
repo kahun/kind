@@ -4,6 +4,7 @@
 
 * Added infrastructure validations for azs, vpcs, subnets and k8s versions
 * [Azure] Bump cluster-api-provider-azure to v1.11.3: Add priority class to NMI
+* [Core] Restrict the maximum number of unhealthy nodes in MachineHealthCheck
 * [Core] Add PDB and PriorityClass to capx components
 * [Core] Bump cluster api to v1.5.3
 * [Core] Enable scale from zero
