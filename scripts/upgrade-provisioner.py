@@ -314,24 +314,38 @@ spec:
     command = "cat <<EOF | " + kubectl + " apply -f -" + core_dns_pdb + "EOF"
     execute_command(command, dry_run)
 
-def add_cluster_autoscaler_annotations(provider, namespace, dry_run):
+def add_cluster_autoscaler_annotations(provider, managed, dry_run):
     ca_annotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
 
-    if provider == "aws":
+    # EKS
+    if provider == "aws" and managed:
         print("[INFO] Adding cluster-autoscaler annotations to coredns:", end =" ", flush=True)
         command = kubectl + ' -n kube-system patch deploy coredns -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"tmp\"}}}}}\''
         execute_command(command, dry_run)
-
         print("[INFO] Adding cluster-autoscaler annotations to ebs-csi-controller:", end =" ", flush=True)
         command = kubectl + ' -n kube-system patch deploy ebs-csi-controller -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"socket-dir\"}}}}}\''
         execute_command(command, dry_run)
 
     if provider == "azure":
-        print("[INFO] Adding cluster-autoscaler annotations to cloud-controller-manager:", end =" ", flush=True)
-        command = kubectl + ' -n kube-system patch deploy cloud-controller-manager -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"etc-kubernetes,ssl-mount,msi\"}}}}}\''
-        execute_command(command, dry_run)
+        # AKS
+        if managed:
+            print("[INFO] Adding cluster-autoscaler annotations to coredns:", end =" ", flush=True)
+            command = kubectl + ' -n kube-system patch deploy coredns -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"tmp\"}}}}}\''
+            execute_command(command, dry_run)
+            print("[INFO] Adding cluster-autoscaler annotations to tigera-operator:", end =" ", flush=True)
+            command = kubectl + ' -n kube-system patch deploy tigera-operator -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"var-lib-calico\"}}}}}\''
+            execute_command(command, dry_run)
+            print("[INFO] Adding cluster-autoscaler annotations to metrics-server:", end =" ", flush=True)
+            command = kubectl + ' -n kube-system patch deploy metrics-server -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"tmp-dir\"}}}}}\''
+            execute_command(command, dry_run)
+        # Azure VMs
+        else:
+            print("[INFO] Adding cluster-autoscaler annotations to cloud-controller-manager:", end =" ", flush=True)
+            command = kubectl + ' -n kube-system patch deploy cloud-controller-manager -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"etc-kubernetes,ssl-mount,msi\"}}}}}\''
+            execute_command(command, dry_run)
 
-    if provider == "gcp":
+    # GCP VMs
+    if provider == "gcp" and not managed:
         print("[INFO] Adding cluster-autoscaler annotations to csi-gce-pd-controller:", end =" ", flush=True)
         command = kubectl + ' -n gce-pd-csi-driver patch deploy csi-gce-pd-controller -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"socket-dir\"}}}}}\''
         execute_command(command, dry_run)
@@ -774,20 +788,19 @@ if __name__ == '__main__':
 
     # Set env vars
     env_vars = "CLUSTER_TOPOLOGY=true CLUSTERCTL_DISABLE_VERSIONCHECK=true"
-    if "aws" in data["secrets"]:
-        provider = "aws"
+    provider = cluster["spec"]["infra_provider"]
+    managed = cluster["spec"]["control_plane"]["managed"]
+    if provider == "aws":
         namespace = "capa-system"
         version = CAPA_VERSION
         credentials = subprocess.getoutput(kubectl + " -n " + namespace + " get secret capa-manager-bootstrap-credentials -o jsonpath='{.data.credentials}'")
         env_vars += " CAPA_EKS_IAM=true AWS_B64ENCODED_CREDENTIALS=" + credentials
-    elif "gcp" in data["secrets"]:
-        provider = "gcp"
+    if provider == "gcp":
         namespace = "capg-system"
         version = CAPG_VERSION
         credentials = subprocess.getoutput(kubectl + " -n " + namespace + " get secret capg-manager-bootstrap-credentials -o json | jq -r '.data[\"credentials.json\"]'")
         env_vars += " GCP_B64ENCODED_CREDENTIALS=" + credentials
-    elif "azure" in data["secrets"]:
-        provider = "azure"
+    if provider == "azure":
         namespace = "capz-system"
         version = CAPZ_VERSION
         if "credentials" in data["secrets"]["azure"]:
@@ -860,7 +873,7 @@ if __name__ == '__main__':
 
     # Cluster Autoscaler annotations
     if config["all"] or config["only_annotations"]:
-        add_cluster_autoscaler_annotations(provider, namespace, config["dry_run"])
+        add_cluster_autoscaler_annotations(provider, managed, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
