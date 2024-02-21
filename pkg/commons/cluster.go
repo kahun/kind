@@ -451,11 +451,16 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, *ClusterConfig, 
 		return nil, nil, errors.New("Keoscluster's manifest has not been found.")
 	}
 
-	if findClusterConfig {
-		return &keosCluster, &clusterConfig, nil
+	if !findClusterConfig {
+		clusterConfig = ClusterConfig{}
+		clusterConfig.APIVersion = "installer.stratio.com/v1beta1"
+		clusterConfig.Kind = "ClusterConfig"
+		clusterConfig.Metadata.Name = keosCluster.Spec.InfraProvider + "-config"
+		clusterConfig.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
+		clusterConfig.Spec = new(ClusterConfigSpec).Init()
 	}
 
-	return &keosCluster, nil, nil
+	return &keosCluster, &clusterConfig, nil
 }
 
 func DecryptFile(filePath string, vaultPassword string) (string, error) {
