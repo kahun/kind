@@ -7,7 +7,6 @@ ENV CLUSTER_TOPOLOGY=true
 ENV CLUSTERCTL_DISABLE_VERSIONCHECK=true
 
 # Tools versions
-ENV CLUSTERCTL=v1.5.3
 ENV CLUSTERAWSADM=v2.2.1
 ENV HELM=v3.13.1
 
@@ -24,6 +23,7 @@ ENV CERT_MANAGER_CHART_VERSION=v1.12.3
 
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
+ENV CAPI=v1.5.3
 ENV CAPA=v2.2.1
 ENV CAPG=v1.4.0
 ENV CAPZ=v1.11.4
@@ -43,7 +43,7 @@ RUN echo 'alias k="kubectl"' >> ~/.bash_aliases \
     && echo 'alias kw="kubectl --kubeconfig /kind/worker-cluster.kubeconfig"' >> ~/.bash_aliases
 
 # Download clusterctl
-RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
+RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CAPI}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
     && chmod +x /usr/local/bin/clusterctl
 
 # Download clusterawsadm
@@ -59,7 +59,7 @@ RUN curl -L https://get.helm.sh/helm-${HELM}-linux-amd64.tar.gz -o /root/helm.ta
 
 RUN mkdir -p ${CAPI_REPO}/cert-manager/${CERT_MANAGER_CHART_VERSION} \
     && curl -LJ -o ${CAPI_REPO}/cert-manager/${CERT_MANAGER_CHART_VERSION}/cert-manager.crds.yaml  https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml
-  
+
 # Download helm charts
 RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull aws-cloud-controller-manager --version ${CLOUD_PROVIDER_AWS_CHART} --repo https://kubernetes.github.io/cloud-provider-aws --untar --untardir /stratio/helm && break; done \
@@ -72,14 +72,14 @@ RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull cert-manager --version ${CERT_MANAGER_CHART_VERSION} --repo  https://charts.jetstack.io --untar --untardir /stratio/helm && break; done
 
 # Prepare cluster-api private repository
-RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure-gcp/${CAPG} ${CAPI_REPO}/infrastructure-azure/${CAPZ} ${CAPI_REPO}/cluster-api/${CLUSTERCTL} ${CAPI_REPO}/bootstrap-kubeadm/${CLUSTERCTL} ${CAPI_REPO}/control-plane-kubeadm/${CLUSTERCTL} ${CROSSPLANE_CACHE} \
+RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure-gcp/${CAPG} ${CAPI_REPO}/infrastructure-azure/${CAPZ} ${CAPI_REPO}/cluster-api/${CAPI} ${CAPI_REPO}/bootstrap-kubeadm/${CAPI} ${CAPI_REPO}/control-plane-kubeadm/${CAPI} ${CROSSPLANE_CACHE} \
   && echo "providers:" > /root/.cluster-api/clusterctl.yaml \
   && echo "  - name: aws\n    url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
   && echo "  - name: gcp\n    url: ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
   && echo "  - name: azure\n    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
-  && echo "  - name: kubeadm\n    url: ${CAPI_REPO}/bootstrap-kubeadm/${CLUSTERCTL}/bootstrap-components.yaml\n    type: BootstrapProvider" >> /root/.cluster-api/clusterctl.yaml \
-  && echo "  - name: kubeadm\n    url: ${CAPI_REPO}/control-plane-kubeadm/${CLUSTERCTL}/control-plane-components.yaml\n    type: ControlPlaneProvider" >> /root/.cluster-api/clusterctl.yaml \
-  && echo "  - name: cluster-api\n    url: ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/core-components.yaml\n    type: CoreProvider" >> /root/.cluster-api/clusterctl.yaml
+  && echo "  - name: kubeadm\n    url: ${CAPI_REPO}/bootstrap-kubeadm/${CAPI}/bootstrap-components.yaml\n    type: BootstrapProvider" >> /root/.cluster-api/clusterctl.yaml \
+  && echo "  - name: kubeadm\n    url: ${CAPI_REPO}/control-plane-kubeadm/${CAPI}/control-plane-components.yaml\n    type: ControlPlaneProvider" >> /root/.cluster-api/clusterctl.yaml \
+  && echo "  - name: cluster-api\n    url: ${CAPI_REPO}/cluster-api/${CAPI}/core-components.yaml\n    type: CoreProvider" >> /root/.cluster-api/clusterctl.yaml
 
 # Download cluster-api artifacts
 RUN for i in metadata.yaml infrastructure-components.yaml; do \
@@ -87,9 +87,9 @@ RUN for i in metadata.yaml infrastructure-components.yaml; do \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/${i} -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/${i}; done
 
-RUN curl -L  https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/core-components.yaml -o ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/core-components.yaml \
-    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/bootstrap-components.yaml -o ${CAPI_REPO}/bootstrap-kubeadm/${CLUSTERCTL}/bootstrap-components.yaml \
-    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/control-plane-components.yaml -o ${CAPI_REPO}/control-plane-kubeadm/${CLUSTERCTL}/control-plane-components.yaml \
-    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/metadata.yaml -o ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/metadata.yaml \
-    && cp ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/metadata.yaml ${CAPI_REPO}/bootstrap-kubeadm/${CLUSTERCTL}/metadata.yaml \
-    && cp ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/metadata.yaml ${CAPI_REPO}/control-plane-kubeadm/${CLUSTERCTL}/metadata.yaml
+RUN curl -L  https://github.com/kubernetes-sigs/cluster-api/releases/download/${CAPI}/core-components.yaml -o ${CAPI_REPO}/cluster-api/${CAPI}/core-components.yaml \
+    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CAPI}/bootstrap-components.yaml -o ${CAPI_REPO}/bootstrap-kubeadm/${CAPI}/bootstrap-components.yaml \
+    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CAPI}/control-plane-components.yaml -o ${CAPI_REPO}/control-plane-kubeadm/${CAPI}/control-plane-components.yaml \
+    && curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CAPI}/metadata.yaml -o ${CAPI_REPO}/cluster-api/${CAPI}/metadata.yaml \
+    && cp ${CAPI_REPO}/cluster-api/${CAPI}/metadata.yaml ${CAPI_REPO}/bootstrap-kubeadm/${CAPI}/metadata.yaml \
+    && cp ${CAPI_REPO}/cluster-api/${CAPI}/metadata.yaml ${CAPI_REPO}/control-plane-kubeadm/${CAPI}/metadata.yaml
