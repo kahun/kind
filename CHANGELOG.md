@@ -10,6 +10,9 @@
 * [Core] Enable scale from zero
 * [Core] Add core dns PDB if required
 * [Core] Add keos 1.1.x support
+* [Core] Added new CR, clusterconfig, for cluster configurations
+* [Core] Added default retrieval of the latest cluster-operator version.
+* [Core] Added the possibility to specify the required chart version and image version in clusterconfig
 
 ## 0.17.0-0.3.0 (2023-09-14)
 

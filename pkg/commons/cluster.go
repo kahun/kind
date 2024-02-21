@@ -58,7 +58,9 @@ type Metadata struct {
 }
 
 type ClusterConfigSpec struct {
-	Private bool `yaml:"private_registry"`
+	Private                     bool   `yaml:"private_registry"`
+	ClusterOperatorVersion      string `yaml:"cluster_operator_version,omitempty"`
+	ClusterOperatorImageVersion string `yaml:"cluster_operator_image_version,omitempty"`
 }
 
 type ClusterConfigRef struct {

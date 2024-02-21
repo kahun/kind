@@ -60,9 +60,7 @@ const (
 
 	scName = "keos"
 
-	certManagerVersion   = "v1.12.3"
-	clusterOperatorChart = "0.2.0-SNAPSHOT"
-	clusterOperatorImage = "0.2.0-SNAPSHOT"
+	certManagerVersion = "v1.12.3"
 
 	postInstallAnnotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
 	corednsPdbPath        = "/kind/coredns_pdb.yaml"
@@ -311,7 +309,27 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 	var c string
 	var err error
 	var helmRepository helmRepository
+	var chartVersion string
+	clusterOperatorImage := ""
 	keosCluster := privateParams.KeosCluster
+
+	if clusterConfig != nil {
+		if clusterConfig.Spec.ClusterOperatorVersion != "" {
+			chartVersion = clusterConfig.Spec.ClusterOperatorVersion
+		} else {
+			chartVersion, err = getLastChartVersion(helmRepoCreds)
+			if err != nil {
+				return errors.Wrap(err, "failed to get the last chart version")
+			}
+			if clusterConfig == nil {
+				clusterConfig = &commons.ClusterConfig{}
+			}
+			clusterConfig.Spec.ClusterOperatorVersion = chartVersion
+		}
+		if clusterConfig.Spec.ClusterOperatorImageVersion != "" {
+			clusterOperatorImage = clusterConfig.Spec.ClusterOperatorImageVersion
+		}
+	}
 
 	if firstInstallation && keosCluster.Spec.InfraProvider == "aws" && strings.HasPrefix(keosCluster.Spec.HelmRepository.URL, "s3://") {
 		c = "mkdir -p ~/.aws"
@@ -405,7 +423,7 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 
 		if firstInstallation {
 			// Pull cluster-operator helm chart
-			c = "helm pull " + stratio_helm_repo + "/cluster-operator --version " + clusterOperatorChart +
+			c = "helm pull " + stratio_helm_repo + "/cluster-operator --version " + chartVersion +
 				" --untar --untardir /stratio/helm"
 			_, err = commons.ExecuteCommand(n, c, 5)
 			if err != nil {
@@ -434,9 +452,11 @@ func (p *Provider) deployClusterOperator(n nodes.Node, privateParams PrivatePara
 	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
 		" --set provider=" + keosCluster.Spec.InfraProvider +
-		" --set app.containers.controllerManager.image.tag=" + clusterOperatorImage +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator"
+	if clusterOperatorImage != "" {
+		c += " --set app.containers.controllerManager.image.tag=" + clusterOperatorImage
+	}
 	if privateParams.Private {
 		c += " --set app.containers.kubeRbacProxy.image=" + keosRegistry.url + "/stratio/kube-rbac-proxy:v0.13.1"
 	}
