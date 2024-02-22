@@ -593,7 +593,7 @@ def upgrade_calico(dry_run):
         execute_command(command, dry_run)
         os.remove("./calico.values")
 
-def cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
+def cluster_operator(helm_repo, keos_registry, docker_registries, provider, credentials, dry_run):
     print("[INFO] Creating keoscluster-registries secret:", end =" ", flush=True)
     command = kubectl + " -n kube-system get secret keoscluster-registries"
     status = subprocess.getstatusoutput(command)[0]
@@ -604,26 +604,24 @@ def cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
         execute_command(command, dry_run)
 
     status, output = subprocess.getstatusoutput(helm + " list -A | grep cluster-operator")
+    chart_version = ""
     if status == 0:
-        print("[INFO] Upgrading Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
         chart_version = output.split()[9]
-        if chart_version == CLUSTER_OPERATOR:
-            print("SKIP")
-        else:
-            command = (helm + " -n kube-system upgrade cluster-operator cluster-operator" +
-                " --wait --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
-                " --set app.containers.controllerManager.image.registry=" + keos_registry +
-                " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-                " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
-                " --set app.replicas=2")
-            if "user" in helm_repo:
-                command += " --username=" + helm_repo["user"]
-                command += " --password=" + helm_repo["pass"]
-            execute_command(command, dry_run)
+    if chart_version == CLUSTER_OPERATOR:
+        print("[INFO] Upgrading Cluster Operator to " + CLUSTER_OPERATOR + ": SKIP")
     else:
+        if status == 0:
+            print("[INFO] Uninstalling Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+            chart_version = output.split()[9]
+            if chart_version == CLUSTER_OPERATOR:
+                print("SKIP")
+            else:
+                command = helm + " -n kube-system uninstall cluster-operator"
+                execute_command(command, dry_run)
         print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-        command = (helm + " install --wait cluster-operator cluster-operator --namespace kube-system" +
-            " --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
+        command = (helm + " -n kube-system install cluster-operator cluster-operator" +
+            " --wait --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
+            " --set provider=" + provider +
             " --set app.containers.controllerManager.image.registry=" + keos_registry +
             " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
             " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
@@ -631,6 +629,15 @@ def cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
         if "user" in helm_repo:
             command += " --username=" + helm_repo["user"]
             command += " --password=" + helm_repo["pass"]
+        if provider == "aws":
+            command += " --set secrets.common.credentialsBase64=" + credentials
+        if provider == "azure":
+            command += " --set secrets.azure.clientIDBase64=" + base64.b64encode(credentials["client_id"].encode("ascii")).decode("ascii")
+            command += " --set secrets.azure.clientSecretBase64=" + base64.b64encode(credentials["client_secret"].encode("ascii")).decode("ascii")
+            command += " --set secrets.azure.tenantIDBase64=" + base64.b64encode(credentials["tenant_id"].encode("ascii")).decode("ascii")
+            command += " --set secrets.azure.subscriptionIDBase64=" + base64.b64encode(credentials["subscription_id"].encode("ascii")).decode("ascii")
+        if provider == "gcp":
+            command += " --set secrets.common.credentialsBase64=" + credentials
         execute_command(command, dry_run)
 
 def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run):
@@ -879,7 +886,7 @@ if __name__ == '__main__':
 
     # Cluster Operator
     if config["all"] or config["only_cluster_operator"]:
-        cluster_operator(helm_repo, keos_registry, docker_registries, config["dry_run"])
+        cluster_operator(helm_repo, keos_registry, docker_registries, provider, credentials, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
