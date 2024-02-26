@@ -2,10 +2,6 @@
 
 ## 0.17.0-0.4.0 (upcoming)
 
-* Upcoming changelog
-
-## 0.17.0-0.4.0 (2024-02-22)
-
 * [Core] Support offline deployments
 * [Core] Added validation for regions
 * [Core] Added infrastructure validations for azs, vpcs, subnets and k8s versions
