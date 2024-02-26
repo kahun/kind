@@ -6,8 +6,8 @@
 Name                              AppId
 --------------------------------  ------------------------------------
 cloud-provisioner                 7cf3ce06-2689-4c17-b2da-09df11fb725b  
-cloud-provisioner-restricted      e979a59d-ba11-4fcc-b174-64cfab548943  (spec.credentials.client_id)
-cloud-provisioner-restricted-aks  e3b6e5b9-e729-4612-a3cf-4bda74c240c4  (spec.credentials.client_id)
+cloud-provisioner-restricted      e979a59d-ba11-4fcc-b174-64cfab548943  
+cloud-provisioner-restricted-aks  e3b6e5b9-e729-4612-a3cf-4bda74c240c4  
 
 ❯ az role assignment list --all --assignee 7cf3ce06-2689-4c17-b2da-09df11fb725b --query "[].{Principal:principalName, Role:roleDefinitionName, Scope:scope}" --output table
 Principal                             Role         Scope
@@ -108,7 +108,7 @@ cloud-provisioner-restricted-aks   <--- capz-role-restricted-aks  <--- /subscrip
 
 Azure Unmanaged <--- cloud-provisioner-resticted <--- capz-role-restricted    (spec.credentials.client_id)
                 <--- capz-controlplane    (spec.security.control_plane_identity)
-                <--- capz-agentpool    (spec.security.nodes_identity)
+                <--- capz-agentpool-restricted    (spec.security.nodes_identity)
 
 Azure Managed   <--- cloud-provisioner-resticted-aks <--- capz-role-restricted-aks    (spec.credentials.client_id)
                 <--- capz-test-controlplane    (spec.security.control_plane_identity)
