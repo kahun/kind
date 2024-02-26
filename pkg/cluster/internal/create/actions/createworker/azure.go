@@ -325,7 +325,7 @@ func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networ
 }
 
 func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
-	var coreDNSPDBName = "coredns-pdb"
+	var coreDNSPDBName = "coredns"
 	if b.capxManaged {
 		coreDNSPDBName = "coredns-pdb"
 

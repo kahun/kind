@@ -35,6 +35,8 @@ import (
 
 //go:embed files/aws/internal-ingress-nginx.yaml
 var awsInternalIngress []byte
+//go:embed files/aws/public-ingress-nginx.yaml
+var awsPublicIngress []byte
 
 type AWSBuilder struct {
 	capxProvider     string
@@ -159,6 +161,29 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string, privateParams PrivatePar
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
 	}
+	return nil
+}
+
+func installLBController(n nodes.Node, k string, privateParams PrivateParams, p ProviderParams) error {
+	clusterName := p.ClusterName
+	roleName := p.ClusterName + "-lb-controller-manager"
+	accountID := p.Credentials["AccountID"]
+
+	c := "helm install aws-load-balancer-controller /stratio/helm/aws-load-balancer-controller" +
+	" --kubeconfig " + k +
+	" --namespace kube-system" +
+	" --set clusterName=" + clusterName +
+	" --set podDisruptionBudget.minAvailable=1" +
+	" --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + accountID + ":role/" + roleName
+	if privateParams.Private {
+		c += " --set image.repository=" + privateParams.KeosRegUrl + "/eks/aws-load-balancer-controller"
+	}
+
+	_, err := commons.ExecuteCommand(n, c, 5)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy aws-load-balancer-controller Helm Chart")
+	}
+
 	return nil
 }
 
@@ -306,6 +331,8 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 	}
 	if requiredInternalNginx {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
+	} else if !requiredInternalNginx && p.Managed {
+		overrideVars = addOverrideVar("ingress-nginx.yaml", awsPublicIngress, overrideVars)
 	}
 	// Add override vars for storage class
 	if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {

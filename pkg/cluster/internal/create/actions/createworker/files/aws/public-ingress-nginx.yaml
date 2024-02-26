@@ -1,0 +1,3 @@
+---
+ingress_external_lb_annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"

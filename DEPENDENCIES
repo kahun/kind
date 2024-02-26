@@ -19,6 +19,7 @@ aws:
   cluster-api-aws: v2.2.1
   cluster-api-aws-templates: v2.2.1
   managed:
+    aws-load-balancer-controller:1.6.2
     eks-addons:
       aws-ebs-csi-driver: v1.19.0-eksbuild.2
       coredns: v1.9.3-eksbuild.3

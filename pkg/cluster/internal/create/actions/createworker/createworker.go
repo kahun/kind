@@ -532,6 +532,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
+		if awsEKSEnabled {
+			ctx.Status.Start("Installing AWS LB controller in workload cluster ⚖️")
+			defer ctx.Status.End(false)
+			err = installLBController(n, kubeconfigPath, privateParams, providerParams)
+
+			if err != nil {
+				return errors.Wrap(err, "failed to install AWS LB controller in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing AWS LB controller in workload cluster
+		}
+
 		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
 		defer ctx.Status.End(false)
 
@@ -544,7 +555,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
 		defer ctx.Status.End(false)
 
-		err = enableSelfHealing(n, a.keosCluster, capiClustersNamespace)
+		err = enableSelfHealing(n, a.keosCluster, capiClustersNamespace, a.clusterConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to enable workload cluster's self-healing")
 		}

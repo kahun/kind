@@ -77,7 +77,8 @@ cloud-provisioner create cluster --name <cluster-name> --vault-password xxxxxx -
 |===
 | Permission | Necessary for | Description | Resource | Application
 | ec2:CreateVpc | Attempting to create VPC | Grants permission to create a VPC with a specified CIDR block. |  arn:aws:ec2:*:<account-id>:vpc/* | cloud-provisioner
-| ec2:CreateTags  | Attempting to create tags | Grants permission to add or overwrite one or more tags for Amazon EC2 resources. | ocker* | cloud-provisioner
+| ec2:ec2:AssociateVpcCidrBlock | Attempting to associate CIDR | Grants permission to associate a second CIDR to a existing VPC |  arn:aws:ec2:*:<account-id>:vpc/* | cloud-provisioner
+| ec2:CreateTags  | Attempting to create tags | Grants permission to add or overwrite one or more tags for Amazon EC2 resources. | * | cloud-provisioner
 | ec2:DescribeVpcs  | Attempting to describe VPCs | Grants permission to describe one or more VPCs. |  * | cloud-provisioner
 | ec2:DescribeVpcAttribute | Attempting to describe VPC attribute | Grants permission to describe an attribute of a VPC. |  arn:aws:ec2:*:<account-id>:vpc/* | cloud-provisioner
 | ec2:ModifyVpcAttribute | Attempting to modify VPC attribute | Grants permission to modify an attribute of a VPC. |  arn:aws:ec2:*:<account-id>:vpc/* | cloud-provisioner

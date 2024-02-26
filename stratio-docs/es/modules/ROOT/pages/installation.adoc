@@ -926,3 +926,132 @@ Debido a un error en los distintos _controllers_ (solucionado en ramas master pe
 Eventualmente, esto podría generar problemas en las peticiones en caso de fallo de alguno de los nodos del _control-plane_, dado que el balanceador de carga enviará peticiones a los nodos del _control-plane_ cuyo puerto responda pero no pueda atender peticiones.
 
 Para evitar este problema, se deberá modificar el _health check_ del balanceador de carga creado, utilizando el protocolo HTTPS y la ruta _/readyz_. El puerto deberá mantenerse, siendo para GCP el 443 y para Azure el 6443.
+
+== Pasos requeridos después de la instalación
+
+Antes de desplegar _Stratio KEOS_ en un entorno, hay que asegurarse que ciertos pasos manuales han de ser ejecutados previo despliegue de la solución de KEOS para asegurar una instalación con éxito.
+
+A día de hoy estas acciones son requeridas para entornos en la nube pública _AWS_ con _AWS Elastic Kubernetes Service_, conocido popularmente como EKS o internamente como entorno gestionado.
+
+=== _aws-load-balancer-controller-manager_
+
+Se trata de un operador encargado de la creación _Elastic Load Balancers_ para clústeres de _Kubernetes_ asistiendo en la creación de objetos tales como: _ingress_ y servicios de tipo _LoadBalancer_.
+
+Para garantizar una configuración adecuada de _aws-load-balancer-controller-manager_ (habilitado por defecto en entornos gestionados, EKS) es fundamental seguir una serie de pasos en los que se incluye la integración con https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IRSA]:
+
+==== Amazon Web Services (AWS)
+
+===== AWS Elastic Kubernetes Service (EKS)
+
+* Definir las siguientes variables de entorno:
+
+[source,shell]
+----
+export AWS_ACCOUNT_ID=<account_id>
+export AWS_REGION=<aws_region>
+export AWS_VPC_ID=<vpc_id>
+export AWS_EKS_CLUSTER_NAME=<aws_eks_cluster_name>
+export AWS_EKS_OIDC_ID=$(aws eks describe-cluster --region ${AWS_REGION} --name ${AWS_EKS_CLUSTER_NAME} --query 'cluster.identity.oidc.issuer' --output text | awk -F'/' '{print $NF}')
+export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/id_roles_create.html[Crear el rol de IAM] que utilizará la _service account_ del despliegue de aws-load-balancer-controller-manager_ con la siguiente política de confianza:
+
+[source,console]
+----
+$ cat << EOF > trustpolicy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+$ aws iam create-role --role-name ${AWS_IAM_ROLE_NAME} --assume-role-policy-document file://trustpolicy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_create.html[Crear la política IAM] con los permisos estrictamente necesarios:
+
+[source,console]
+----
+$ cat << EOF > policy.json
+{
+	"Statement": [
+		{
+			"Action": [
+        			"ec2:DescribeAvailabilityZones",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSubnets",
+				"elasticloadbalancing:DescribeListeners",
+				"elasticloadbalancing:DescribeLoadBalancers",
+				"elasticloadbalancing:DescribeLoadBalancerAttributes",
+				"elasticloadbalancing:DescribeRules",
+				"elasticloadbalancing:DescribeTags",
+				"elasticloadbalancing:DescribeTargetGroups",
+				"elasticloadbalancing:DescribeTargetGroupAttributes",
+				"elasticloadbalancing:DescribeTargetHealth"
+			],
+			"Effect": "Allow",
+			"Resource": "*"
+		},
+		{
+			"Action": [
+				"ec2:AuthorizeSecurityGroupIngress",
+				"ec2:CreateSecurityGroup",
+        			"ec2:CreateTags",
+				"ec2:DeleteSecurityGroup",
+				"ec2:RevokeSecurityGroupIngress"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:vpc/${AWS_VPC_ID}",
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:security-group/*"
+			]
+		},
+		{
+			"Action": [
+				"elasticloadbalancing:AddTags",
+				"elasticloadbalancing:CreateListener",
+				"elasticloadbalancing:CreateLoadBalancer",
+				"elasticloadbalancing:CreateTargetGroup",
+				"elasticloadbalancing:DeleteLoadBalancer",
+				"elasticloadbalancing:DeleteTargetGroup",
+				"elasticloadbalancing:DeregisterTargets",
+				"elasticloadbalancing:ModifyLoadBalancerAttributes",
+				"elasticloadbalancing:ModifyTargetGroup",
+				"elasticloadbalancing:RegisterTargets"
+			],
+			"Effect": "Allow",
+			"Resource": "*",
+			"Condition": {
+				"StringEquals": {
+					"aws:ResourceTag/elbv2.k8s.aws/cluster": "${AWS_EKS_CLUSTER_NAME}"
+				}
+			}
+		}
+	],
+	"Version": "2012-10-17"
+}
+EOF
+$ aws iam create-policy --policy-name ${AWS_IAM_POLICY_NAME} --policy-document file://policy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_manage-attach-detach.html[Asociar la política IAM] al rol creado anteriormente:
+
+[source,console]
+----
+$ aws iam attach-role-policy --role-name ${AWS_IAM_ROLE_NAME} --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${AWS_IAM_POLICY_NAME}
+----

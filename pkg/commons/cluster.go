@@ -58,9 +58,19 @@ type Metadata struct {
 }
 
 type ClusterConfigSpec struct {
-	Private                     bool   `yaml:"private_registry"`
-	ClusterOperatorVersion      string `yaml:"cluster_operator_version,omitempty"`
-	ClusterOperatorImageVersion string `yaml:"cluster_operator_image_version,omitempty"`
+	Private                     bool               `yaml:"private_registry"`
+	ControlplaneConfig          ControlplaneConfig `yaml:"controlplane_config"`
+	WorkersConfig               WorkersConfig      `yaml:"workers_config"`
+	ClusterOperatorVersion      string             `yaml:"cluster_operator_version,omitempty"`
+	ClusterOperatorImageVersion string             `yaml:"cluster_operator_image_version,omitempty"`
+}
+
+type ControlplaneConfig struct {
+	MaxUnhealthy *int `yaml:"max_unhealthy,omitempty" validate:"omitempty,numeric,gte=0,lte=100"`
+}
+
+type WorkersConfig struct {
+	MaxUnhealthy *int `yaml:"max_unhealthy,omitempty" validate:"omitempty,numeric,gte=0,lte=100"`
 }
 
 type ClusterConfigRef struct {
@@ -347,6 +357,7 @@ type SCParameters struct {
 
 func (s ClusterConfigSpec) Init() ClusterConfigSpec {
 	s.Private = false
+	s.WorkersConfig.MaxUnhealthy = ToPtr[int](100)
 	return s
 }
 
@@ -458,6 +469,9 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, *ClusterConfig, 
 		clusterConfig.Metadata.Name = keosCluster.Spec.InfraProvider + "-config"
 		clusterConfig.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
 		clusterConfig.Spec = new(ClusterConfigSpec).Init()
+		if !keosCluster.Spec.ControlPlane.Managed {
+			clusterConfig.Spec.ControlplaneConfig.MaxUnhealthy = ToPtr[int](34)
+		}
 	}
 
 	return &keosCluster, &clusterConfig, nil
@@ -591,4 +605,9 @@ func requireCheckFieldValue(fl validator.FieldLevel, param string, value string,
 
 	return false
 
+}
+
+// Ptr returns a pointer to the provided value.
+func ToPtr[T any](v T) *T {
+	return &v
 }

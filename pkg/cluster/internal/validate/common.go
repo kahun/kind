@@ -34,7 +34,7 @@ const (
 
 var k8sVersionSupported = []string{"1.24", "1.25", "1.26", "1.27", "1.28"}
 
-func validateCommon(spec commons.KeosSpec) error {
+func validateCommon(spec commons.KeosSpec, clusterConfigSpec commons.ClusterConfigSpec) error {
 	var err error
 	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
@@ -44,6 +44,18 @@ func validateCommon(spec commons.KeosSpec) error {
 	}
 	if err = validateVolumes(spec); err != nil {
 		return err
+	}
+	if err = validateClusterConfig(spec, clusterConfigSpec); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateClusterConfig(spec commons.KeosSpec, clusterConfigSpec commons.ClusterConfigSpec) error {
+	if spec.ControlPlane.Managed {
+		if clusterConfigSpec.ControlplaneConfig.MaxUnhealthy != nil {
+			return errors.New("spec: Invalid value: \"controlplane_config.max_unhealthy\" in clusterConfig: This field cannot be set with managed cluster")
+		}
 	}
 	return nil
 }
