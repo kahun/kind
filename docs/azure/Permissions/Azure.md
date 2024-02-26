@@ -108,7 +108,7 @@ cloud-provisioner-restricted-aks   <--- capz-role-restricted-aks  <--- /subscrip
 
 Azure Unmanaged <--- cloud-provisioner-resticted <--- capz-role-restricted    (spec.credentials.client_id)
                 <--- capz-controlplane    (spec.security.control_plane_identity)
-                <--- capz-agentpool (spec.security.nodes_identity)
+                <--- capz-agentpool    (spec.security.nodes_identity)
 
 Azure Managed   <--- cloud-provisioner-resticted-aks <--- capz-role-restricted-aks    (spec.credentials.client_id)
                 <--- capz-test-controlplane    (spec.security.control_plane_identity)
