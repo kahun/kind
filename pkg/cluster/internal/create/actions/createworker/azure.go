@@ -132,6 +132,8 @@ func (b *AzureBuilder) installCloudProvider(n nodes.Node, k string, privateParam
 		" --kubeconfig " + k +
 		" --namespace kube-system" +
 		" --set infra.clusterName=" + keosCluster.Metadata.Name +
+		" --set cloudControllerManager.configureCloudRoutes=false" +
+		" --set cloudControllerManager.replicas=2" +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
 	if privateParams.Private {
 		c += " --set cloudControllerManager.imageRepository=" + privateParams.KeosRegUrl + "/oss/kubernetes" +
@@ -323,7 +325,7 @@ func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networ
 }
 
 func (b *AzureBuilder) postInstallPhase(n nodes.Node, k string) error {
-	var coreDNSPDBName = "coredns-pdb"
+	var coreDNSPDBName = "coredns"
 	if b.capxManaged {
 		coreDNSPDBName = "coredns-pdb"
 

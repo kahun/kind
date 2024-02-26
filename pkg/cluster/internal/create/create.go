@@ -18,7 +18,6 @@ package create
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/alessio/shellescape"
@@ -236,11 +235,14 @@ func logUsage(logger log.Logger, name, explicitKubeconfigPath string) {
 func logSalutation(logger log.Logger) {
 	salutations := []string{
 		// "Kubeconfig file: ",
-		"The cluster has been installed, please refer to Stratio KEOS documentation on how to proceed.",
+		"The cluster has been installed successfully. Please refer to the documents below on how to proceed:",
+		"1. Post-installation Stratio cloud-provisioner documentation",
+		"2. Stratio KEOS documentation",
 	}
-	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-	s := salutations[r.Intn(len(salutations))]
-	logger.V(0).Info(s)
+
+    for _, salutation := range salutations {
+        logger.V(0).Info(salutation)
+    }
 }
 
 func fixupOptions(opts *ClusterOptions) error {

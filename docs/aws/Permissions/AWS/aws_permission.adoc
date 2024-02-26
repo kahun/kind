@@ -254,6 +254,11 @@ aws-cl01   false   Updating worker nodes   aws-cl01   Keoscluster
 ==== Modify max_size / min_size worker_nodes (No additional permissions needed)
 ==== Upgrade kubernetes version (No additional permissions needed)
 ==== Keos Deployment (No additional permissions needed)
+[options="header"]
+| Permission | Necessary for | Description | Resource | Application
+|===
+| ecr:ListImages | Helm charts version lookup | ListImages | arn:aws:ec2:*:*:vpc/* | keos  
+|===
 ==== Custom Network Deployment
 
 [options="header"]

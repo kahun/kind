@@ -14,10 +14,11 @@ ENV HELM=v3.13.1
 # Helm charts
 ENV HELM_EXPERIMENTAL_OCI=1
 ENV CLOUD_PROVIDER_AWS_CHART=0.0.8
+ENV AWS_LOAD_BALANCER_CONTROLLER_CHART=1.6.2
 ENV AWS_EBS_CSI_DRIVER_CHART=v2.20.0
 ENV AZUREDISK_CSI_DRIVER_CHART=v1.28.3
 ENV AZUREFILE_CSI_DRIVER_CHART=v1.28.3
-ENV CLOUD_PROVIDER_AZURE_CHART=v1.28.0
+ENV CLOUD_PROVIDER_AZURE_CHART=v1.26.7
 ENV CLUSTER_AUTOSCALER_CHART=9.29.1
 ENV TIGERA_OPERATOR_CHART=v3.26.1
 ENV CERT_MANAGER_CHART_VERSION=v1.12.3
@@ -63,6 +64,7 @@ RUN mkdir -p ${CAPI_REPO}/cert-manager/${CERT_MANAGER_CHART_VERSION} \
 # Download helm charts
 RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull aws-cloud-controller-manager --version ${CLOUD_PROVIDER_AWS_CHART} --repo https://kubernetes.github.io/cloud-provider-aws --untar --untardir /stratio/helm && break; done \
+  && for i in $(seq 1 3); do timeout 5 helm pull aws-load-balancer-controller --version ${AWS_LOAD_BALANCER_CONTROLLER_CHART} --repo https://aws.github.io/eks-charts --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull aws-ebs-csi-driver --version ${AWS_EBS_CSI_DRIVER_CHART} --repo https://kubernetes-sigs.github.io/aws-ebs-csi-driver --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull azuredisk-csi-driver --version ${AZUREDISK_CSI_DRIVER_CHART} --repo https://raw.githubusercontent.com/kubernetes-sigs/azuredisk-csi-driver/master/charts --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull azurefile-csi-driver --version ${AZUREFILE_CSI_DRIVER_CHART} --repo https://raw.githubusercontent.com/kubernetes-sigs/azurefile-csi-driver/master/charts --untar --untardir /stratio/helm && break; done \

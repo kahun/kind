@@ -55,6 +55,7 @@
                 "ec2:ReleaseAddress",
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:BatchGetImage",
+		"ecr:ListImages",
                 "ecr:GetDownloadUrlForLayer",
                 "secretsmanager:CreateSecret",
                 "secretsmanager:DeleteSecret",
