@@ -18,21 +18,23 @@ import sys
 import subprocess
 import yaml
 import base64
+import re
 from datetime import datetime
 from ansible_vault import Vault
 
-# Versions
-CAPA_VERSION = "v2.2.1"
-CAPG_VERSION = "v1.4.0"
-CAPZ_VERSION = "v1.10.4"
-CAPI_VERSION = "v1.5.1"
 CALICO_VERSION = "v3.26.1"
 CALICO_NODE_VERSION = "v1.30.5"
 AZUREDISK_CSI_DRIVER_CHART = "v1.28.3"
 AZUREFILE_CSI_DRIVER_CHART = "v1.28.3"
 CLOUD_PROVIDER_AZURE_CHART = "v1.26.7"
-CLUSTER_OPERATOR = "0.1.7"
-CLOUD_PROVISIONER = "0.17.0-0.3.7"
+
+CLOUD_PROVISIONER = "0.17.0-0.3.8"
+CLUSTER_OPERATOR = "0.1.8-SNAPSHOT"
+
+CAPI = "v1.5.1"
+CAPA = "v2.2.1"
+CAPG = "v1.4.0"
+CAPZ = "v1.10.4"
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -333,7 +335,7 @@ def add_cluster_autoscaler_annotations(provider, namespace, dry_run):
         command = kubectl + ' -n gce-pd-csi-driver patch deploy csi-gce-pd-controller -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"socket-dir\"}}}}}\''
         execute_command(command, dry_run)
 
-def upgrade_capx(kubeconfig, provider, namespace, version, env_vars, dry_run):
+def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dry_run):
     replicas = "2"
     gnp = ""
 
@@ -380,49 +382,55 @@ spec:
 """
 
     if provider == "azure":
-        print("[INFO] Setting priorityClass system-node-critical to capz-nmi:", end =" ", flush=True)
-        command = kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
-        execute_command(command, dry_run)
+        print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
+        command =  kubectl + " -n " + namespace + " get ds capz-nmi -o jsonpath='{.spec.template.spec.priorityClassName}'"
+        priorityClassName = execute_command(command, dry_run, False)
+        if priorityClassName == "system-node-critical":
+            print("SKIP")
+        else:
+            command =  kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
+            execute_command(command, dry_run, False)
+            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+            execute_command(command, dry_run)
     else:
         print("[INFO] Updating GlobalNetworkPolicy:", end =" ", flush=True)
         command = "cat <<EOF | " + kubectl + " apply -f -" + gnp + "EOF"
         execute_command(command, dry_run)
 
-    print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI_VERSION + ":", end =" ", flush=True)
-    command = kubectl + " -n " + namespace + " get deploy -o json  | jq -r '.items[0].spec.template.spec.containers[].image' 2>/dev/null | cut -d: -f2"
-    status, output = subprocess.getstatusoutput(command)
-    if status == 0 and output.split("@")[0] == version:
+    print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI + ":", end =" ", flush=True)
+    # Check if capx & capi are already upgraded
+    capx_version = get_deploy_version(namespace.split("-")[0] + "-controller-manager", namespace, "controller")
+    capi_version = get_deploy_version("capi-controller-manager", "capi-system", "controller")
+    if capx_version == version and capi_version == CAPI:
         print("SKIP")
-    elif status == 0:
-        command = (env_vars + " clusterctl upgrade apply --kubeconfig " + kubeconfig + " --wait-providers" +
-                    " --core capi-system/cluster-api:" + CAPI_VERSION +
-                    " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI_VERSION +
-                    " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI_VERSION +
-                    " --infrastructure " + namespace + "/" + provider + ":" + version)
-        execute_command(command, dry_run)
-    elif status != 0:
-        print("FAILED (" + output + ")")
-        sys.exit(1)
+        return
+    # Upgrade capx & capi
+    command = (env_vars + " clusterctl upgrade apply --kubeconfig " + kubeconfig + " --wait-providers" +
+                " --core capi-system/cluster-api:" + CAPI +
+                " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
+                " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
+                " --infrastructure " + namespace + "/" + provider + ":" + version)
+    execute_command(command, dry_run)
 
+    replicas = "2"
     print("[INFO] Scaling " + namespace.split("-")[0] + "-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n " + namespace + " scale --replicas " + replicas + " deploy " + namespace.split("-")[0] + "-controller-manager"
     execute_command(command, dry_run)
-
     print("[INFO] Scaling capi-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n capi-system scale --replicas " + replicas + " deploy capi-controller-manager"
     execute_command(command, dry_run)
 
-    # For EKS scale capi-kubeadm-control-plane-controller-manager and capi-kubeadm-bootstrap-controller-manager to 0 replicas
-    if provider == "aws":
+    # For AKS/EKS clusters scale capi-kubeadm-control-plane-controller-manager and capi-kubeadm-bootstrap-controller-manager to 0 replicas
+    if managed:
         replicas = "0"
-
     print("[INFO] Scaling capi-kubeadm-control-plane-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n capi-kubeadm-control-plane-system scale --replicas " + replicas + " deploy capi-kubeadm-control-plane-controller-manager"
     execute_command(command, dry_run)
-
     print("[INFO] Scaling capi-kubeadm-bootstrap-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n capi-kubeadm-bootstrap-system scale --replicas " + replicas + " deploy capi-kubeadm-bootstrap-controller-manager"
     execute_command(command, dry_run)
+
+    return
 
 def upgrade_drivers(cluster, cluster_name, dry_run):
     # Azuredisk CSI driver
@@ -582,21 +590,37 @@ def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_ru
         command = kubectl + " -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + json.dumps(docker_registries, separators=(',', ':')) + "'"
         execute_command(command, dry_run)
 
-    print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-    status = subprocess.getstatusoutput(helm + " list -A | grep cluster-operator")[0]
-    if status == 0:
-        print("SKIP")
-    else:
-        command = (helm + " install --wait cluster-operator cluster-operator --namespace kube-system" +
-            " --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
-            " --set app.containers.controllerManager.image.registry=" + keos_registry +
-            " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
-            " --set app.replicas=2")
-        if "user" in helm_repo:
-            command += " --username=" + helm_repo["user"]
-            command += " --password=" + helm_repo["pass"]
+    # Check if cluster-operator is already upgraded
+    cluster_operator_version = get_chart_version("cluster-operator", "kube-system")
+    if cluster_operator_version == CLUSTER_OPERATOR:
+        print("[INFO] Upgrading Cluster Operator to " + CLUSTER_OPERATOR + ": SKIP")
+        return
+    if cluster_operator_version != None:
+        # Get cluster-operator values
+        command = helm + " -n kube-system get values cluster-operator -o json"
+        values = execute_command(command, dry_run, False)
+        cluster_operator_values = open('./clusteroperator.values', 'w')
+        cluster_operator_values.write(values)
+        cluster_operator_values.close()
+        # Uninstall cluster-operator
+        print("[INFO] Uninstalling Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+        command = helm + " -n kube-system uninstall cluster-operator"
         execute_command(command, dry_run)
+    # Upgrade cluster-operator
+    print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+    command = (helm + " -n kube-system install cluster-operator cluster-operator" +
+        " --wait --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
+        " --set app.containers.controllerManager.image.registry=" + keos_registry +
+        " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
+        " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
+        " --set app.replicas=2")
+    if os.path.isfile('./clusteroperator.values'):
+        command += " --values ./clusteroperator.values"
+    if "user" in helm_repo:
+        command += " --username=" + helm_repo["user"]
+        command += " --password=" + helm_repo["pass"]
+    execute_command(command, dry_run)
+    os.remove('./clusteroperator.values')
 
 def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run):
     keoscluster = cluster
@@ -650,16 +674,52 @@ def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run
         command = kubectl + " apply -f ./keoscluster.yaml"
         execute_command(command, dry_run)
 
-def execute_command(command, dry_run):
+def execute_command(command, dry_run, result = True):
+    output = ""
     if dry_run:
-        print("DRY-RUN: " + command)
+        if result:
+            print("DRY-RUN: " + command)
     else:
         status, output = subprocess.getstatusoutput(command)
         if status == 0:
-            print("OK")
+            if result:
+                print("OK")
         else:
             print("FAILED (" + output + ")")
             sys.exit(1)
+    return output
+
+def get_deploy_version(deploy, namespace, container):
+    command = kubectl + " -n " + namespace + " get deploy " + deploy + " -o json  | jq -r '.spec.template.spec.containers[].image' | grep '" + container + "' | cut -d: -f2"
+    output = execute_command(command, False, False)
+    return output.split("@")[0]
+
+def get_chart_version(chart, namespace):
+    command = helm + " -n " + namespace + " list"
+    output = execute_command(command, False, False)
+    for line in output.split("\n"):
+        splitted_line = line.split()
+        if chart == splitted_line[0]:
+            if len(splitted_line) < 10:
+                return splitted_line[8].split("-")[-1]
+            return splitted_line[9]
+    return None
+
+def get_version(version):
+    return re.sub(r'\D', '', version)
+
+def verify_upgrade():
+    print("[INFO] Verifying upgrade process")
+    cluster_operator_version = get_chart_version("cluster-operator", "kube-system")
+    if cluster_operator_version == None:
+        return
+    patch_version = get_version(cluster_operator_version)
+    if int(patch_version[:2]) < int(get_version(CLUSTER_OPERATOR)[:2]):
+        return
+    elif int(patch_version) > int(get_version(CLUSTER_OPERATOR)):
+        print("[WARN] Downgrading cloud-provisioner from a version major than " + CLUSTER_OPERATOR + " is NOT SUPPORTED")
+        sys.exit(0)
+    return
 
 def request_confirmation():
     enter = input("Press ENTER to continue upgrading the cluster or any other key to abort: ")
@@ -750,22 +810,21 @@ if __name__ == '__main__':
 
     # Set env vars
     env_vars = "CLUSTER_TOPOLOGY=true CLUSTERCTL_DISABLE_VERSIONCHECK=true"
+    provider = cluster["spec"]["infra_provider"]
+    managed = cluster["spec"]["control_plane"]["managed"]
     if "aws" in data["secrets"]:
-        provider = "aws"
         namespace = "capa-system"
-        version = CAPA_VERSION
+        version = CAPA
         credentials = subprocess.getoutput(kubectl + " -n " + namespace + " get secret capa-manager-bootstrap-credentials -o jsonpath='{.data.credentials}'")
         env_vars += " CAPA_EKS_IAM=true AWS_B64ENCODED_CREDENTIALS=" + credentials
     elif "gcp" in data["secrets"]:
-        provider = "gcp"
         namespace = "capg-system"
-        version = CAPG_VERSION
+        version = CAPG
         credentials = subprocess.getoutput(kubectl + " -n " + namespace + " get secret capg-manager-bootstrap-credentials -o json | jq -r '.data[\"credentials.json\"]'")
         env_vars += " GCP_B64ENCODED_CREDENTIALS=" + credentials
     elif "azure" in data["secrets"]:
-        provider = "azure"
         namespace = "capz-system"
-        version = CAPZ_VERSION
+        version = CAPZ
         if "credentials" in data["secrets"]["azure"]:
             credentials = data["secrets"]["azure"]["credentials"]
             env_vars += " AZURE_CLIENT_ID_B64=" + base64.b64encode(credentials["client_id"].encode("ascii")).decode("ascii")
@@ -798,6 +857,9 @@ if __name__ == '__main__':
             data["secrets"]["helm_repository"] = helm_repo
             vault.dump(data, open(config["secrets"], 'w'))
 
+    # Verify upgrade
+    verify_upgrade()
+
     if not config["disable_backup"]:
         now = datetime.now()
         backup_dir = backup_dir + now.strftime("%Y%m%d-%H%M%S")
@@ -814,7 +876,7 @@ if __name__ == '__main__':
             request_confirmation()
 
     if config["all"] or config["only_capx"]:
-        upgrade_capx(kubeconfig, provider, namespace, version, env_vars, config["dry_run"])
+        upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
