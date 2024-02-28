@@ -321,7 +321,7 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks, clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error) {
 	var overrideVars = make(map[string][]byte)
 
 	// Add override vars internal nginx
@@ -331,7 +331,7 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 	}
 	if requiredInternalNginx {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
-	} else if !requiredInternalNginx && p.Managed {
+	} else if !requiredInternalNginx && p.Managed && clusterConfigSpec.EKSLBController {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsPublicIngress, overrideVars)
 	}
 	// Add override vars for storage class

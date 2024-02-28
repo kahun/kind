@@ -16,7 +16,7 @@
 * [Core] Set custom maxUnhealthy for CP and workers
 * [Core] Added default retrieval of the latest cluster-operator helm chart.
 * [Core] Override the cluster-operator chart and image versions in clusterconfig
-* [AWS][EKS] Support aws load balancer controller manager
+* [AWS][EKS] Support aws load balancer controller manager (optional)
 
 ## 0.17.0-0.3.7 (2024-01-31)
 

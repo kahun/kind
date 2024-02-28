@@ -58,6 +58,7 @@ type Metadata struct {
 }
 
 type ClusterConfigSpec struct {
+	EKSLBController             bool               `yaml:"eks_lb_controller"`
 	Private                     bool               `yaml:"private_registry"`
 	ControlplaneConfig          ControlplaneConfig `yaml:"controlplane_config"`
 	WorkersConfig               WorkersConfig      `yaml:"workers_config"`
