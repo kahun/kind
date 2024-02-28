@@ -64,7 +64,7 @@ def parse_args():
     args = parser.parse_args()
     return vars(args)
 
-def backup(backup_dir, namespace, cluster_name):
+def backup(backup_dir, namespace, cluster_name, machine_deployment):
     print("[INFO] Backing up files into directory " + backup_dir)
 
     # Backup CAPX files
@@ -76,17 +76,18 @@ def backup(backup_dir, namespace, cluster_name):
         sys.exit(1)
 
     # Backup calico files
-    os.makedirs(backup_dir + "/calico", exist_ok=True)
-    command = kubectl + " get installation default -o yaml > " + backup_dir + "/calico/installation_calico.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up Calico files failed:\n" + output)
-        sys.exit(1)
-    command = helm + " -n tigera-operator get values calico 2>/dev/null > " + backup_dir + "/calico/values-tigera_calico.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up Calico files failed:\n" + output)
-        sys.exit(1)
+    if machine_deployment:
+        os.makedirs(backup_dir + "/calico", exist_ok=True)
+        command = kubectl + " get installation default -o yaml > " + backup_dir + "/calico/installation_calico.yaml"
+        status, output = subprocess.getstatusoutput(command)
+        if status != 0:
+            print("[ERROR] Backing up Calico files failed:\n" + output)
+            sys.exit(1)
+        command = helm + " -n tigera-operator get values calico 2>/dev/null > " + backup_dir + "/calico/values-tigera_calico.yaml"
+        status, output = subprocess.getstatusoutput(command)
+        if status != 0:
+            print("[ERROR] Backing up Calico files failed:\n" + output)
+            sys.exit(1)
 
     # Backup capsule files
     os.makedirs(backup_dir + "/capsule", exist_ok=True)
@@ -852,13 +853,15 @@ if __name__ == '__main__':
             data["secrets"]["helm_repository"] = helm_repo
             vault.dump(data, open(config["secrets"], 'w'))
 
+    machine_deployment = not managed or (managed and provider == "aws")
+
     # Verify upgrade
     verify_upgrade()
 
     if not config["disable_backup"]:
         now = datetime.now()
         backup_dir = backup_dir + now.strftime("%Y%m%d-%H%M%S")
-        backup(backup_dir, namespace, cluster_name)
+        backup(backup_dir, namespace, cluster_name, machine_deployment)
 
     if not config["disable_prepare_capsule"]:
         prepare_capsule(config["dry_run"])
@@ -875,17 +878,17 @@ if __name__ == '__main__':
         if not config["yes"]:
             request_confirmation()
 
-    if (config["all"] or config["only_azure_drivers"]) and (provider == "azure" and not managed):
+    if (config["all"] or config["only_azure_drivers"]) and (not managed and provider == "azure"):
         upgrade_azure_drivers(cluster, cluster_name, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
-    if config["all"] or config["only_calico"]:
+    if (config["all"] or config["only_calico"]) and machine_deployment:
         upgrade_calico(config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
-    if config["all"] or config["only_annotations"]:
+    if (config["all"] or config["only_annotations"]) and machine_deployment:
         add_cluster_autoscaler_annotations(provider, managed, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
