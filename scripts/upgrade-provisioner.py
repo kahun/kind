@@ -205,6 +205,21 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                 " --infrastructure " + namespace + "/" + provider + ":" + version)
     execute_command(command, dry_run)
 
+    if provider == "azure":
+        # Wait for capz-nmi daemonset to be ready
+        command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+        execute_command(command, dry_run)
+        print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
+        command =  kubectl + " -n " + namespace + " get ds capz-nmi -o jsonpath='{.spec.template.spec.priorityClassName}'"
+        priorityClassName = execute_command(command, dry_run, False)
+        if priorityClassName == "system-node-critical":
+            print("SKIP")
+        else:
+            command =  kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
+            execute_command(command, dry_run, False)
+            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+            execute_command(command, dry_run)
+
     replicas = "2"
     print("[INFO] Scaling " + namespace.split("-")[0] + "-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n " + namespace + " scale --replicas " + replicas + " deploy " + namespace.split("-")[0] + "-controller-manager"
@@ -222,8 +237,6 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
     print("[INFO] Scaling capi-kubeadm-bootstrap-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n capi-kubeadm-bootstrap-system scale --replicas " + replicas + " deploy capi-kubeadm-bootstrap-controller-manager"
     execute_command(command, dry_run)
-
-    return
 
 def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
     # Check if cluster-operator is already upgraded
@@ -288,7 +301,6 @@ def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
         command = kubectl + " apply -f clusterconfig.yaml"
         execute_command(command, dry_run)
         os.remove('./clusterconfig.yaml')
-    return
 
 def execute_command(command, dry_run, result = True):
     output = ""
