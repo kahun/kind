@@ -65,19 +65,6 @@ def backup(backup_dir, namespace, cluster_name):
         print("[ERROR] Backing up CAPX files failed:\n" + output)
         sys.exit(1)
 
-    # Backup calico files
-    os.makedirs(backup_dir + "/calico", exist_ok=True)
-    command = kubectl + " get installation default -o yaml > " + backup_dir + "/calico/installation_calico.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up Calico files failed:\n" + output)
-        sys.exit(1)
-    command = helm + " -n tigera-operator get values calico 2>/dev/null > " + backup_dir + "/calico/values-tigera_calico.yaml"
-    status, output = subprocess.getstatusoutput(command)
-    if status != 0:
-        print("[ERROR] Backing up Calico files failed:\n" + output)
-        sys.exit(1)
-
     # Backup capsule files
     os.makedirs(backup_dir + "/capsule", exist_ok=True)
     command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration"
