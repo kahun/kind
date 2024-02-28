@@ -57,7 +57,7 @@ def parse_args():
     parser.add_argument("--only-annotations", action="store_true", help="Only add annotations to evict local volumes")
     parser.add_argument("--only-capx", action="store_true", help="Only upgrade CAPx components")
     parser.add_argument("--only-calico", action="store_true", help="Only upgrade Calico components")
-    parser.add_argument("--only-drivers", action="store_true", help="Only upgrade Azure drivers")
+    parser.add_argument("--only-azure-drivers", action="store_true", help="Only upgrade Azure drivers")
     parser.add_argument("--only-cluster-operator", action="store_true", help="Only install Cluster Operator")
     parser.add_argument("--only-cluster-operator-descriptor", action="store_true", help="Only create Cluster Operator descriptor")
     parser.add_argument("--dry-run", action="store_true", help="Do not upgrade components. This invalidates all other options")
@@ -311,10 +311,10 @@ spec:
     command = "cat <<EOF | " + kubectl + " apply -f -" + core_dns_pdb + "EOF"
     execute_command(command, dry_run)
 
-def add_cluster_autoscaler_annotations(provider, namespace, dry_run):
+def add_cluster_autoscaler_annotations(provider, managed, dry_run):
     ca_annotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
 
-    if provider == "aws":
+    if provider == "aws" and managed:
         print("[INFO] Adding cluster-autoscaler annotations to coredns:", end =" ", flush=True)
         command = kubectl + ' -n kube-system patch deploy coredns -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"tmp\"}}}}}\''
         execute_command(command, dry_run)
@@ -430,7 +430,7 @@ spec:
     command = kubectl + " -n capi-kubeadm-bootstrap-system scale --replicas " + replicas + " deploy capi-kubeadm-bootstrap-controller-manager"
     execute_command(command, dry_run)
 
-def upgrade_drivers(cluster, cluster_name, dry_run):
+def upgrade_azure_drivers(cluster, cluster_name, dry_run):
     # Azuredisk CSI driver
     print("[INFO] Upgrading Azuredisk CSI driver to " + AZUREDISK_CSI_DRIVER_CHART + ":", end =" ", flush=True)
     chart_version = subprocess.getstatusoutput(helm + " list -A | grep azuredisk-csi-driver")[1].split()[9]
@@ -875,8 +875,8 @@ if __name__ == '__main__':
         if not config["yes"]:
             request_confirmation()
 
-    if (config["all"] or config["only_drivers"]) and provider == "azure":
-        upgrade_drivers(cluster, cluster_name, config["dry_run"])
+    if (config["all"] or config["only_azure_drivers"]) and (provider == "azure" and not managed):
+        upgrade_azure_drivers(cluster, cluster_name, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
@@ -886,7 +886,7 @@ if __name__ == '__main__':
             request_confirmation()
 
     if config["all"] or config["only_annotations"]:
-        add_cluster_autoscaler_annotations(provider, namespace, config["dry_run"])
+        add_cluster_autoscaler_annotations(provider, managed, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
