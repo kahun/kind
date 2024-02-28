@@ -27,6 +27,8 @@ CLUSTER_OPERATOR = "0.2.0-SNAPSHOT"
 CLUSTER_OPERATOR_UPGRADE_SUPPORT = "0.1.7"
 CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.3.7"
 
+AWS_LOAD_BALANCER_CONTROLLER_CHART = "1.6.2"
+
 CAPI = "v1.5.3"
 CAPA = "v2.2.1"
 CAPG = "v1.4.0"
@@ -45,6 +47,7 @@ def parse_args():
     parser.add_argument("-p", "--vault-password", help="Set the vault password file for decrypting secrets", required=True)
     parser.add_argument("-s", "--secrets", help="Set the secrets file for decrypting secrets", default="secrets.yml")
     parser.add_argument("-d", "--descriptor", help="Set the cluster descriptor file", default="cluster.yaml")
+    parser.add_argument("--enable-lb-controller", action="store_true", help="Install AWS Load Balancer Controller for EKS clusters (disabled by default)")
     parser.add_argument("--disable-backup", action="store_true", help="Disable backing up files before upgrading (enabled by default)")
     parser.add_argument("--disable-prepare-capsule", action="store_true", help="Disable preparing capsule for the upgrade process (enabled by default)")
     parser.add_argument("--dry-run", action="store_true", help="Do not upgrade components. This invalidates all other options")
@@ -156,6 +159,35 @@ def restore_capsule(dry_run):
                 """jq -r '.webhooks[] |= (select(.name == "namespaces.capsule.clastix.io").objectSelector |= {})' """ +
                 "| " + kubectl + " apply -f -")
         execute_command(command, dry_run)
+
+def install_lb_controller(cluster_name, account_id, dry_run):
+    print("[INFO] Installing LoadBalancer Controller:", end =" ", flush=True)
+    chart_version = get_chart_version("aws-load-balancer-controller", "kube-system")
+    if chart_version == AWS_LOAD_BALANCER_CONTROLLER_CHART:
+        print("SKIP")
+        return
+    gnpPatch = {
+                    "spec": {
+                                "selector":
+                                    "app.kubernetes.io/name in {'aws-ebs-csi-driver', 'aws-load-balancer-controller' } || " +
+                                    "cluster.x-k8s.io/provider == 'infrastructure-aws' || " +
+                                    "k8s-app == 'aws-cloud-controller-manager'"
+                            }
+                }
+    gnpPatch_file = open('./gnpPatch.yaml', 'w')
+    gnpPatch_file.write(yaml.dump(gnpPatch, default_flow_style=False))
+    gnpPatch_file.close()
+    command = kubectl + " patch globalnetworkpolicy allow-traffic-to-aws-imds-capa --type merge --patch-file gnpPatch.yaml"
+    execute_command(command, dry_run, False)
+    os.remove('./gnpPatch.yaml')
+    role_name = cluster_name + "-lb-controller-manager"
+    command = (helm + " -n kube-system install aws-load-balancer-controller aws-load-balancer-controller" +
+                " --wait --version " + AWS_LOAD_BALANCER_CONTROLLER_CHART +
+                " --set clusterName=" + cluster_name +
+                " --set podDisruptionBudget.minAvailable=1" +
+                " --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + account_id + ":role/" + role_name +
+                " --repo https://aws.github.io/eks-charts")
+    execute_command(command, dry_run)
 
 def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dry_run):
     print("[INFO] Upgrading " + namespace.split("-")[0] + " to " + version + " and capi to " + CAPI + ":", end =" ", flush=True)
@@ -284,9 +316,10 @@ def get_chart_version(chart, namespace):
     for line in output.split("\n"):
         splitted_line = line.split()
         if chart == splitted_line[0]:
-            if len(splitted_line) < 10:
+            if chart == "cluster-operator":
+                return splitted_line[9]
+            else:
                 return splitted_line[8].split("-")[-1]
-            return splitted_line[9]
     return None
 
 def get_version(version):
@@ -321,8 +354,6 @@ def request_confirmation():
 
 if __name__ == '__main__':
     # Init variables
-    keos_registry = ""
-    docker_registries = []
     backup_dir = "./backup/upgrade/"
     binaries = ["clusterctl", "kubectl", "helm", "jq"]
     helm_repo = {}
@@ -389,7 +420,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Set env vars
-    env_vars = "CLUSTER_TOPOLOGY=true CLUSTERCTL_DISABLE_VERSIONCHECK=true"
+    env_vars = "CLUSTER_TOPOLOGY=true CLUSTERCTL_DISABLE_VERSIONCHECK=true GOPROXY=off"
     provider = cluster["spec"]["infra_provider"]
     managed = cluster["spec"]["control_plane"]["managed"]
     if provider == "aws":
@@ -445,6 +476,17 @@ if __name__ == '__main__':
         prepare_capsule(config["dry_run"])
         if not config["yes"]:
             request_confirmation()
+
+    # EKS LoadBalancer Controller
+    if config["enable_lb_controller"]:
+        if provider == "aws" and managed:
+            account_id = data["secrets"]["aws"]["credentials"]["account_id"]
+            install_lb_controller(cluster_name, account_id, config["dry_run"])
+        else:
+            print("[WARN] AWS LoadBalancer Controller is only supported for EKS managed clusters")
+            sys.exit(0)
+    if not config["yes"]:
+        request_confirmation()
 
     # CAPX
     upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, config["dry_run"])
