@@ -712,7 +712,7 @@ def verify_upgrade():
     if cluster_operator_version != None:
         patch_version = get_version(cluster_operator_version)
         if int(patch_version) > int(get_version(CLUSTER_OPERATOR)):
-            print("[WARN] Downgrading cloud-provisioner from a version major than " + CLUSTER_OPERATOR + " is NOT SUPPORTED")
+            print("[WARN] Downgrading cloud-provisioner from a version major than " + CLOUD_PROVISIONER + " is NOT SUPPORTED")
             sys.exit(0)
     return
 
