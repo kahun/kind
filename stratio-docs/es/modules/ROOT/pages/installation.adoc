@@ -933,7 +933,7 @@ Antes de desplegar _Stratio KEOS_ en un entorno, hay que asegurarse que ciertos 
 
 A día de hoy estas acciones son requeridas para entornos en la nube pública _AWS_ con _AWS Elastic Kubernetes Service_, conocido popularmente como EKS o internamente como entorno gestionado.
 
-=== _aws-load-balancer-controller-manager_
+=== _aws-load-balancer-controller-manager_ (opcional)
 
 Se trata de un operador encargado de la creación _Elastic Load Balancers_ para clústeres de _Kubernetes_ asistiendo en la creación de objetos tales como: _ingress_ y servicios de tipo _LoadBalancer_.
 

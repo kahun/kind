@@ -88,7 +88,7 @@ type PBuilder interface {
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
 	internalNginx(p ProviderParams, networks commons.Networks) (bool, error)
-	getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error)
+	getOverrideVars(p ProviderParams, networks commons.Networks, clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error)
 	getRegistryCredentials(p ProviderParams, u string) (string, string, error)
 	postInstallPhase(n nodes.Node, k string) error
 }
@@ -211,8 +211,8 @@ func (i *Infra) internalNginx(p ProviderParams, networks commons.Networks) (bool
 	return i.builder.internalNginx(p, networks)
 }
 
-func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
-	return i.builder.getOverrideVars(p, networks)
+func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks, clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error) {
+	return i.builder.getOverrideVars(p, networks, clusterConfigSpec)
 }
 
 func (i *Infra) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {

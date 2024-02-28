@@ -26,9 +26,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-func override_vars(ctx *actions.ActionContext, p ProviderParams, networks commons.Networks, infra *Infra) error {
+func override_vars(ctx *actions.ActionContext, p ProviderParams, networks commons.Networks, infra *Infra, clusterConfigSpec commons.ClusterConfigSpec) error {
 
-	override_vars, err := infra.getOverrideVars(p, networks)
+	override_vars, err := infra.getOverrideVars(p, networks, clusterConfigSpec)
 	if err != nil {
 		return err
 	}
