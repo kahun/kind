@@ -20,6 +20,7 @@ Requirements:
 | Permission | Needed for | Description | Resource | Application |
 | --- | --- | --- | --- | --- |
 | Microsoft.Authorization/roleAssignments/read | Read Secrets | Invalid client secret provided RESPONSE 403 Forbidden | Microsoft.Authorization | Provisioner |
+| Microsoft.ContainerRegistry/registries/pull/read | pull image "eosregistry.azurecr.io/keos/stratio/capsule:0.1.1-0.3.1 | Microsoft.ContainerRegistry/registries/pull/read | Microsoft.ContainerRegistry | Provisioner |
 | Microsoft.Resources/subscriptions/resourcegroups/read | Read ResourceGroup |does not have authorization to perform action 'Microsoft.Resources/subscriptions/resourcegroups/read' over scope '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/azure1 | Microsoft.Resources | Provisioner |
 | Microsoft.Resources/subscriptions/resourcegroups/write | Create Resourcegroup | does not have authorization to perform action 'Microsoft.Resources/subscriptions/resourcegroups/write' over scope '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourcegroups/xxxxxx | Microsoft.Resources | Provisioner |
 | Microsoft.Network/virtualNetworks/read | Read virtualNetworks | does not have authorization to perform action 'Microsoft.Network/virtualNetworks/read' over scope '/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/xxxxxx/providers/Microsoft.Network/virtualNetworks/xxxxxx-vnet | Microsoft.Network | Provisioner |

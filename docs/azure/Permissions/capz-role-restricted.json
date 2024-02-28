@@ -10,6 +10,7 @@
             {
                 "actions": [
                     "Microsoft.Authorization/*/read",
+                    "Microsoft.ContainerRegistry/registries/pull/read",
                     "Microsoft.Resources/subscriptions/resourcegroups/read",
                     "Microsoft.Resources/subscriptions/resourcegroups/write",
                     "Microsoft.Resources/subscriptions/resourcegroups/delete",

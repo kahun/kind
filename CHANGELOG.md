@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0-0.4.0 (2024-02-22)
+## 0.17.0-0.4.0 (2024-02-27)
 
 * [Core] Support offline deployments
 * [Core] Added validation for regions
