@@ -193,7 +193,7 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
         execute_command(command, dry_run)
         if provider == "azure":
             command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-            execute_command(command, dry_run)
+            execute_command(command, dry_run, False)
 
     if provider == "azure":
         print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
