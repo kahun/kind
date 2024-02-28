@@ -196,19 +196,19 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
     capi_version = get_deploy_version("capi-controller-manager", "capi-system", "controller")
     if capx_version == version and capi_version == CAPI:
         print("SKIP")
-        return
-    # Upgrade capx & capi
-    command = (env_vars + " clusterctl upgrade apply --kubeconfig " + kubeconfig + " --wait-providers" +
-                " --core capi-system/cluster-api:" + CAPI +
-                " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
-                " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
-                " --infrastructure " + namespace + "/" + provider + ":" + version)
-    execute_command(command, dry_run)
+    else:
+        # Upgrade capx & capi
+        command = (env_vars + " clusterctl upgrade apply --kubeconfig " + kubeconfig + " --wait-providers" +
+                    " --core capi-system/cluster-api:" + CAPI +
+                    " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
+                    " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
+                    " --infrastructure " + namespace + "/" + provider + ":" + version)
+        execute_command(command, dry_run)
+        if provider == "azure":
+            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+            execute_command(command, dry_run)
 
     if provider == "azure":
-        # Wait for capz-nmi daemonset to be ready
-        command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-        execute_command(command, dry_run)
         print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
         command =  kubectl + " -n " + namespace + " get ds capz-nmi -o jsonpath='{.spec.template.spec.priorityClassName}'"
         priorityClassName = execute_command(command, dry_run, False)
