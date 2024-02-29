@@ -29,6 +29,8 @@ AZUREDISK_CSI_DRIVER_CHART = "v1.28.3"
 AZUREFILE_CSI_DRIVER_CHART = "v1.28.3"
 CLOUD_PROVIDER_AZURE_CHART = "v1.26.7"
 
+CLUSTERCTL = "v1.5.1"
+
 CAPI = "v1.5.1"
 CAPA = "v2.2.1"
 CAPG = "v1.4.0"
@@ -438,7 +440,7 @@ def upgrade_azure_drivers(cluster, cluster_name, dry_run):
     if chart_version == AZUREDISK_CSI_DRIVER_CHART:
         print("SKIP")
     else:
-        chart_values = subprocess.getoutput(helm + " -n kube-system get values azuredisk-csi-driver -o json")
+        chart_values = subprocess.getoutput(helm + " -n kube-system get values azuredisk-csi-driver -o yaml")
         f = open('./azurediskcsidriver.values', 'w')
         f.write(chart_values)
         f.close()
@@ -513,7 +515,7 @@ def upgrade_azure_drivers(cluster, cluster_name, dry_run):
         if chart_version == CLOUD_PROVIDER_AZURE_CHART[1:] and chart_namespace == "kube-system":
             print("[INFO] Upgrading Cloud Provider Azure " + CLOUD_PROVIDER_AZURE_CHART + ": SKIP")
         else:
-            chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o json")
+            chart_values = subprocess.getoutput(helm + " -n " + chart_namespace + " get values cloud-provider-azure -o yaml")
             f = open('./cloudproviderazure.values', 'w')
             f.write(chart_values)
             f.close()
@@ -562,7 +564,7 @@ def upgrade_calico(dry_run):
         print("SKIP")
     else:
         # Get the current calico values
-        values = subprocess.getoutput(helm + " -n tigera-operator get values calico -o json")
+        values = subprocess.getoutput(helm + " -n tigera-operator get values calico -o yaml")
         values = values.replace("v3.25.1", TIGERA_OPERATOR_CHART)
         values = values.replace("v1.29.3", CALICO_NODE_VERSION)
         values = values.replace('"podAnnotations":{}', '"podAnnotations":{"cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes": "var-lib-calico"}')
@@ -594,7 +596,7 @@ def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_ru
         return
     if cluster_operator_version != None:
         # Get cluster-operator values
-        command = helm + " -n kube-system get values cluster-operator -o json"
+        command = helm + " -n kube-system get values cluster-operator -o yaml"
         values = execute_command(command, dry_run, False)
         cluster_operator_values = open('./clusteroperator.values', 'w')
         cluster_operator_values.write(values)
@@ -744,6 +746,11 @@ if __name__ == '__main__':
         if not subprocess.getstatusoutput("which " + binary)[0] == 0:
             print("[ERROR] " + binary + " binary not found in $PATH")
             sys.exit(1)
+
+    command = "clusterctl version -o short"
+    status, output = subprocess.getstatusoutput(command)
+    if (status != 0) or (get_version(output) < get_version(CLUSTERCTL)):
+        print("[ERROR] clusterctl version " + CLUSTERCTL + " is required")
 
     # Check paths
     if not os.path.exists(config["descriptor"]):
