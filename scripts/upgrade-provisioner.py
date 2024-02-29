@@ -29,6 +29,8 @@ CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.3.7"
 
 AWS_LOAD_BALANCER_CONTROLLER_CHART = "1.6.2"
 
+CLUSTERCTL = "v1.5.3"
+
 CAPI = "v1.5.3"
 CAPA = "v2.2.1"
 CAPG = "v1.4.0"
@@ -371,6 +373,11 @@ if __name__ == '__main__':
         if not subprocess.getstatusoutput("which " + binary)[0] == 0:
             print("[ERROR] " + binary + " binary not found in $PATH")
             sys.exit(1)
+
+    command = "clusterctl version -o short"
+    status, output = subprocess.getstatusoutput(command)
+    if (status != 0) or (get_version(output) < get_version(CLUSTERCTL)):
+        print("[ERROR] clusterctl version " + CLUSTERCTL + " is required")
 
     # Check paths
     if not os.path.exists(config["descriptor"]):
