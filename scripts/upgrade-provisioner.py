@@ -611,7 +611,7 @@ def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_ru
         cluster_operator_values.write(values)
         cluster_operator_values.close()
         # Uninstall cluster-operator
-        print("[INFO] Uninstalling Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+        print("[INFO] Uninstalling Cluster Operator " + cluster_operator_version + ":", end =" ", flush=True)
         command = helm + " -n kube-system uninstall cluster-operator"
         execute_command(command, dry_run)
     print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
