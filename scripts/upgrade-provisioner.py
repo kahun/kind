@@ -289,7 +289,7 @@ def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
         clusterConfig_file.close()
         command = kubectl + " apply -f clusterconfig.yaml"
         execute_command(command, dry_run)
-        #os.remove('./clusterconfig.yaml')
+        os.remove('./clusterconfig.yaml')
 
 def execute_command(command, dry_run, result = True):
     output = ""
