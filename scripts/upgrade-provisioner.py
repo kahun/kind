@@ -64,6 +64,7 @@ def backup(backup_dir, namespace, cluster_name):
     command = "clusterctl --kubeconfig " + kubeconfig + " -n cluster-" + cluster_name + " move --to-directory " + backup_dir + "/" + namespace + " >/dev/null 2>&1"
     status, output = subprocess.getstatusoutput(command)
     if status != 0:
+        print("FAILED")
         print("[ERROR] Backing up CAPX files failed:\n" + output)
         sys.exit(1)
 
@@ -75,6 +76,7 @@ def backup(backup_dir, namespace, cluster_name):
         command = kubectl + " get mutatingwebhookconfigurations capsule-mutating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-mutating-webhook-configuration.yaml"
         status, output = subprocess.getstatusoutput(command)
         if status != 0:
+            print("FAILED")
             print("[ERROR] Backing up capsule files failed:\n" + output)
             sys.exit(1)
     command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration"
@@ -83,6 +85,7 @@ def backup(backup_dir, namespace, cluster_name):
         command = kubectl + " get validatingwebhookconfigurations capsule-validating-webhook-configuration -o yaml 2>/dev/null > " + backup_dir + "/capsule/capsule-validating-webhook-configuration.yaml"
         status, output = subprocess.getstatusoutput(command)
         if status != 0:
+            print("FAILED")
             print("[ERROR] Backing up capsule files failed:\n" + output)
             sys.exit(1)
 
@@ -94,6 +97,7 @@ def prepare_capsule(dry_run):
         if "NotFound" in output:
             print("SKIP")
         else:
+            print("FAILED")
             print("[ERROR] Preparing capsule-mutating-webhook-configuration failed:\n" + output)
             sys.exit(1)
     else:
@@ -110,6 +114,7 @@ def prepare_capsule(dry_run):
         if "NotFound" in output:
             print("SKIP")
         else:
+            print("FAILED")
             print("[ERROR] Preparing capsule-validating-webhook-configuration failed:\n" + output)
             sys.exit(1)
     else:
@@ -127,6 +132,7 @@ def restore_capsule(dry_run):
         if "NotFound" in output:
             print("SKIP")
         else:
+            print("FAILED")
             print("[ERROR] Restoring capsule-mutating-webhook-configuration failed:\n" + output)
             sys.exit(1)
     else:
@@ -141,6 +147,7 @@ def restore_capsule(dry_run):
         if "NotFound" in output:
             print("SKIP")
         else:
+            print("FAILED")
             print("[ERROR] Restoring capsule-validating-webhook-configuration failed:\n" + output)
             sys.exit(1)
     else:
@@ -302,7 +309,8 @@ def execute_command(command, dry_run, result = True):
             if result:
                 print("OK")
         else:
-            print("FAILED (" + output + ")")
+            print("FAILED")
+            print("[ERROR] " + output)
             sys.exit(1)
     return output
 
