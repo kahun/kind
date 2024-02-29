@@ -761,6 +761,7 @@ if __name__ == '__main__':
     status, output = subprocess.getstatusoutput(command)
     if (status != 0) or (get_version(output) < get_version(CLUSTERCTL)):
         print("[ERROR] clusterctl version " + CLUSTERCTL + " is required")
+        sys.exit(1)
 
     # Check paths
     if not os.path.exists(config["descriptor"]):
