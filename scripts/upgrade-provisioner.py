@@ -248,7 +248,7 @@ def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
         cluster_operator_values.write(values)
         cluster_operator_values.close()
         # Uninstall cluster-operator
-        print("[INFO] Uninstalling Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+        print("[INFO] Uninstalling Cluster Operator " + cluster_operator_version + ":", end =" ", flush=True)
         command = helm + " -n kube-system uninstall cluster-operator"
         execute_command(command, dry_run)
     # Upgrade cluster-operator
