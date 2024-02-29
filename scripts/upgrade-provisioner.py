@@ -24,7 +24,7 @@ from ansible_vault import Vault
 
 CLOUD_PROVISIONER = "0.17.0-0.4.0"
 CLUSTER_OPERATOR = "0.2.0-377b861"
-CLUSTER_OPERATOR_UPGRADE_SUPPORT = "0.1.7"
+CLUSTER_OPERATOR_UPGRADE_SUPPORT = ["0.1.7", "0.1.8"]
 CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.3.7"
 
 AWS_LOAD_BALANCER_CONTROLLER_CHART = "1.6.2"
@@ -339,7 +339,7 @@ def verify_upgrade():
             print_upgrade_support()
     patch_version = get_version(cluster_operator_version)
     if int(patch_version[:2]) < int(get_version(CLUSTER_OPERATOR)[:2]):
-        if int(patch_version) != int(get_version(CLUSTER_OPERATOR_UPGRADE_SUPPORT)):
+        if patch_version not in CLUSTER_OPERATOR_UPGRADE_SUPPORT:
             print_upgrade_support()
     elif int(patch_version) > int(get_version(CLUSTER_OPERATOR)):
         print("[WARN] Downgrading cloud-provisioner from a version major than " + CLUSTER_OPERATOR + " is NOT SUPPORTED")
@@ -458,8 +458,12 @@ if __name__ == '__main__':
     helm_repo["url"] = cluster["spec"]["helm_repository"]["url"]
     if "auth_required" in cluster["spec"]["helm_repository"]:
         if cluster["spec"]["helm_repository"]["auth_required"]:
-            helm_repo["user"] = data["secrets"]["helm_repository"]["user"]
-            helm_repo["pass"] = data["secrets"]["helm_repository"]["pass"]
+            if "user" in data["secrets"]["helm_repository"] and "pass" in data["secrets"]["helm_repository"]:
+                helm_repo["user"] = data["secrets"]["helm_repository"]["user"]
+                helm_repo["pass"] = data["secrets"]["helm_repository"]["pass"]
+            else:
+                print("[ERROR] Helm repository credentials not found in secrets file")
+                sys.exit(1)
 
     # Verify upgrade
     verify_upgrade()
