@@ -235,7 +235,7 @@ def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
         return
     if cluster_operator_version != None:
         # Get cluster-operator values
-        command = helm + " -n kube-system get values cluster-operator -o json"
+        command = helm + " -n kube-system get values cluster-operator -o yaml"
         values = execute_command(command, dry_run, False)
         cluster_operator_values = open('./clusteroperator.values', 'w')
         cluster_operator_values.write(values)
@@ -289,7 +289,7 @@ def cluster_operator(helm_repo, provider, credentials, cluster_name, dry_run):
         clusterConfig_file.close()
         command = kubectl + " apply -f clusterconfig.yaml"
         execute_command(command, dry_run)
-        os.remove('./clusterconfig.yaml')
+        #os.remove('./clusterconfig.yaml')
 
 def execute_command(command, dry_run, result = True):
     output = ""
