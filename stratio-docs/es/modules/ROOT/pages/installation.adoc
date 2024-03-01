@@ -8,8 +8,9 @@
 +
 Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones sobre diversos servicios de AWS como EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Si bien la utilización o no de estas acciones dependerá del tipo de instalación, el proveedor valida que el usuario indicado tenga estos permisos para poder ejecutarse con normalidad.
 +
+** xref:attachment$stratio-aws-unmanaged-policy.json[Descargar permisos permanentes para AWS no gestionado]
 ** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
-** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
+** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS y AWS no gestionado]
 
 +
 Para el despliegue de EKS se deberá crear de forma manual el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
