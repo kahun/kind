@@ -86,7 +86,6 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 	for _, tag := range spec.ControlPlane.Tags {
 		for k, v := range tag {
 			label := k + "=" + v
-			fmt.Println(label)
 			if err = validateAWSLabel(label); err != nil {
 				return errors.Wrap(err, "spec.control_plane.tags: Invalid value")
 			}
