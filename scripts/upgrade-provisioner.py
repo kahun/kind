@@ -24,7 +24,7 @@ from datetime import datetime
 from ansible_vault import Vault
 
 CLOUD_PROVISIONER = "0.17.0-0.4.0"
-CLUSTER_OPERATOR = "0.2.0-377b861"
+CLUSTER_OPERATOR = "0.2.0-4112cad"
 CLUSTER_OPERATOR_UPGRADE_SUPPORT = "0.1.7"
 CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.3.7"
 
@@ -200,22 +200,22 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                     " --bootstrap capi-kubeadm-bootstrap-system/kubeadm:" + CAPI +
                     " --control-plane capi-kubeadm-control-plane-system/kubeadm:" + CAPI +
                     " --infrastructure " + namespace + "/" + provider + ":" + version)
-        execute_command(command, dry_run)
-        if provider == "azure":
-            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-            execute_command(command, dry_run, False)
-
-    if provider == "azure":
-        print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
-        command =  kubectl + " -n " + namespace + " get ds capz-nmi -o jsonpath='{.spec.template.spec.priorityClassName}'"
-        priorityClassName = execute_command(command, dry_run, False)
-        if priorityClassName == "system-node-critical":
-            print("SKIP")
+        if dry_run:
+            print("DRY-RUN")
         else:
-            command =  kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
-            execute_command(command, dry_run, False)
-            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
-            execute_command(command, dry_run)
+            status, output = subprocess.getstatusoutput(command)
+            if status == 0:
+                print("OK")
+            else:
+                if "timeout" in output:
+                    execute_command(command, dry_run)
+                else:
+                    print("FAILED")
+                    print("[ERROR] " + output)
+                    sys.exit(1)
+            if provider == "azure":
+                command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+                execute_command(command, dry_run, False)
 
     replicas = "2"
     print("[INFO] Scaling " + namespace.split("-")[0] + "-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
@@ -244,26 +244,32 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
         print("[INFO] Applying new KeosCluster CRD:", end =" ", flush=True)
         # https://github.com/Stratio/cluster-operator/blob/master/deploy/helm/cluster-operator/crds/installer.stratio.com_keosclusters.yaml
         keoscluster_crd = "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"
-        p = subprocess.Popen(["kubectl", "--kubeconfig", kubeconfig, "apply", "--server-side", "--force-conflicts", "-f", "-"], stdin=subprocess.PIPE, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        keoscluster_decoded = zlib.decompress(base64.b64decode(keoscluster_crd))
-        _, errors = p.communicate(input=yaml.dump(yaml.safe_load(keoscluster_decoded), default_flow_style=False))
-        if errors == "":
-            print("OK")
+        if dry_run:
+            print("DRY-RUN")
         else:
-            print("FAILED")
-            print("[ERROR] " + errors)
+            p = subprocess.Popen(["kubectl", "--kubeconfig", kubeconfig, "apply", "--server-side", "--force-conflicts", "-f", "-"], stdin=subprocess.PIPE, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            keoscluster_decoded = zlib.decompress(base64.b64decode(keoscluster_crd))
+            _, errors = p.communicate(input=yaml.dump(yaml.safe_load(keoscluster_decoded), default_flow_style=False))
+            if errors == "":
+                print("OK")
+            else:
+                print("FAILED")
+                print("[ERROR] " + errors)
 
         print("[INFO] Applying new ClusterConfig CRD", end =" ", flush=True)
         # https://github.com/Stratio/cluster-operator/blob/master/deploy/helm/cluster-operator/crds/installer.stratio.com_clusterconfigs.yaml
         clusterconfig_crd = "eJzFVkuP0zAQvvdXjMRhLyTdwgXlhgqHFQ+hLdpr5CST1NSxgx9lC+K/M7bTR9J0VYFW+FTPjL+Z+eaRJkkyYx1/QG24khnQb3y0KP3NpJs3JuVqvl3MNlxWGSydsaq9R6OcLvEd1lxyS5azFi2rmGXZDIBJqSzzYuOvAKWSVishUCcNynTjCiwcFxXqAL53vb1NF6/SBT2RrMUMSkHeUNPrmjcUhzSWeZDUWO3h01K1M9Nh6b00Wrkug2mjiNhH02cSwZcBPMgFN/bDue4jiYO+E04zMQ4rqAyXjRNMj5SkM6XqKJXP3n3HSqxI1iccwkn6XLeLghhcRLRyjS2LwQLQe/n2y93D69VADFChKTXvbOBuEDJwA3aNEF9ArXS4DgMHAj1gdZrcaMv3HMVz0hcn0pHnGx9ctCIFNQRG532WWPX5gKpJTpFp7DQalLFFBsDgjZgEVXzD0qawQu1hwKyVE5XvI7paQihVI/nPAzZ5VMGpYBb7ch0Pl5S1ZAK2TDh8SQ4qaNmOYLwXcPIEL5iYFD4pjfSwVhmsre1MNp833O7ngXqqddT5u3lobV44q7SZV7hFMTe8SZgu19wSutM4JxqTELoMM5G21QvdT5C5GcRqd75ZqHOpn04UoWOfqIDvWl9z1j+NWRyJ9iLPzv371VfYuw7FGLMfeD8+NMcSeMKID9SxiLVWbcBEWXWKGO47jNOrEahxRcutr/t3otb6WqWwDEsCCgTX0d7AKoU7SdIWxZIZfPYCeKZN4om9rgSn+21sHFk7Uex30oV6DWZ1RbaDuSFTrn1n03ygn4fzTbU/01PrD25MLor8uHjHBj6kmjlhM6iZMHimjqkVSglk4yHtF0nuvTMiPuctazDfTu2KJzidhPorkJhmJ5jEPK638/eXyfKnZY+5k2tkwq53UwbBhLeuzWBxezttQB/DYDCtjgn4ZdSgvpDeWSvFyPmWeiHX2NC3SE+E9w+1/KH0hih/PtoOsV2k7f/w6teRH7Rh1MnFjrxq8Glmnbl69IP1YPhVYfy+vWr6J2M4E0a8DKx2sTHoD5ymaT2VuOLwPdrH3mcCv37P/gDZnAI8"
         clusterconfig_decoded = zlib.decompress(base64.b64decode(clusterconfig_crd))
-        p = subprocess.Popen(["kubectl", "--kubeconfig", kubeconfig, "apply", "--server-side", "--force-conflicts", "-f", "-"], stdin=subprocess.PIPE, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        _, errors = p.communicate(input=yaml.dump(yaml.safe_load(clusterconfig_decoded), default_flow_style=False))
-        if errors == "":
-            print("OK")
+        if dry_run:
+            print("DRY-RUN")
         else:
-            print("FAILED")
-            print("[ERROR] " + errors)
+            p = subprocess.Popen(["kubectl", "--kubeconfig", kubeconfig, "apply", "--server-side", "--force-conflicts", "-f", "-"], stdin=subprocess.PIPE, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            _, errors = p.communicate(input=yaml.dump(yaml.safe_load(clusterconfig_decoded), default_flow_style=False))
+            if errors == "":
+                print("OK")
+            else:
+                print("FAILED")
+                print("[ERROR] " + errors)
 
         command = helm + " -n kube-system get values cluster-operator -o yaml"
         values = execute_command(command, dry_run, False)
@@ -323,7 +329,7 @@ def execute_command(command, dry_run, result = True):
     output = ""
     if dry_run:
         if result:
-            print("DRY-RUN: " + command)
+            print("DRY-RUN")
     else:
         status, output = subprocess.getstatusoutput(command)
         if status == 0:
