@@ -203,6 +203,7 @@ Copy the generated binary to the repository and create the configuration file `e
 +
 [source,console]
 ----
+cd image-builder
 mkdir -p images/capi/ansible/roles/providers/files
 cp ../cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider images/capi/ansible/roles/providers/files/
 cat <<EOF >> images/capi/ansible/roles/providers/files/ecr-credential-provider-config.yaml
