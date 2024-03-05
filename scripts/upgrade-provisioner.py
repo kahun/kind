@@ -208,6 +208,7 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                 print("OK")
             else:
                 if "timeout" in output:
+                    os.sleep(30)
                     execute_command(command, dry_run)
                 else:
                     print("FAILED")
