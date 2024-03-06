@@ -24,7 +24,7 @@ from datetime import datetime
 from ansible_vault import Vault
 
 CLOUD_PROVISIONER = "0.17.0-0.4.0"
-CLUSTER_OPERATOR = "0.2.0-4112cad"
+CLUSTER_OPERATOR = "0.2.0-637340e"
 CLUSTER_OPERATOR_UPGRADE_SUPPORT = "0.1.7"
 CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.3.7"
 
@@ -208,7 +208,7 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
                 print("OK")
             else:
                 if "timeout" in output:
-                    os.sleep(30)
+                    os.sleep(60)
                     execute_command(command, dry_run)
                 else:
                     print("FAILED")
@@ -217,6 +217,25 @@ def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dr
             if provider == "azure":
                 command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
                 execute_command(command, dry_run, False)
+
+    deployments = [
+        {"name": namespace.split("-")[0] + "-controller-manager", "namespace": namespace},
+        {"name": "capi-controller-manager", "namespace": "capi-system"}
+    ]
+    if not managed:
+        deployments.append({"name": "capi-kubeadm-control-plane-controller-manager", "namespace": "capi-kubeadm-control-plane-system"})
+        deployments.append({"name": "capi-kubeadm-bootstrap-controller-manager", "namespace": "capi-kubeadm-bootstrap-system"})
+    for deploy in deployments:
+        print("[INFO] Setting priorityClass system-node-critical to " + deploy["name"] + ":", end =" ", flush=True)
+        command =  kubectl + " -n " + deploy["namespace"] + " get deploy " + deploy["name"] + " -o jsonpath='{.spec.template.spec.priorityClassName}'"
+        priorityClassName = execute_command(command, dry_run, False)
+        if priorityClassName == "system-node-critical":
+            print("SKIP")
+        else:
+            command =  kubectl + " -n " + deploy["namespace"] + " patch deploy " + deploy["name"] + " -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
+            execute_command(command, dry_run, False)
+            command =  kubectl + " -n " + deploy["namespace"] + " rollout status deploy " + deploy["name"] + " --timeout 120s"
+            execute_command(command, dry_run)
 
     replicas = "2"
     print("[INFO] Scaling " + namespace.split("-")[0] + "-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
