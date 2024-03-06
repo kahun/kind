@@ -23,6 +23,7 @@ import (
 	_ "embed"
 	"os"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/commons"
@@ -377,7 +378,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		c = "kubectl -n " + capiClustersNamespace + " get cluster " + a.keosCluster.Metadata.Name
-		_, err = commons.ExecuteCommand(n, c, 15)
+		for i := 0; i < 5; i++ {
+			time.Sleep(6 * time.Second)
+			_, err = commons.ExecuteCommand(n, c, 5)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for cluster")
 		}
