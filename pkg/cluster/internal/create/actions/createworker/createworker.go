@@ -377,7 +377,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		c = "kubectl -n " + capiClustersNamespace + " get cluster " + a.keosCluster.Metadata.Name
-		_, err = commons.ExecuteCommand(n, c, 15)
+		_, err = commons.ExecuteCommand(n, c, 40)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for cluster")
 		}
