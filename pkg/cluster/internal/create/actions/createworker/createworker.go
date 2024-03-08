@@ -714,7 +714,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Customizing CoreDNS configuration 🪡")
 			defer ctx.Status.End(false)
 
-			err = customCoreDNS(n, kubeconfigPath, a.keosCluster)
+			err = customCoreDNS(n, a.keosCluster)
 			if err != nil {
 				return errors.Wrap(err, "failed to customized CoreDNS configuration")
 			}
@@ -855,7 +855,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
 
-	err = createKEOSDescriptor(a.keosCluster, scName, a.clusterCredentials)
+	err = createKEOSDescriptor(a.keosCluster, scName)
 	if err != nil {
 		return err
 	}
