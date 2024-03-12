@@ -354,8 +354,6 @@ def execute_command(command, dry_run, result = True):
                     print("FAILED")
                     print("[ERROR] " + output)
                     sys.exit(1)
-                print("DEBUG")
-                print("[DEBUG] Retrying command: " + command, end =" ", flush=True)
                 os.sleep(30)
     return output
 
