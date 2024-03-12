@@ -538,8 +538,8 @@ func installCalico(n nodes.Node, k string, privateParams PrivateParams, allowCom
 	}
 
 	// Wait for calico-system namespace to be created
-	c = "timeout 300s bash -c 'until kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system; do sleep 2s ; done'"
-	_, err = commons.ExecuteCommand(n, c, 5)
+	c = "kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system"
+	_, err = commons.ExecuteCommand(n, c, 30)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for calico-system namespace")
 	}
