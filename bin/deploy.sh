@@ -24,3 +24,4 @@ fi
 
 mv "$DIR"/cloud-provisioner-${VERSION}.${EXTENSION} "$DIR"/cloud-provisioner.${EXTENSION}
 mv "$DIR"/upgrade-provisioner-${VERSION}.${EXTENSION} "$DIR"/upgrade-provisioner.${EXTENSION}
+
