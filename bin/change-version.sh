@@ -10,5 +10,5 @@ else
 	VERSION=$1
 fi
 
-echo "Modifying cluster-provisioner version to: $1"
+echo "Modifying cloud-provisioner version to: $1"
 echo $VERSION > VERSION
