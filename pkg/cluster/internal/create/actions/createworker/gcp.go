@@ -113,6 +113,7 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxProvider:     b.capxProvider,
 		capxVersion:      b.capxVersion,
 		capxImageVersion: b.capxImageVersion,
+		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
