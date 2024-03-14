@@ -35,6 +35,7 @@ import (
 
 //go:embed files/aws/internal-ingress-nginx.yaml
 var awsInternalIngress []byte
+
 //go:embed files/aws/public-ingress-nginx.yaml
 var awsPublicIngress []byte
 
@@ -170,11 +171,11 @@ func installLBController(n nodes.Node, k string, privateParams PrivateParams, p 
 	accountID := p.Credentials["AccountID"]
 
 	c := "helm install aws-load-balancer-controller /stratio/helm/aws-load-balancer-controller" +
-	" --kubeconfig " + k +
-	" --namespace kube-system" +
-	" --set clusterName=" + clusterName +
-	" --set podDisruptionBudget.minAvailable=1" +
-	" --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + accountID + ":role/" + roleName
+		" --kubeconfig " + k +
+		" --namespace kube-system" +
+		" --set clusterName=" + clusterName +
+		" --set podDisruptionBudget.minAvailable=1" +
+		" --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + accountID + ":role/" + roleName
 	if privateParams.Private {
 		c += " --set image.repository=" + privateParams.KeosRegUrl + "/eks/aws-load-balancer-controller"
 	}
@@ -350,7 +351,7 @@ func (b *AWSBuilder) postInstallPhase(n nodes.Node, k string) error {
 	c := "kubectl --kubeconfig " + kubeconfigPath + " get pdb " + coreDNSPDBName + " -n kube-system"
 	_, err := commons.ExecuteCommand(n, c, 5)
 	if err != nil {
-		err = installCorednsPdb(n, k)
+		err = installCorednsPdb(n)
 		if err != nil {
 			return errors.Wrap(err, "failed to add core dns PDB")
 		}
