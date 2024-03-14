@@ -90,7 +90,7 @@ type EFSConfig struct {
 	Permissions string `yaml:"permissions"`
 }
 
-func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string, creds commons.ClusterCredentials) error {
+func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) error {
 
 	var keosDescriptor KEOSDescriptor
 	var err error
