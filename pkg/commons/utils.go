@@ -246,20 +246,24 @@ func ExecuteCommand(n nodes.Node, command string, timeout int, envVars ...[]stri
 	if len(envVars) > 0 {
 		cmd.SetEnv(envVars[0]...)
 	}
+	retryConditions := []string{"dial tcp: lookup", "NotFound", "timed out waiting"}
+	provisionCommands := strings.Contains(command, "kubectl") || strings.Contains(command, "helm") || strings.Contains(command, "clusterctl")
 	for i := 0; i < 3; i++ {
 		raw = bytes.Buffer{}
 		err = cmd.SetStdout(&raw).SetStderr(&raw).Run()
-		dialLookupErrorPresent := strings.Contains(raw.String(), "dial tcp: lookup")
-		notFoundErrorPresent := strings.Contains(raw.String(), "NotFound")
-		provisionCommands := strings.Contains(command, "kubectl") || strings.Contains(command, "helm")
-
-		if err == nil || !provisionCommands || !(provisionCommands && (dialLookupErrorPresent || notFoundErrorPresent)) {
+		retry := false
+		for _, condition := range retryConditions {
+			if strings.Contains(raw.String(), condition) {
+				retry = true
+			}
+		}
+		if err == nil || !(provisionCommands && retry) {
 			break
 		}
 		time.Sleep(time.Duration(timeout) * time.Second)
 	}
-	if strings.Contains(raw.String(), "Error:") {
-		return "", errors.Wrap(err, "Command Output: "+raw.String())
+	if strings.Contains(raw.String(), "Error:") || strings.Contains(raw.String(), "Error from server") {
+		return "", errors.New("Command Output: " + raw.String())
 	}
 	if err != nil {
 		return "", err
