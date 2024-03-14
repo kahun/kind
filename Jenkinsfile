@@ -9,7 +9,7 @@ hose {
     UPSTREAM_VERSION = '0.17.0'
     DEPLOYONPRS = true
     GRYPE_TEST = true
-    MODULE_LIST = [ "paas.cloud-provisioner:cloud-provisioner:tar.gz"]
+    MODULE_LIST = [ "paas.cloud-provisioner:cloud-provisioner:tar.gz", "paas.cloud-provisioner:ugrade-provisioner:tar.gz" ]
 
     BUILDTOOL_MEMORY_REQUEST = "1024Mi"
     BUILDTOOL_MEMORY_LIMIT = "4096Mi"

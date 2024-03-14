@@ -35,6 +35,7 @@ import (
 
 //go:embed files/aws/internal-ingress-nginx.yaml
 var awsInternalIngress []byte
+
 //go:embed files/aws/public-ingress-nginx.yaml
 var awsPublicIngress []byte
 
@@ -170,11 +171,11 @@ func installLBController(n nodes.Node, k string, privateParams PrivateParams, p 
 	accountID := p.Credentials["AccountID"]
 
 	c := "helm install aws-load-balancer-controller /stratio/helm/aws-load-balancer-controller" +
-	" --kubeconfig " + k +
-	" --namespace kube-system" +
-	" --set clusterName=" + clusterName +
-	" --set podDisruptionBudget.minAvailable=1" +
-	" --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + accountID + ":role/" + roleName
+		" --kubeconfig " + k +
+		" --namespace kube-system" +
+		" --set clusterName=" + clusterName +
+		" --set podDisruptionBudget.minAvailable=1" +
+		" --set serviceAccount.annotations.\"eks\\.amazonaws\\.com/role-arn\"=arn:aws:iam::" + accountID + ":role/" + roleName
 	if privateParams.Private {
 		c += " --set image.repository=" + privateParams.KeosRegUrl + "/eks/aws-load-balancer-controller"
 	}
@@ -321,7 +322,7 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks, clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error) {
 	var overrideVars = make(map[string][]byte)
 
 	// Add override vars internal nginx
@@ -331,7 +332,7 @@ func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks
 	}
 	if requiredInternalNginx {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
-	} else if !requiredInternalNginx && p.Managed {
+	} else if !requiredInternalNginx && p.Managed && clusterConfigSpec.EKSLBController {
 		overrideVars = addOverrideVar("ingress-nginx.yaml", awsPublicIngress, overrideVars)
 	}
 	// Add override vars for storage class

@@ -122,6 +122,7 @@ cloud-provisioner create cluster --name <cluster-name> --vault-password xxxxxx -
 | eks:UpdateAddon | Attempting to update addon | Grants permission to update an add-on. |  arn:aws:eks:eu-west-1:<account-id>:addon/* | cloud-provisioner
 | iam:TagOpenIDConnectProvider | Attempting to tag OpenID Connect provider | Grants permission to add one or more tags to an OpenID Connect (OIDC) provider resource. |  arn:aws:iam::268367799918:oidc-provider/* | cloud-provisioner
 | ec2:DescribeNetworkInterfaces | Attempting to describe network interfaces | 	Grants permission to describe one or more network interfaces.. | * | cloud-provisioner
+| ec2:CreateNetworkInterface | Attempting to create network interface | Grants permission to create a network interface in the specified subnet. |  arn:aws:ec2:eu-west-1:<account-id>:network-interface/* | cloud-provisioner
 |===
 
 ==== Using ECR (Elastic Container Registry) instead of generic docker registry
@@ -157,6 +158,7 @@ kubectl --kubeconfig local_kubeconfig -n cluster-<cluster-name> delete cluster <
 | ec2:DeleteVpc | Attempting to delete VPC | Grants permission to delete the specified VPC. |  arn:aws:ec2:eu-west-1:<account-id>:vpc/* | cloud-provisioner
 | eks:DeleteCluster | Attempting to delete cluster | Grants permission to delete the specified cluster. |  arn:aws:eks:eu-west-1:<account-id>:cluster/* | cloud-provisioner
 | iam:DeleteOpenIDConnectProvider | Attempting to delete OpenID Connect provider | Grants permission to delete an IAM OpenID Connect (OIDC) provider resource object in IAM. |  arn:aws:iam::268367799918:oidc-provider/* | cloud-provisioner
+| ec2:DisassociateVpcCidrBlock | Attempting to disassociate CIDR block | Grants permission to disassociate a CIDR block from a VPC. | arn:aws:ec2:eu-west-1:<account-id>:vpc/* | cloud-provisioner
 |===
 
 === Retain (No additional permissions needed)

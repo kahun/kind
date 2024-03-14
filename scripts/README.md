@@ -3,6 +3,10 @@
 | Script Name | Description |
 |-------------|-------------|
 | aws_images_vpc.py | Vpc creation for images building (if no default vpc exists) |
+| ClusterWatch.py | Send mail if EKS clusters are active more then 3 days |
+| delete_oidc.py | Delete OIDC with no clusters associated |
+| delete_unused_ebs.py.py | Delete unused EBS Volumes |
+| delete_unused_epis.py | Delete unused Elastic IPs |
 | upgrade-provisioner.py | Stratio Cloud Provisioner upgrade |
 | upload-images.py | Upload keos images to the cloud-provisioner |
 

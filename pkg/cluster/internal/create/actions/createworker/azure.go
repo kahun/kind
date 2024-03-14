@@ -311,7 +311,7 @@ func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.Subn
 	}
 }
 
-func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+func (b *AzureBuilder) getOverrideVars(p ProviderParams, networks commons.Networks, clusterConfigSpec commons.ClusterConfigSpec) (map[string][]byte, error) {
 	var overrideVars = make(map[string][]byte)
 
 	requiredInternalNginx, err := b.internalNginx(p, networks)

@@ -539,7 +539,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
-		if awsEKSEnabled {
+		if awsEKSEnabled && a.clusterConfig.Spec.EKSLBController {
 			ctx.Status.Start("Installing AWS LB controller in workload cluster ⚖️")
 			defer ctx.Status.End(false)
 			err = installLBController(n, kubeconfigPath, privateParams, providerParams)
@@ -867,7 +867,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	err = override_vars(ctx, providerParams, a.keosCluster.Spec.Networks, infra)
+	err = override_vars(ctx, providerParams, a.keosCluster.Spec.Networks, infra, a.clusterConfig.Spec)
 	if err != nil {
 		return err
 	}
