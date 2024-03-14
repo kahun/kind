@@ -26,7 +26,7 @@ ENV CERT_MANAGER_CHART_VERSION=v1.12.3
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.2.1
-ENV CAPG=v1.5.1
+ENV CAPG=v1.6.1
 ENV CAPZ=v1.11.4
 
 # Install vim
@@ -60,7 +60,7 @@ RUN curl -L https://get.helm.sh/helm-${HELM}-linux-amd64.tar.gz -o /root/helm.ta
 
 RUN mkdir -p ${CAPI_REPO}/cert-manager/${CERT_MANAGER_CHART_VERSION} \
     && curl -LJ -o ${CAPI_REPO}/cert-manager/${CERT_MANAGER_CHART_VERSION}/cert-manager.crds.yaml  https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.crds.yaml
-  
+
 # Download helm charts
 RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull aws-cloud-controller-manager --version ${CLOUD_PROVIDER_AWS_CHART} --repo https://kubernetes.github.io/cloud-provider-aws --untar --untardir /stratio/helm && break; done \
@@ -86,7 +86,7 @@ RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure
 # Download cluster-api artifacts
 RUN for i in metadata.yaml infrastructure-components.yaml; do \
       curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/${i} -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/${i} \
-      && curl -L https://raw.githubusercontent.com/kahun/cluster-api-provider-gcp/test-1.5.1/manifests/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
+      && curl -L https://raw.githubusercontent.com/kahun/cluster-api-provider-gcp/test-${CAPG}/manifests/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/${i} -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/${i}; done
 
 RUN curl -L  https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/core-components.yaml -o ${CAPI_REPO}/cluster-api/${CLUSTERCTL}/core-components.yaml \
