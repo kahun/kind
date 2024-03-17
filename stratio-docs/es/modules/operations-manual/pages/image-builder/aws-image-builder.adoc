@@ -10,7 +10,6 @@ Hay que descargar el role de Ansible necesario para la construcción de la image
 
 ** xref:attachment$stratio.tar.gz[Stratio Ansible Role]
 
-
 Es necesario tener instaladas las siguientes herramientas:
 
 * Versión del empaquetador (Packer) ≥ 1.9.4
@@ -76,7 +75,6 @@ Explicación de los parámetros:
 |===
 
 La documentación oficial de Image Builder para la configuración de las imágenes se encuentra en https://image-builder.sigs.k8s.io/capi/capi.html#customization[customization] ^[English]^ y la lista completa de parámetros en https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/packer/ami/packer.json[packer.json] ^[English]^.
-
 
 == Construcción de la imagen
 
