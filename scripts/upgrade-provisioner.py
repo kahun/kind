@@ -3,8 +3,11 @@
 
 ##############################################################
 # Author: Stratio Clouds <clouds-integration@stratio.com>    #
-# Supported provisioner versions: 0.2.0                      #
-# Supported providers: EKS, GCP, Azure                       #
+# Supported provisioner versions: 0.2.0 && 0.3.X             #
+# Supported cloud providers:                                 #
+#   - AWS VMs, EKS                                           #
+#   - GCP VMs                                                #
+#   - Azure VMs & AKS                                        #
 ##############################################################
 
 __version__ = "0.3.8"
@@ -411,28 +414,34 @@ spec:
             command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
             execute_command(command, dry_run, False)
 
-    if provider == "azure":
-        print("[INFO] Setting priorityClass system-node-critical to capz-nmi daemonset:", end =" ", flush=True)
-        command =  kubectl + " -n " + namespace + " get ds capz-nmi -o jsonpath='{.spec.template.spec.priorityClassName}'"
+    deployments = [
+        {"name": namespace.split("-")[0] + "-controller-manager", "namespace": namespace},
+        {"name": "capi-controller-manager", "namespace": "capi-system"}
+    ]
+    if not managed:
+        deployments.append({"name": "capi-kubeadm-control-plane-controller-manager", "namespace": "capi-kubeadm-control-plane-system"})
+        deployments.append({"name": "capi-kubeadm-bootstrap-controller-manager", "namespace": "capi-kubeadm-bootstrap-system"})
+    for deploy in deployments:
+        print("[INFO] Setting priorityClass system-node-critical to " + deploy["name"] + ":", end =" ", flush=True)
+        command =  kubectl + " -n " + deploy["namespace"] + " get deploy " + deploy["name"] + " -o jsonpath='{.spec.template.spec.priorityClassName}'"
         priorityClassName = execute_command(command, dry_run, False)
         if priorityClassName == "system-node-critical":
             print("SKIP")
         else:
-            command =  kubectl + " -n " + namespace + " patch ds capz-nmi -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
+            command =  kubectl + " -n " + deploy["namespace"] + " patch deploy " + deploy["name"] + " -p '{\"spec\": {\"template\": {\"spec\": {\"priorityClassName\": \"system-node-critical\"}}}}' --type=merge"
             execute_command(command, dry_run, False)
-            command =  kubectl + " -n " + namespace + " rollout status ds capz-nmi --timeout 120s"
+            command =  kubectl + " -n " + deploy["namespace"] + " rollout status deploy " + deploy["name"] + " --timeout 120s"
             execute_command(command, dry_run)
 
     replicas = "2"
     print("[INFO] Scaling " + namespace.split("-")[0] + "-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n " + namespace + " scale --replicas " + replicas + " deploy " + namespace.split("-")[0] + "-controller-manager"
     execute_command(command, dry_run)
-
     print("[INFO] Scaling capi-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
     command = kubectl + " -n capi-system scale --replicas " + replicas + " deploy capi-controller-manager"
     execute_command(command, dry_run)
 
-    # For EKS scale capi-kubeadm-control-plane-controller-manager and capi-kubeadm-bootstrap-controller-manager to 0 replicas
+    # For AKS/EKS clusters scale capi-kubeadm-control-plane-controller-manager and capi-kubeadm-bootstrap-controller-manager to 0 replicas
     if managed:
         replicas = "0"
     print("[INFO] Scaling capi-kubeadm-control-plane-controller-manager to " + replicas + " replicas:", end =" ", flush=True)
