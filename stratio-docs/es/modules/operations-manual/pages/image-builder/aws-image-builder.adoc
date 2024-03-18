@@ -6,7 +6,7 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 
 === Globales
 
-Hay que descargar el role de Ansible necesario para la construcción de la imagen.
+Es necesario descargar el rol de Ansible llamado "Stratio.tar.gz" para la construcción de la imagen.
 
 ** xref:attachment$stratio.tar.gz[Stratio Ansible Role]
 
@@ -18,7 +18,7 @@ Es necesario tener instaladas las siguientes herramientas:
 
 Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
-=== De AWS
+=== AWS
 
 Es necesario tener:
 
@@ -30,7 +30,7 @@ Es necesario tener:
 
 == Configuración de la imagen
 
-Para construir una imagen de AWS, es necesario crear un fichero de configuración para Packer. Este fichero contiene tanto la configuración de la imagen, como el tipo de instancia, la región, la versión de Kubernetes, etc.
+Para construir una imagen de AWS, es necesario crear un único fichero JSON de configuración para Packer. Este fichero contiene los parámetros de configuración para la generación de la imagen (configuración de la imagen, tipo de instancia, región, versión de Kubernetes, etc.)
 
 Este es un descriptor de ejemplo para una imagen de Ubuntu 22.04 y Kubernetes 1.26.14:
 
