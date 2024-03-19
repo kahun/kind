@@ -149,15 +149,19 @@ func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) 
 			keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
 		}
 	}
-	// Set deploy_tigera_operator to false for keos versions < 1.1
-	version := strings.TrimPrefix(keosCluster.Spec.Keos.Version, "v")
-	splitVersion := strings.Split(version, ".")
-	keosVersion, err := strconv.ParseFloat(splitVersion[0]+"."+splitVersion[1], 64)
-	if err != nil {
-		return err
-	}
+
+	// If keos version is less than 1.1, unespecified or invalid, deploy_tigera_operator is set to false
 	deployTigeraOperator := false
-	if keosVersion < 1.1 {
+	if keosCluster.Spec.Keos.Version != "" {
+		version := strings.TrimPrefix(keosCluster.Spec.Keos.Version, "v")
+		splitVersion := strings.Split(version, ".")
+		keosVersion, err := strconv.ParseFloat(splitVersion[0]+"."+splitVersion[1], 64)
+		if err != nil {
+			keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
+		} else if keosVersion < 1.1 {
+			keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
+		}
+	} else {
 		keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
 	}
 
