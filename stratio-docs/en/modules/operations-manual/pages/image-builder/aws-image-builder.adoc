@@ -1,3 +1,5 @@
+_TO BE TRANSLATED_
+
 = AWS image builder
 
 This section explains how to build your own images for _Stratio Cloud Provisioner_ https://image-builder.sigs.k8s.io/capi/providers/aws.html[on AWS].
