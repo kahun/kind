@@ -18,7 +18,7 @@ Además es necesario tener instaladas las siguientes herramientas:
 
 Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
-=== AWS
+=== De AWS
 
 Es necesario tener:
 

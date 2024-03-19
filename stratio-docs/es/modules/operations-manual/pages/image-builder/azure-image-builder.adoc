@@ -29,6 +29,7 @@ Este es un descriptor de ejemplo para una imagen de Ubuntu 22.04 y Kubernetes 1.
     "kubernetes_semver": "v1.26.14",
     "kubernetes_deb_version": "1.26.14-1.1",
     "kubernetes_rpm_version": "1.26.14",
+    "vm_size": "Standard_B2ms",
     "node_custom_roles_post": "stratio"
 }
 
@@ -41,6 +42,7 @@ Explicación de los parámetros:
 | *kubernetes_semver* | v1.26.14 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
 | *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
+| *vm_size* | Standard_B2ms | Tipo de instancia para la construcción de la imagen.
 | *node_custom_roles_post* | stratio | Rol de ansible personalizado para el nodo.
 |===
 
