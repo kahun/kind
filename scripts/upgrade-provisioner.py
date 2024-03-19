@@ -20,6 +20,7 @@ import subprocess
 import yaml
 import base64
 import re
+import zlib
 from datetime import datetime
 from ansible_vault import Vault
 
@@ -597,7 +598,7 @@ def upgrade_calico(dry_run):
         execute_command(command, dry_run)
         os.remove("./calico.values")
 
-def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
+def cluster_operator(helm_repo, keos_registry, docker_registries, dry_run):
     print("[INFO] Creating keoscluster-registries secret:", end =" ", flush=True)
     command = kubectl + " -n kube-system get secret keoscluster-registries"
     status = subprocess.getstatusoutput(command)[0]
@@ -613,28 +614,45 @@ def install_cluster_operator(helm_repo, keos_registry, docker_registries, dry_ru
         print("[INFO] Upgrading Cluster Operator to " + CLUSTER_OPERATOR + ": SKIP")
         return
     if cluster_operator_version != None:
+        print("[INFO] Applying new KeosCluster CRD:", end =" ", flush=True)
+        if dry_run:
+            print("DRY-RUN")
+        else:
+            p = subprocess.Popen(["kubectl", "--kubeconfig", kubeconfig, "apply", "--server-side", "--force-conflicts", "-f", "-"], stdin=subprocess.PIPE, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # https://github.com/Stratio/cluster-operator/blob/branch-0.1/deploy/helm/cluster-operator/crds/installer.stratio.com_keosclusters.yaml
+            keoscluster_crd = "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"
+            keoscluster_decoded = zlib.decompress(base64.b64decode(keoscluster_crd))
+            _, errors = p.communicate(input=yaml.dump(yaml.safe_load(keoscluster_decoded), default_flow_style=False))
+            if errors == "":
+                print("OK")
+            else:
+                print("FAILED")
+                print("[ERROR] " + errors)
+                sys.exit(1)
+
         # Get cluster-operator values
         command = helm + " -n kube-system get values cluster-operator -o yaml"
         values = execute_command(command, dry_run, False)
         cluster_operator_values = open('./clusteroperator.values', 'w')
         cluster_operator_values.write(values)
         cluster_operator_values.close()
-        # Uninstall cluster-operator
-        print("[INFO] Uninstalling Cluster Operator " + cluster_operator_version + ":", end =" ", flush=True)
-        command = helm + " -n kube-system uninstall cluster-operator"
-        execute_command(command, dry_run)
-    print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-    command = (helm + " -n kube-system install --wait cluster-operator cluster-operator" +
-        " --wait --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
-        " --set app.containers.controllerManager.image.registry=" + keos_registry +
-        " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-        " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
-        " --set app.replicas=2")
+
+        print("[INFO] Upgrading Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+        command = (helm + " -n kube-system upgrade cluster-operator cluster-operator" +
+            " --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
+            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
+            " --repo " + helm_repo["url"])
+    else:
+        print("[INFO] Installing Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
+        command = (helm + " -n kube-system install --wait cluster-operator cluster-operator" +
+            " --wait --version " + CLUSTER_OPERATOR + " --repo " + helm_repo["url"] +
+            " --set app.containers.controllerManager.image.registry=" + keos_registry +
+            " --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
+            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
+            " --set app.replicas=2")
     if "user" in helm_repo:
         command += " --username=" + helm_repo["user"]
         command += " --password=" + helm_repo["pass"]
-    if os.path.isfile('./clusteroperator.values'):
-        command += " --values ./clusteroperator.values"
     execute_command(command, dry_run)
     if os.path.isfile('./clusteroperator.values'):
         os.remove('./clusteroperator.values')
@@ -694,18 +712,27 @@ def create_cluster_operator_descriptor(cluster, cluster_name, helm_repo, dry_run
 
 def execute_command(command, dry_run, result = True):
     output = ""
+    retry_conditions = ["dial tcp: lookup", "timed out waiting"]
     if dry_run:
         if result:
-            print("DRY-RUN: " + command)
+            print("DRY-RUN")
     else:
-        status, output = subprocess.getstatusoutput(command)
-        if status == 0:
-            if result:
-                print("OK")
-        else:
-            print("FAILED")
-            print("[ERROR] Command failed:\n" + output)
-            sys.exit(1)
+        for _ in range(3):
+            status, output = subprocess.getstatusoutput(command)
+            if status == 0:
+                if result:
+                    print("OK")
+                    break
+            else:
+                retry = False
+                for condition in retry_conditions:
+                    if condition in output:
+                        retry = True
+                if not retry:
+                    print("FAILED")
+                    print("[ERROR] " + output)
+                    sys.exit(1)
+                os.sleep(30)
     return output
 
 def get_deploy_version(deploy, namespace, container):
@@ -921,7 +948,7 @@ if __name__ == '__main__':
             request_confirmation()
 
     if config["all"] or config["only_cluster_operator"]:
-        install_cluster_operator(helm_repo, keos_registry, docker_registries, config["dry_run"])
+        cluster_operator(helm_repo, keos_registry, docker_registries, config["dry_run"])
         if not config["yes"]:
             request_confirmation()
 
