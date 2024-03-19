@@ -84,7 +84,7 @@ Explicación de los parámetros:
 
 [%autowidth]
 |===
-| *crictl_version* | 1.26.1 | Versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools]
+| *crictl_version* | 1.26.1 | Versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools], hay que seguir la https://github.com/kubernetes-sigs/cri-tools#compatibility-matrix-cri-tools--kubernetes[matriz de compatibilidad] con la versión de Kubernetes.
 | *kubernetes_series* | v1.26 | Versión de Kubernetes que se instalará en la imagen.
 | *kubernetes_semver* | v1.26.14 | Versión semántica de Kubernetes que se instalará en la imagen.
 | *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
