@@ -150,19 +150,22 @@ func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) 
 		}
 	}
 
-	// If keos version is less than 1.1, unespecified or invalid, deploy_tigera_operator is set to false
+	// If keos version is less than 1.1, undefined or invalid, deploy_tigera_operator is set to false
+	// otherwise if keos_version is 1.1 or greater, deploy_tigera_operator is removed from the keos.yaml
 	deployTigeraOperator := false
+	keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
 	if keosCluster.Spec.Keos.Version != "" {
+		var keosVersion float64
 		version := strings.TrimPrefix(keosCluster.Spec.Keos.Version, "v")
 		splitVersion := strings.Split(version, ".")
-		keosVersion, err := strconv.ParseFloat(splitVersion[0]+"."+splitVersion[1], 64)
-		if err != nil {
-			keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
-		} else if keosVersion < 1.1 {
-			keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
+		if len(splitVersion) >= 2 {
+			keosVersion, err = strconv.ParseFloat(splitVersion[0]+"."+splitVersion[1], 64)
+			if err == nil {
+				if keosVersion >= 1.1 {
+					keosDescriptor.Keos.Calico.DeployTigeraOperator = nil
+				}
+			}
 		}
-	} else {
-		keosDescriptor.Keos.Calico.DeployTigeraOperator = &deployTigeraOperator
 	}
 
 	// Keos - Storage
