@@ -8,9 +8,9 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 
 Es necesario descargar el rol de Ansible llamado "Stratio.tar.gz" para la construcción de la imagen.
 
-** xref:attachment$stratio.tar.gz[Stratio Ansible Role]
+** xref:attachment$stratio.tar.gz[Rol de Ansible]
 
-Es necesario tener instaladas las siguientes herramientas:
+Además es necesario tener instaladas las siguientes herramientas:
 
 * Versión del empaquetador (Packer) ≥ 1.9.4
 * Complemento de Goss para Packer ≥ 3.1.4
@@ -63,7 +63,7 @@ Explicación de los parámetros:
 | *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
 | *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
 | *builder_instance_type* | t3.medium | Tipo de instancia para la construcción de la imagen.
-| *node_custom_roles_post* | stratio | Role de ansible personalizado para el nodo.
+| *node_custom_roles_post* | stratio | Rol de ansible personalizado para el nodo.
 | *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | Parche de cloud-init para las AMIs de Ubuntu 22.04 en AWs.
 | *associate_public_ip_address* | true | Asigna una IP pública a la instancia.
 | *ssh_interface* | public_ip | Interfaz de red por la que se conectará a la instancia.
@@ -94,7 +94,7 @@ cd image-builder
 git pull
 ----
 
-. Desempaqueta el role de Ansible necesario para la construcción de la imagen.
+. Desempaqueta el rol de Ansible necesario para la construcción de la imagen.
 +
 [source,console]
 ----
