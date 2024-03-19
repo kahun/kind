@@ -4,7 +4,7 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 
 == Prerrequisitos
 
-Es necesario descargar el rol de Ansible llamado "Stratio.tar.gz" para la construcción de la imagen.
+Es necesario descargar el rol de Ansible llamado "stratio.tar.gz" para la construcción de la imagen.
 
 ** xref:attachment$stratio.tar.gz[Rol de Ansible]
 
