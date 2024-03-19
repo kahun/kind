@@ -10,11 +10,11 @@ Es necesario descargar el rol de Ansible llamado "Stratio.tar.gz" para la constr
 
 ** xref:attachment$stratio.tar.gz[Rol de Ansible]
 
-Además es necesario tener instaladas las siguientes herramientas:
+Además, es necesario tener instaladas las siguientes herramientas:
 
-* Versión del empaquetador (Packer) ≥ 1.9.4
-* Complemento de Goss para Packer ≥ 3.1.4
-* Versión de Ansible ≥ 2.15.4
+* Versión del empaquetador (Packer) ≥ 1.9.4.
+* Complemento de Goss para Packer ≥ 3.1.4.
+* Versión de Ansible ≥ 2.15.4.
 
 Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
@@ -65,11 +65,12 @@ image::google-service-account.png[]
 
 == Configuración de la imagen
 
-Para construir una imagen de AWS, es necesario crear un único fichero JSON de configuración para Packer. Este fichero contiene los parámetros de configuración para la generación de la imagen (configuración de la imagen, tipo de instancia, región, versión de Kubernetes, etc.)
+Para construir una imagen de AWS, es necesario crear un único fichero JSON de configuración para Packer. Este fichero contiene los parámetros de configuración para la generación de la imagen (configuración de la imagen, tipo de instancia, región, versión de Kubernetes, etc.).
 
 Este es un descriptor de ejemplo para una imagen de Ubuntu 22.04 y Kubernetes 1.26.14:
 
 [source,json]
+----
 {
     "crictl_version": "1.26.1",
     "kubernetes_series": "v1.26",
@@ -79,6 +80,7 @@ Este es un descriptor de ejemplo para una imagen de Ubuntu 22.04 y Kubernetes 1.
     "machine_type": "n2-standard-2",
     "node_custom_roles_post": "stratio"
 }
+----
 
 Explicación de los parámetros:
 
@@ -161,7 +163,7 @@ image::deps-gce.png[]
 make help | grep build-gce
 ----
 
-. Genera la imagen deseada, pasándole el json de configuración que preparamos anteriormente, como variable de entorno `PACKER_VAR_FILES` y el objetivo de la imagen que queremos construir. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
+. Genera la imagen deseada pasándole el JSON de configuración preparado anteriormente como variable de entorno `PACKER_VAR_FILES` y el objetivo de la imagen que se quiere construir. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
 +
 [source,console]
 ----
