@@ -64,7 +64,7 @@ Explicación de los parámetros:
 | *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
 | *builder_instance_type* | t3.medium | Tipo de instancia para la construcción de la imagen.
 | *node_custom_roles_post* | stratio | Rol de ansible personalizado para el nodo.
-| *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | Parche de cloud-init para las AMIs de Ubuntu 22.04 en AWs.
+| *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | Parche de cloud-init para las AMI de Ubuntu 22.04 en AWS.
 | *associate_public_ip_address* | true | Asigna una IP pública a la instancia.
 | *ssh_interface* | public_ip | Interfaz de red por la que se conectará a la instancia.
 | *aws_region* | eu-west-1 | Región de AWS donde se creará la instancia para la construcción de la imagen.
@@ -124,7 +124,7 @@ image::desp-ami.png[]
 make help | grep build-ami
 ----
 
-. Genera la imagen deseada, pasándole el json de configuración que preparamos anteriormente, como variable de entorno `PACKER_VAR_FILES` y el objetivo de la imagen que queremos construir. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
+. Genera la imagen deseada pasándole el JSON de configuración preparado anteriormente como variable de entorno `PACKER_VAR_FILES` y el objetivo de la imagen que se quiere construir. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
 +
 [source,console]
 ----
@@ -150,13 +150,13 @@ export PACKER_LOG=1
 
 * *VPCIdNotSpecified: no hay VPC por defecto para este usuario*
 +
-Para solucionarlo, edita el fichero json de configuración y añade la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS. Para conseguir dicho valor debes navegar a la sección 'VPC' de la consola de AWS y copiar el _VPC ID_ de la pestaña 'Details'.
+Para solucionarlo, edita el fichero JSON de configuración y añade la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS. Para conseguir dicho valor debes navegar a la sección 'VPC' de la consola de AWS y copiar el VPC ID de la pestaña 'Details'.
 +
 image::vpc-id.png[]
 
 * *"`subnet_id` or `subnet_filter` must be provided for non-default VPCs"*
 +
-Para solucionarlo, edita el fichero json de configuración y añade la variable `subnet_id` con el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
+Para solucionarlo, edita el fichero JSON de configuración y añade la variable `subnet_id` con el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
 
 * *"Timeout waiting for SSH"*
 +
@@ -176,14 +176,14 @@ Sigue estos pasos para solucionarlo:
 "ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
 ----
 +
-. La máquina virtual debe tener una IP pública para poder conectarse a ella. Asegúrate de que la variable `associate_public_ip_address` esté presente en el fichero json de configuración y que su valor sea _true_.
+. La máquina virtual debe tener una IP pública para poder conectarse a ella. Asegúrate de que la variable `associate_public_ip_address` esté presente en el fichero JSON de configuración y que su valor sea _true_.
 +
 [source,json]
 ----
 "associate_public_ip_address": "true"
 ----
 +
-. Crea un grupo de seguridad en la misma red que la instancia que se va a crear y permite el tráfico por el puerto 22 para el protocolo TCP y asegúrate de que la variable `aws_security_group_ids` esté presente en el fichero json de configuración y que su valor sea el ID del grupo de seguridad creado.
+. Crea un grupo de seguridad en la misma red que la instancia que se va a crear, permite el tráfico por el puerto 22 para el protocolo TCP y asegúrate de que la variable `aws_security_group_ids` esté presente en el fichero JSON de configuración y que su valor sea el ID del grupo de seguridad creado.
 +
 [source,json]
 ----
@@ -192,7 +192,7 @@ Sigue estos pasos para solucionarlo:
 +
 image::security-group.png[]
 +
-. Asegúrate de que la variable `ssh_interface` esté presente en el fichero json de configuración y que su valor sea _public_ip_.
+. Asegúrate de que la variable `ssh_interface` esté presente en el fichero JSON de configuración y que su valor sea "public_ip".
 +
 [source,json]
 ----
