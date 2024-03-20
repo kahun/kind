@@ -303,7 +303,7 @@ Ejemplo:
 python3 upgrade-provisioner.py -p <vault_password> --helm-repo <url> --helm-user <username> --helm-password <password> -a
 ----
 
-El cluster.yaml y el secrets.yml deben estar presentes en el workspace, si el cluster.yaml tiene otro nombre o está en otro path se puede especificar con el parámetro -d.
+Los descriptores _cluster.yaml_ y _secrets.yml_ deben estar presentes en el workspace. Si el descriptor _cluster.yaml_ tiene otro nombre o está en otra ruta se puede especificar con el parámetro '-d'.
 
 === Actualización de Kubernetes
 
