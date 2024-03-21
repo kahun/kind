@@ -20,9 +20,9 @@ Es necesario tener:
 
 * Una cuenta de AWS con un https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[usuario IAM con los permisos mínimos necesarios para crear una imagen] ^[English]^.
 * https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI] instalado y configurado.
-* VPC por defecto para el usuario de AWS.
-* Par de claves para la conexión SSH a la instancia.
-* Grupo de seguridad permitiendo el tráfico por el puerto 22 para el protocolo TCP.
+* Un VPC por defecto para el usuario de AWS.
+* Un par de claves para la conexión SSH a la instancia.
+* Un grupo de seguridad permitiendo el tráfico por el puerto 22 para el protocolo TCP.
 
 == Configuración de la imagen
 
@@ -61,7 +61,7 @@ Explicación de los parámetros:
 | *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
 | *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
 | *builder_instance_type* | t3.medium | Tipo de instancia para la construcción de la imagen.
-| *node_custom_roles_post* | stratio | Rol de ansible personalizado para el nodo.
+| *node_custom_roles_post* | stratio | Rol de Ansible personalizado para el nodo.
 | *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | Parche de cloud-init para las AMI de Ubuntu 22.04 en AWS.
 | *associate_public_ip_address* | true | Asigna una IP pública a la instancia.
 | *ssh_interface* | public_ip | Interfaz de red por la que se conectará a la instancia.

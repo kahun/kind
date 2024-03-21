@@ -6,11 +6,7 @@ Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisio
 
 === Globales
 
-Es necesario descargar el rol de Ansible llamado "stratio.tar.gz" para la construcción de la imagen.
-
-** xref:attachment$stratio.tar.gz[Rol de Ansible]
-
-Además, es necesario tener instaladas las siguientes herramientas:
+Es necesario descargar el xref:attachment$stratio.tar.gz[rol de Ansible llamado "stratio.tar.gz"] para la construcción de la imagen así como tener instaladas las siguientes herramientas:
 
 * Versión del empaquetador (Packer) ≥ 1.9.4.
 * Complemento de Goss para Packer ≥ 3.1.4.
@@ -59,7 +55,7 @@ iam.serviceAccounts.actAs
 +
 image::google-service-account.png[]
 
-*  Necesitarás tener Ansible y Packer instalados en el sistema. https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Consulta su documentación] ^[English]^ para hacerlo.
+* Necesitarás tener Ansible y Packer instalados en el sistema. https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Consulta su documentación] ^[English]^ para hacerlo.
 
 * También necesitarás tener el cliente de https://cloud.google.com/sdk/docs/install?hl=es-419[Google Cloud Platform] instalado en el sistema.
 
@@ -92,7 +88,7 @@ Explicación de los parámetros:
 | *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
 | *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
 | *machine_type* | n2-standard-2 | Tipo de instancia para la construcción de la imagen.
-| *node_custom_roles_post* | stratio | Rol de ansible personalizado para el nodo.
+| *node_custom_roles_post* | stratio | Rol de Ansible personalizado para el nodo.
 |===
 
 La documentación oficial de Image Builder para la configuración de las imágenes se encuentra en https://image-builder.sigs.k8s.io/capi/capi.html#customization[customization] ^[English]^ y la lista completa de parámetros en https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/packer/gce/packer.json[packer.json] ^[English]^.
