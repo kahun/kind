@@ -26,6 +26,26 @@ By centralizing all operations on the cluster and the various cloud resources, o
 
 For this purpose, the _KeosCluster_ subresource is defined being a status that will report the type of operation it is doing in case it is.
 
+== _ClusterConfig_ object
+
+In the same way as the _KeosCluster_ object, during the installation phase, the _ClusterConfig_ resource will be created to indicate specific configurations for that particular cluster.
+
+The declaration of this Kubernetes resource must be made in the descriptor file itself, next to the _KeosCluster_ object. If it is not indicated during the cluster installation, the resource will be generated with the default values.
+
+TIP: For more details, see the xref:operations-manual:api-reference.adoc[API reference] section.
+
+=== Choice of the _Cluster Operator_
+
+By default, the latest version of the chart available in the Helm repository indicated in the _KeosCluster_ object will be installed, although this behavior can be overridden and you can indicate the version you want to install by indicating the value in the xref:operations-manual:api-reference.adoc[_ClusterConfig_ configuration].
+
+The choice of the latest available version considers both the order of precedence of the versioning and the alphanumeric ordering of the versions. That is, priority will be given to versions in the following order: _release_, _prerelease_, _milestone_, _snapshot_ and _pull++_++request_.
+
+In case several versions of the same precedence (except _prerreleases_) coincide in the same repository, the last alphanumerically ordered version will be returned. Thus, for example, version 0.2.1 will be returned before version 0.2.0.
+
+There is an exception to this choice mechanism. Due to the versioning naming in Stratio, if the existing versions with the highest precedence are _prerreleases_, the last version uploaded to the Helm repository will be returned because the order cannot be set alphanumerically.
+
+NOTE: In the case of choosing the default chart, it will not be necessary to indicate the field during the installation but this field will be reflected when the object is created in the cluster with the version that has been retrieved.
+
 == Cloud provider objects
 
 In a *default deployment*, the following objects are created in each cloud provider (in [silver]#gray# optional objects that will depend on what is specified in the cluster descriptor):

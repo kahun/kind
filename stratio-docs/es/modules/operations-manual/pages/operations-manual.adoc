@@ -432,3 +432,7 @@ root@<cluster_name>-control-plane:/#
 ----
 [bastion]$ sudo ./bin/cloud-provisioner delete cluster --name <cluster_name>
 ----
+
+== Instalación _offline_
+
+Para saber cómo llevar a cabo una instalación en la que las imágenes de los _workloads_ del _cluster_ provengan de repositorios accesibles desde entornos sin acceso a internet, consulta el xref:operations-manual:offline-installation.adoc[Manual de instalación _offline_].
