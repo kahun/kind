@@ -393,6 +393,8 @@ root_volume:
 |Sí
 |===
 
+NOTE: Se ha implementado la opción de establecer un _min++_++size_ igual a cero, lo que permite que el autoescalado pueda incrementar o disminuir el número de nodos hasta alcanzar cero según sea necesario. Esta funcionalidad proporciona un ahorro significativo de costes en comparación con versiones anteriores ya que permite la definición de un grupo de _workers_ sin instanciar ningún recurso en el proveedor _cloud_ que no sea necesario.
+
 === _Stratio KEOS_
 
 Los parámetros para la fase del _keos-installer_ se indicarán en este apartado.
@@ -938,7 +940,7 @@ A día de hoy estas acciones son requeridas para entornos en la nube pública _A
 
 Se trata de un operador encargado de la creación _Elastic Load Balancers_ para clústeres de _Kubernetes_ asistiendo en la creación de objetos tales como: _ingress_ y servicios de tipo _LoadBalancer_.
 
-Para garantizar una configuración adecuada de _aws-load-balancer-controller-manager_ (habilitado por defecto en entornos gestionados, EKS) es fundamental seguir una serie de pasos en los que se incluye la integración con https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IRSA]:
+Para garantizar una configuración adecuada de _aws-load-balancer-controller-manager_ (no habilitado por defecto en entornos gestionados, EKS) es fundamental seguir una serie de pasos en los que se incluye la integración con https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IRSA].
 
 ==== Amazon Web Services (AWS)
 
