@@ -10,7 +10,6 @@ For automated provisioning in AWS/EKS, it is necessary to execute actions on var
 +
 ** xref:attachment$stratio-eks-policy.json[Download permanent permissions for EKS].
 ** xref:attachment$stratio-aws-temp-policy.json[Download temporary permissions for EKS and AWS unmanaged].
-
 +
 For EKS deployment, you must manually create the "AWSServiceRoleForAmazonEKS" role and associate to it the "AmazonEKSServiceRolePolicy" policy (created by default in AWS).
 
@@ -119,9 +118,9 @@ metadata:
 spec:
 ----
 
-=== metadata
+=== _metadata_
 
-The metadata of the _KeosCluster_ consists of the following fields:
+The _metadata_ of the _KeosCluster_ consists of the following fields:
 
 [cols="1,4,2,1"]
 |===
@@ -246,6 +245,33 @@ The following fields are considered provisioning secrets:
 |===
 
 NOTE: Any changes to _spec.credentials_ must be made with all credentials in the cluster descriptor and removing the _secrets.yml_ beforehand.
+
+=== Helm repository
+
+As an installation prerequisite, the Helm repository from which the _Cluster Operator_ chart can be extracted must be specified. This section allows you to specify the URL of the repository, its type and whether it is an authenticated repository.
+
+[cols="1,4,2,1"]
+|===
+^|Name ^|Description ^|Example ^|Optional
+
+| _auth++_++required_
+| Indicates if the repository is authenticated.
+| false
+| Yes. Default: false.
+
+| _url_
+| URL of the repository.
+| *OCI repositories*: oci://stratioregistry.azurecr.io/helm-repository-example +
+*HTTPS repositories*: https://[IP]:8080
+| No
+
+| _type_
+| Repository type.
+| generic or ecr.
+| Yes. Default: generic.
+|===
+
+NOTE: OCI repositories (from _cloud_ providers such as ECR, GAR or ACR) are never authenticated. Authentication will be done by the credentials used in provisioning. Please check the _Stratio KEOS_ documentation for the repositories supported in the version to be used.
 
 === Networking
 
@@ -928,3 +954,124 @@ Due to a bug in the various _controllers_ (fixed in master branches but not yet 
 Eventually, this could generate request problems in case of failure of any of the _control-plane_ nodes, since the load balancer will send requests to _control-plane_ nodes whose port is responsive but cannot handle requests.
 
 To avoid this problem, the health check of the load balancer created must be modified, using the HTTPS protocol and the _/readyz_ path. The port should be maintained, being 443 for GCP and 6443 for Azure.
+
+== Deployment of _aws-load-balancer-controller-manager_ (EKS only)
+
+In EKS clusters, it is possible to deploy a controller (aws-load-balancer-controller-manager) responsible for creating _Elastic Load Balancers_, used by objects such as _Ingress_ and _Service_ type _LoadBalancer_.
+
+Since this deployment is not enabled by default, it must be indicated with _spec.eks_lb_controller_: "true" in the ClusterConfig object of the cluster descriptor.
+
+To authorize the controller, we will use https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IAM roles for Service Accounts], which involves creating the corresponding IAM objects as indicated below:
+
+* Define the following environment variables:
++
+[source,shell]
+----
+export AWS_ACCOUNT_ID=<account_id>
+export AWS_REGION=<aws_region>
+export AWS_VPC_ID=<vpc_id>
+export AWS_EKS_CLUSTER_NAME=<aws_eks_cluster_name>
+export AWS_EKS_OIDC_ID=$(aws eks describe-cluster --region ${AWS_REGION} --name ${AWS_EKS_CLUSTER_NAME} --query 'cluster.identity.oidc.issuer' --output text | awk -F'/' '{print $NF}')
+export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+----
+
+* https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html[Create the IAM role] that will be used by the _service account_ of the _aws-load-balancer-controller-manager_ deployment with the following trust policy:
++
+[source,console]
+----
+$ cat << EOF > trustpolicy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+$ aws iam create-role --role-name ${AWS_IAM_ROLE_NAME} --assume-role-policy-document file://trustpolicy.json
+----
+
+* https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html[Create the IAM policy] with the strictly necessary permissions:
++
+[source,console]
+----
+$ cat << EOF > policy.json
+{
+	"Statement": [
+		{
+			"Action": [
+        			"ec2:DescribeAvailabilityZones",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSubnets",
+				"elasticloadbalancing:DescribeListeners",
+				"elasticloadbalancing:DescribeLoadBalancers",
+				"elasticloadbalancing:DescribeLoadBalancerAttributes",
+				"elasticloadbalancing:DescribeRules",
+				"elasticloadbalancing:DescribeTags",
+				"elasticloadbalancing:DescribeTargetGroups",
+				"elasticloadbalancing:DescribeTargetGroupAttributes",
+				"elasticloadbalancing:DescribeTargetHealth"
+			],
+			"Effect": "Allow",
+			"Resource": "*"
+		},
+		{
+			"Action": [
+				"ec2:AuthorizeSecurityGroupIngress",
+				"ec2:CreateSecurityGroup",
+        			"ec2:CreateTags",
+				"ec2:DeleteSecurityGroup",
+				"ec2:RevokeSecurityGroupIngress"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:vpc/${AWS_VPC_ID}",
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:security-group/*"
+			]
+		},
+		{
+			"Action": [
+				"elasticloadbalancing:AddTags",
+				"elasticloadbalancing:CreateListener",
+				"elasticloadbalancing:CreateLoadBalancer",
+				"elasticloadbalancing:CreateTargetGroup",
+				"elasticloadbalancing:DeleteLoadBalancer",
+				"elasticloadbalancing:DeleteTargetGroup",
+				"elasticloadbalancing:DeregisterTargets",
+				"elasticloadbalancing:ModifyLoadBalancerAttributes",
+				"elasticloadbalancing:ModifyTargetGroup",
+				"elasticloadbalancing:RegisterTargets"
+			],
+			"Effect": "Allow",
+			"Resource": "*",
+			"Condition": {
+				"StringEquals": {
+					"aws:ResourceTag/elbv2.k8s.aws/cluster": "${AWS_EKS_CLUSTER_NAME}"
+				}
+			}
+		}
+	],
+	"Version": "2012-10-17"
+}
+EOF
+$ aws iam create-policy --policy-name ${AWS_IAM_POLICY_NAME} --policy-document file://policy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_manage-attach-detach.html[Associate the IAM policy] with the role created earlier:
++
+[source,console]
+----
+$ aws iam attach-role-policy --role-name ${AWS_IAM_ROLE_NAME} --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${AWS_IAM_POLICY_NAME}
+----

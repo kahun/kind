@@ -287,19 +287,23 @@ Se deberán asegurar los permisos necesarios en el directorio _backup_ de la má
 
 ==== Ejecución
 
-Para actualizar la versión de _Stratio Cloud Provisioner_ de 0.2 a 0.3 se debe ejecutar el _script_ _upgrade-provisioner++_++v0.3.py_. Puedes consultar la ayuda del _script_ con el siguiente comando:
+Para actualizar la versión de _Stratio Cloud Provisioner_ de 0.3 a 0.4 se debe ejecutar el _script_ _upgrade-provisioner++_++.py_ desde el _workspace_ con el que se instaló el _cluster_.
+
+Puedes consultar la ayuda del _script_ con el siguiente comando:
 
 [source,bash]
 ----
-python3 upgrade-provisioner_v0.3.py -h
+python3 upgrade-provisioner.py -h
 ----
 
 Ejemplo:
 
 [source,bash]
 ----
-python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
+python3 upgrade-provisioner.py -p <vault_pass>
 ----
+
+Los descriptores _cluster.yaml_ y _secrets.yml_ deben estar presentes en el _workspace_. Si el descriptor _cluster.yaml_ tiene otro nombre o está en otra ruta, se puede especificar con el parámetro `-d`.
 
 === Actualización de Kubernetes
 

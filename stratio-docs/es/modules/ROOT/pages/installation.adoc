@@ -9,9 +9,7 @@
 Para el aprovisionamiento automatizado en AWS/EKS, se necesita ejecutar acciones sobre diversos servicios de AWS como EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Si bien la utilización o no de estas acciones dependerá del tipo de instalación, el proveedor valida que el usuario indicado tenga estos permisos para poder ejecutarse con normalidad.
 +
 ** xref:attachment$stratio-aws-unmanaged-policy.json[Descargar permisos permanentes para AWS no gestionado]
-** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
 ** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS y AWS no gestionado]
-
 +
 Para el despliegue de EKS se deberá crear de forma manual el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
 
@@ -247,6 +245,33 @@ Los siguientes campos son considerados secretos del aprovisionamiento:
 |===
 
 NOTE: Cualquier cambio en _spec.credentials_ debe hacerse con todas las credenciales en el descriptor del _cluster_ y eliminando previamente el _secrets.yml_.
+
+=== Repositorio de Helm
+
+Como prerrequisito de instalación, se debe indicar el repositorio Helm del que se pueda extraer el _chart_ del _Cluster Operator_. Este apartado permite indicar la URL del repositorio, su tipo y si se trata de un repositorio autenticado.
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+| _auth++_++required_
+| Indica si el repositorio es autenticado.
+| _false_
+| Sí. Por defecto: _false_.
+
+| _url_
+| URL del repositorio.
+| *Repositorios OCI*: oci://stratioregistry.azurecr.io/helm-repository-example +
+*Repositorios HTTPS*: https://[IP]:8080
+| No
+
+| _type_
+| Tipo del repositorio.
+| _generic_ o ecr.
+| Sí. Por defecto: _generic_.
+|===
+
+NOTE: Los repositorios OCI (de proveedores _cloud_ como ECR, GAR o ACR) nunca son autenticados. La autenticación se realizará mediante las credenciales utilizadas en el aprovisionamiento. Por favor, verifica en la documentación de _Stratio KEOS_ los repositorios que se soportan en la versión a utilizar.
 
 === Redes
 
@@ -930,24 +955,16 @@ Eventualmente, esto podría generar problemas en las peticiones en caso de fallo
 
 Para evitar este problema, se deberá modificar el _health check_ del balanceador de carga creado, utilizando el protocolo HTTPS y la ruta _/readyz_. El puerto deberá mantenerse, siendo para GCP el 443 y para Azure el 6443.
 
-== Pasos requeridos después de la instalación
+== Despliegue de _aws-load-balancer-controller-manager_ (sólo EKS)
 
-Antes de desplegar _Stratio KEOS_ en un entorno, hay que asegurarse que ciertos pasos manuales han de ser ejecutados previo despliegue de la solución de KEOS para asegurar una instalación con éxito.
+En _clusters_ de EKS es posible desplegar un controlador (_aws-load-balancer-controller-manager_) encargado de la creación de _Elastic Load Balancers_, utilizado por objetos tales como _Ingress_ y _Service_ de tipo _LoadBalancer_.
 
-A día de hoy estas acciones son requeridas para entornos en la nube pública _AWS_ con _AWS Elastic Kubernetes Service_, conocido popularmente como EKS o internamente como entorno gestionado.
+Dado que este despliegue no está habilitado por defecto, deberá indicarse con _spec.eks_lb_controller_: "true" en el objeto _ClusterConfig_ del descriptor del _cluster_.
 
-=== _aws-load-balancer-controller-manager_ (opcional)
-
-Se trata de un operador encargado de la creación _Elastic Load Balancers_ para clústeres de _Kubernetes_ asistiendo en la creación de objetos tales como: _ingress_ y servicios de tipo _LoadBalancer_.
-
-Para garantizar una configuración adecuada de _aws-load-balancer-controller-manager_ (no habilitado por defecto en entornos gestionados, EKS) es fundamental seguir una serie de pasos en los que se incluye la integración con https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IRSA].
-
-==== Amazon Web Services (AWS)
-
-===== AWS Elastic Kubernetes Service (EKS)
+Para autorizar el controlador se utilizarán https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[Roles de IAM para cuentas de servicio], lo que implica crear los correspondientes objetos de IAM como se indica a continuación:
 
 * Definir las siguientes variables de entorno:
-
++
 [source,shell]
 ----
 export AWS_ACCOUNT_ID=<account_id>
@@ -959,8 +976,8 @@ export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
 export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
 ----
 
-* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/id_roles_create.html[Crear el rol de IAM] que utilizará la _service account_ del despliegue de aws-load-balancer-controller-manager_ con la siguiente política de confianza:
-
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/id_roles_create.html[Crear el rol de IAM] que utilizará la cuenta de servicio del despliegue de _aws-load-balancer-controller-manager_ con la siguiente política de confianza:
++
 [source,console]
 ----
 $ cat << EOF > trustpolicy.json
@@ -987,7 +1004,7 @@ $ aws iam create-role --role-name ${AWS_IAM_ROLE_NAME} --assume-role-policy-docu
 ----
 
 * https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_create.html[Crear la política IAM] con los permisos estrictamente necesarios:
-
++
 [source,console]
 ----
 $ cat << EOF > policy.json
@@ -1053,7 +1070,7 @@ $ aws iam create-policy --policy-name ${AWS_IAM_POLICY_NAME} --policy-document f
 ----
 
 * https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_manage-attach-detach.html[Asociar la política IAM] al rol creado anteriormente:
-
++
 [source,console]
 ----
 $ aws iam attach-role-policy --role-name ${AWS_IAM_ROLE_NAME} --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${AWS_IAM_POLICY_NAME}

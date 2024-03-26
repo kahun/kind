@@ -287,19 +287,23 @@ The necessary permissions must be secured on the backup directory of the bastion
 
 ==== Execution
 
-To upgrade the _Stratio Cloud Provisioner_ version from 0.2 to 0.3 you must run the script _upgrade-provisioner++_++v0.3.py_. You can refer to the script help with the following command:
+To upgrade the _Stratio Cloud Provisioner_ version from 0.3 to 0.4 you must run the script _upgrade-provisioner++_++.py_ from the workspace with which the cluster was installed.
+
+You can refer to the script help with the following command:
 
 [source,bash]
 ----
-python3 upgrade-provisioner_v0.3.py -h
+python3 upgrade-provisioner.py -h
 ----
 
 Example:
 
 [source,bash]
 ----
-python3 upgrade-provisioner_v0.3.py -p <vault_pass> --helm-repo <helm_repo> -a
+python3 upgrade-provisioner.py -p <vault_pass>
 ----
+
+The _cluster.yaml_ and _secrets.yml_ descriptors must be present in the workspace. If the _cluster.yaml_ descriptor has another name or is in another path, it can be specified with the `-d` parameter.
 
 === Kubernetes upgrade
 

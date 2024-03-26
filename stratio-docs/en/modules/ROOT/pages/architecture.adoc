@@ -8,7 +8,7 @@ image::eks-reference-architecture.png[]
 
 image::arq-intro.png[]
 
-The _Stratio Cloud Provisioner_ is the initial phase for the creation of a _Stratio KEOS_ cluster in a cloud provider. This comprises the provisioning of the infrastructure (virtual machines, private network, load balancers, etc., in the cloud), the creation of a Kubernetes cluster, its networking and storage.
+The _Stratio Cloud Provisioner_ is the initial phase for the creation of a _Stratio KEOS_ cluster in a cloud provider. This comprises the provisioning of the infrastructure (virtual machines, private network, load balancers, etc., in the cloud), the creation of a Kubernetes cluster, and its networking and storage.
 
 To carry out the creation of the cluster, _Stratio Cloud Provisioner_ will create a Kubernetes _KeosCluster_ resource and the controller in charge of its lifecycle, _Stratio Cluster Operator_. This _KeosCluster_ will be in charge of generating the necessary resources for the creation and operation of the cluster.
 
@@ -148,7 +148,7 @@ Reference architecture
 
 image::eks-reference-architecture.png[]
 
-The internal networking layer of the cluster is based on Calico, with the following integrations per provider/flavour:
+The internal networking layer of the cluster is based on Calico, with the following integrations per provider/flavor:
 
 [.center,cols="1,1,1,1,1,1",center]
 |===
@@ -192,7 +192,7 @@ The internal networking layer of the cluster is based on Calico, with the follow
 
 === Proprietary infrastructure
 
-Although one of the advantages of automatic resource creation in provisioning is the great dynamism it provides, for security and compliance reasons, it is often necessary to create certain resources prior to the deployment of _Stratio KEOS_ in the cloud provider.
+Although one of the advantages of automatic resource creation in provisioning is the great dynamism it provides, for security and compliance reasons, it is often necessary to create certain resources before the deployment of _Stratio KEOS_ in the cloud provider.
 
 In this sense, the _Stratio Cloud Provisioner_ allows using both a VPC and subnets previously created using the networks parameter in the cluster descriptor, as detailed in the xref:ROOT:installation.adoc[installation guide].
 
@@ -244,7 +244,7 @@ In this case, 3 subnets will be created (1 per zone) with an 18-bit mask (/18) o
 ^|100.64.128.0/18
 |===
 
-In case of using custom infrastructure, the 3 subnets (one per zone) for the pods must be indicated together with those of the nodes in the cluster descriptor:
+In the case of using custom infrastructure, the 3 subnets (one per zone) for the pods must be indicated together with those of the nodes in the cluster descriptor:
 
 [source,bash]
 ----
@@ -268,7 +268,7 @@ The CIDR of each subnet (obtained from the secondary CIDR of the VPC), must be t
 
 ==== GCP and AWS/Azure unmanaged
 
-In these providers/flavours Calico is used as the IPAM of the CNI, this allows to be able to specify an arbitrary CIDR for the pods:
+In these providers/flavors Calico is used as the IPAM of the CNI, this allows to be able to specification of an arbitrary CIDR for the pods:
 
 [source,bash]
 ----
@@ -333,23 +333,23 @@ In turn, the EKS OIDC provider is enabled to allow the use of IAM roles for _Ser
 
 ==== EKS
 
-During the creation of the EKS cluster, an endpoint is created for the API Server to be used for access the cluster from the installer and lifecycle operations.
+During the creation of the EKS cluster, an endpoint is created for the API Server to be used for accessing the cluster from the installer and lifecycle operations.
 
 This endpoint is published to the internet, and its access is restricted with a combination of Amazon's Identity and Access Management (IAM) rules, and Kubernetes' native Role Based Access Control (RBAC).
 
 ==== AWS unmanaged
 
-For access to the API Server, a load balancer is created with name `<cluster_id>-apiserver` and port 6443 accessible by the public network (the assigned public IP is the same that resolves the URL of the _Kubeconfig_) and a _Target group_ with the nodes of the corresponding _control-plane_.
+For access to the API Server, a load balancer is created with the name `<cluster_id>-apiserver` and port 6443 accessible by the public network (the assigned public IP is the same that resolves the URL of the _Kubeconfig_) and a _Target group_ with the nodes of the corresponding _control-plane_.
 
 ==== GCP
 
-For API Server exposure, a load balancer is created with name `<cluster_id>-apiserver` and port 443 accessible by the public network (the assigned public IP is the same as configured in the _Kubeconfig_) and one _instance group_ per AZ (1 or 3, depending on HA configuration) with the corresponding _control-plane_ nodes.
+For API Server exposure, a load balancer is created with the name `<cluster_id>-apiserver` and port 443 accessible by the public network (the assigned public IP is the same as configured in the _Kubeconfig_) and one _instance group_ per AZ (1 or 3, depending on HA configuration) with the corresponding _control-plane_ nodes.
 
 The health check of the service is done via SSL, but it is recommended to change to HTTPS with the `/healthz` path.
 
 ==== Azure unmanaged
 
-For the API Server exposure, a load balancer is created with name `<cluster_id>-public-lb` and port 6443 accessible by public network (the assigned public IP is the same that resolves the _Kubeconfig_ URL) and a Backend pool with the _control-plane_ nodes.
+For the API Server exposure, a load balancer is created with the name `<cluster_id>-public-lb` and port 6443 accessible by the public network (the assigned public IP is the same that resolves the _Kubeconfig_ URL) and a Backend pool with the _control-plane_ nodes.
 
 The health check of the service is done over TCP, but it is recommended to change to HTTPS with the `/healthz` path.
 
@@ -377,9 +377,9 @@ These disks are created in the initial provisioning of the _worker_ nodes, so th
 
 === _StorageClass_
 
-By default, a _StorageClass_ with name "keos" is made available for block disk during provisioning. This _StorageClass_ is created with the parameters `reclaimPolicy: Delete` and `volumeBindingMode: WaitForFirstConsumer`, i.e. the disk will be created at the moment a pod consumes the corresponding _PersistentVolumeClaim_ and will be deleted when the _PersistentVolume_ is deleted.
+By default, a _StorageClass_ with the name "keos" is made available for block disk during provisioning. This _StorageClass_ is created with the parameters `reclaimPolicy: Delete` and `volumeBindingMode: WaitForFirstConsumer`, i.e. the disk will be created at the moment a pod consumes the corresponding _PersistentVolumeClaim_ and will be deleted when the _PersistentVolume_ is deleted.
 
-NOTE: Note that _PersistentVolumes_ created from this _StorageClass_ will have affinity to the area where they have been consumed.
+NOTE: Note that _PersistentVolumes_ created from this _StorageClass_ will have an affinity to the area where they have been consumed.
 
 *Example with free parameters:*
 
@@ -474,11 +474,11 @@ spec:
 
 With this data, the _keos.yaml_ will be rendered so that in the execution of the _keos-installer_ the driver is displayed and the corresponding _StorageClass_ is configured.
 
-NOTE: This functionality is intended for customized infrastructure, since the EFS file system must be associated to an existing VPC in its creation.
+NOTE: This functionality is intended for customized infrastructure since the EFS file system must be associated with an existing VPC in its creation.
 
 == Tags in EKS
 
-All objects created in EKS contain by default the tag with key _keos.stratio.com/owner_ and as value the name of the cluster. It is also allowed to add custom tags to all objects created in the cloud provider as follows:
+All objects created in EKS contain by default the tag with key _keos.stratio.com/owner_ and as a value the name of the cluster. It is also allowed to add custom tags to all objects created in the cloud provider as follows:
 
 [source,bash]
 ----
@@ -504,9 +504,9 @@ spec:
 
 As a prerequisite to the installation of _Stratio KEOS_, the Docker images of all its components must reside in a Docker registry which will be indicated in the cluster descriptor (`keos_registry: true`). There should be one (and only one) Docker registry for _Stratio KEOS_, the rest will be configured on the nodes to be able to use their images in any deployment.
 
-Currently, 3 types of Docker registries are supported: _generic_, _ecr_ and _acr_. For the _generic_ type, you must indicate if the registry is authenticated or not (_ecr_ and _acr_ types cannot have authentication), and if it is, it is mandatory to indicate user and password in the 'spec.credentials' section.
+Currently, 3 types of Docker registries are supported: _generic_, _ecr_ and _acr_. For the _generic_ type, you must indicate if the registry is authenticated or not (_ecr_ and _acr_ types cannot have authentication), and if it is, it is mandatory to indicate the user and password in the 'spec.credentials' section.
 
-The following table shows the supported registries by provider/flavour:
+The following table shows the supported registries by provider/flavor:
 
 [.center,cols="2,1",width=40%]
 |===
@@ -525,3 +525,29 @@ The following table shows the supported registries by provider/flavour:
 ^|AKS
 ^|acr
 |===
+
+== Helm repository
+
+As a prerequisite of the installation, a Helm repository must be specified from which the _Cluster Operator_ chart can be extracted. This repository can use HTTPS or OCI protocols (used for cloud provider repositories such as ECR, GAR or ACR).
+
+[.center,cols="2,1",width=40%]
+|===
+^|AWS
+^|ecr, generic
+
+^|EKS
+^|ecr, generic
+
+^|GCP
+^|gar, gcr, generic
+
+^|Azure
+^|acr, generic
+
+^|AKS
+^|acr, generic
+|===
+
+NOTE: URLs for OCI repositories are prefixed with *oci://*. For example, oci://stratioregistry.azurecr.io/helm-repository-example.
+
+NOTE: Remember to check the _keos-installer_ documentation for the repositories supported in the version to be used.
