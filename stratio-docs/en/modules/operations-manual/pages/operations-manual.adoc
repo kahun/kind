@@ -303,7 +303,7 @@ Example:
 python3 upgrade-provisioner.py -p <vault_pass>
 ----
 
-The _cluster.yaml_ and _secrets.yml_ descriptors must be present in the workspace. If the _cluster.yaml_ descriptor has a different name or is located in a different path, it can be specified using the '-d' parameter.
+The _cluster.yaml_ and _secrets.yml_ descriptors must be present in the workspace. If the _cluster.yaml_ descriptor has another name or is in another path, it can be specified with the `-d` parameter.
 
 === Kubernetes upgrade
 
