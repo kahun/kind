@@ -1,0 +1,237 @@
+= Imágenes EKS
+
+== Imágenes propias de EKS
+
+|===
+| _Chart_ | Versión | Imagen pública | Versión
+
+| *Instalado por Cluster API - CAPA*
+| *v2.2.1*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api-aws/cluster-api-aws-controller
+| v2.2.1
+
+| *aws-load-balancer-controller*
+| *v1.6.2*
+|
+|
+
+|
+|
+| public.ecr.aws/eks/aws-load-balancer-controller
+| v2.6.2
+|===
+
+== Imágenes comunes necesarias en EKS
+
+Asociadas a los _charts_ que instala _Stratio Cloud Provisioner_ en EKS, las imágenes necesarias son:
+
+|===
+| _Chart_ | Versión | Imagen pública | Versión
+
+| *tigera-operator*
+| *v3.26.1*
+|
+|
+
+|
+|
+| docker.io/calico/kube-controllers
+| v3.26.1
+
+|
+|
+| docker.io/calico/typha
+| v3.26.1
+
+|
+|
+| docker.io/calico/node
+| v3.26.1
+
+|
+|
+| docker.io/calico/csi
+| v3.26.1
+
+|
+|
+| docker.io/calico/node-driver-registrar
+| v3.26.1
+
+|
+|
+| docker.io/calico/ctl
+| v3.26.1
+
+|
+|
+| docker.io/calico/cni
+| v3.26.1
+
+|
+|
+| docker.io/calico/pod2daemon-flexvol
+| v3.26.1
+
+|
+|
+| quay.io/tigera/operator
+| v1.30.5
+
+| *cert-manager*
+| *v1.12.3*
+|
+|
+
+|
+|
+| quay.io/jetstack/cert-manager-controller
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-cainjector
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-webhook
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-acmesolver
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-ctl
+| v1.12.3
+
+| *cluster-autoscaler*
+| *9.29.1*
+|
+|
+
+|
+|
+| registry.k8s.io/autoscaling/cluster-autoscaler
+| v1.27.2
+
+| *cluster-operator*
+| ***
+|
+|
+
+|
+|
+| gcr.io/kubebuilder/kube-rbac-proxy
+| v0.13.1
+
+| *Instalado por Cluster API - CAPI Component*
+| *v1.5.3*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-bootstrap-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-control-plane-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/cluster-api-controller
+| v1.5.3
+|===
+
+== Imágenes instaladas como _add-ons_ de EKS
+
+En *EKS* existen imágenes adicionales a las que se instalan a través de los diferentes componentes que se integran mediante *_charts_ de Helm* o mediante *_clusterctl_*.
+
+Al instalar diferentes componentes como *_add-ons_ de EKS*, se instalan en el _workload cluster_ las siguientes imágenes procedentes de repositorios propios de EKS. Estas imágenes pueden variar dependiendo de las versiones de los _add-ons_ que se instalen, lo cual estará sujeto a sus compatibilidades con las versiones de EKS, por lo que la siguiente tabla podría no cumplirse en el momento de su lectura.
+
+NOTE: En cualquier caso, no es necesario subir estas imágenes a ningún registro. Es meramente informativo.
+
+|===
+| _Add-on_ | Versión | Imagen pública | Versión
+
+| *coredns*
+| *v1.9.3-eksbuild.3*
+|
+|
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/coredns
+| v1.9.3-eksbuild.3
+
+| *aws-ebs-csi-driver*
+| *v1.19.0-eksbuild.2*
+|
+|
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/aws-ebs-csi-driver
+| v1.19.0
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/csi-node-driver-registrar
+| v2.8.0-eks-1-27-3
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/csi-provisioner
+| v3.5.0-eks-1-27-3
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/csi-attacher
+| v4.3.0-eks-1-27-3
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/csi-snapshotter
+| v6.2.1-eks-1-27-3
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/csi-resizer
+| v1.8.0-eks-1-27-3
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/livenessprobe
+| v2.10.0-eks-1-27-3
+
+| *vpc-cni*
+| *v1.12.6-eksbuild.2*
+|
+|
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/amazon-k8s-cni
+| v1.12.6-eksbuild.2
+
+| *kube-proxy*
+| *v1.24.15-eksbuild.2*
+|
+|
+
+|
+|
+| 602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/kube-proxy
+| v1.26.7-minimal-eksbuild.2
+|===
