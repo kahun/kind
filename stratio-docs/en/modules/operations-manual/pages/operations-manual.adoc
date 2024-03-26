@@ -287,7 +287,7 @@ The necessary permissions must be secured on the backup directory of the bastion
 
 ==== Execution
 
-To upgrade the _Stratio Cloud Provisioner_ version from 0.3 to 0.4 you must run the script _upgrade-provisioner++_++.py_ from the workspace where the cluster was installed.
+To upgrade the _Stratio Cloud Provisioner_ version from 0.3 to 0.4 you must run the script _upgrade-provisioner++_++.py_ from the workspace with which the cluster was installed.
 
 You can refer to the script help with the following command:
 
