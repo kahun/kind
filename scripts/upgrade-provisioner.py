@@ -324,8 +324,13 @@ spec:
         execute_command(command, dry_run)
 
     print("[INFO] Adding PodDisruptionBudget to coredns:", end =" ", flush=True)
-    command = "cat <<EOF | " + kubectl + " apply -f -" + core_dns_pdb + "EOF"
-    execute_command(command, dry_run)
+    command = kubectl + " -n kube-system get PodDisruptionBudget coredns"
+    status = subprocess.getstatusoutput(command)[0]
+    if status == 0:
+        print("SKIP")
+    else:
+        command = "cat <<EOF | " + kubectl + " apply -f -" + core_dns_pdb + "EOF"
+        execute_command(command, dry_run)
 
 def add_cluster_autoscaler_annotations(provider, managed, dry_run):
     ca_annotation = "cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes"
