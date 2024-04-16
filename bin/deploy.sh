@@ -17,3 +17,9 @@ else
 	echo "Run 'make build' first"
 	exit 1
 fi
+
+DIR=docs/descriptor
+EXTENSION="yaml"
+echo "Uploading keoscluster_v1beta1_template-$VERSION..."
+curl -sS -u stratio:${NEXUSPASS} --upload-file "$DIR"/keoscluster_v1beta1_template-${VERSION}.${EXTENSION} http://qa.int.stratio.com/${GROUP_ID_NEXUS}/
+echo "$GROUP_ID:keoscluster_v1beta1_template:$EXTENSION" >> "$BASEDIR/deploy-recorder.lst"
