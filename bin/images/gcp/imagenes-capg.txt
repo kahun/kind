@@ -1,1 +1,0 @@
-registry.k8s.io/cluster-api-gcp/cluster-api-gcp-controller:v1.4.0@sha256:742ebf999137f4ab83c83b408793e2c97a1311adebe3b0c0e7e7317a122f26df

@@ -4,82 +4,47 @@ This section explains how to build your own images for _Stratio Cloud Provisione
 
 == Prerequisites
 
-Packer and Ansible are used to build the images.
+It is necessary to download the xref:attachment$stratio.tar.gz[Ansible role named "stratio.tar.gz"] for building the image as well as having the following tools installed:
 
-* Packer version ≥ 1.6.0
-* Goss add-on for Packer version ≥ 1.2.0
-* Ansible version ≥ 2.10.0
+* Packer version ≥ 1.6.0.
+* Goss add-on for Packer version ≥ 1.2.0.
+* Ansible version ≥ 2.10.0.
 
 If the required binary files are not present, they can be installed in _~/.local/bin_ with the `make deps-ami` command. This directory should be added to your _$PATH_.
 
-== Image settings
+== Image configuration
 
-To modify the https://image-builder.sigs.k8s.io/capi/capi.html#customization[image configuration] you can edit the _images/capi/packer/config/ami-<OS>.json_ file. The configuration parameters can be found at https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/azure[Packer documentation].
+To build an AWS image, you need to create a single configuration JSON file for Packer. This file contains the configuration parameters for image generation (image configuration, instance type, region, Kubernetes version, etc.).
 
-Here are some recommendations:
+This is an example descriptor for an Ubuntu 22.04 and Kubernetes 1.26.14 image:
 
-* Modify the Kubernetes versions.
-+
-Edit the _images/capi/packer/packer/config/kubernetes.json_ file and modify the values of the `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` and `kubernetes_series` variables.
-+
-[%autowidth]
-|===
-| *crictl_version* | 1.26.1 | cri-tools version.
-| *kubernetes_deb_version* | 1.24.10-00 | Debian version of Kubernetes.
-| *kubernetes_rpm_version* | 1.24.10-0 | RPM version of Kubernetes.
-| *kubernetes_semver* | 1.24.10 | Semantic version of Kubernetes to be installed in the image.
-| *kubernetes_series* | 1.24 | Kubernetes series version to be installed in the image.
-|===
-+
-The version of the https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools] must be aligned with the Kubernetes version being used.
-+
-[%autowidth]
-|===
-| cri-tools version | Kubernetes version
-| 1.26.1 | 1.24, 1.25, 1.26
-| 1.27.1 | 1.27
-| 1.28.0 | 1.28
-|===
-
-* Modify kernel parameters.
-+
-IMPORTANT: Required for Stratio monitoring to work.
-+
-Edit the file _ansible/roles/node/tasks/main.yml_ and modify the task with the name "Set and persist kernel params" to add the parameter `vm.max_map_count` with the value "262144".
-+
-[source,yaml]
-----
-- name: Set and persist kernel params
-  sysctl:
-    name: "{{ item.param }}"
-    value: "{{ item.val }}"
-    state: present
-    sysctl_set: yes
-    sysctl_file: "{{ sysctl_conf_file }}"
-    reload: yes
-  loop:
-    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
-    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
-    - { param: net.ipv4.ip_forward, val: 1 }
-    - { param: net.ipv6.conf.all.forwarding, val: 1 }
-    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
-    - { param: net.ipv4.tcp_congestion_control, val: bbr }
-    - { param: vm.overcommit_memory, val: 1 }
-    - { param: kernel.panic, val: 10 }
-    - { param: kernel.panic_on_oops, val: 1 }
-    - { param: fs.inotify.max_user_instances, val: 8192 }
-    - { param: fs.inotify.max_user_watches, val: 524288 }
-    - { param: vm.max_map_count, val: 262144 }
-----
-
-* Change the instance type of the image.
-+
-Edit the _images/capi/packer/packer/ami/packer.json_ file and change the value of the `builder_instance_type` variable in the 'builders' section to the desired instance type.
-+
 [source,json]
 ----
-"builder_instance_type": "Standard_D2as_v4"
+{
+    "crictl_version": "1.26.1",
+    "kubernetes_series": "v1.26",
+    "kubernetes_semver": "v1.26.14",
+    "kubernetes_deb_version": "1.26.14-1.1",
+    "kubernetes_rpm_version": "1.26.14",
+    "vm_size": "Standard_B2ms",
+    "node_custom_roles_post": "stratio"
+}
 ----
+
+Explanation of the parameters:
+
+[%autowidth]
+|===
+| *crictl_version* | 1.26.1 | Version of the https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools], follow the https://github.com/kubernetes-sigs/cri-tools#compatibility-matrix-cri-tools--kubernetes[compatibility matrix] with the Kubernetes version.
+| *kubernetes_series* | v1.26 | Kubernetes version to be installed in the image.
+| *kubernetes_semver* | v1.26.14 | Semantic version of Kubernetes to be installed in the image.
+| *kubernetes_deb_version* | 1.26.14-1.1 | Debian version of Kubernetes.
+| *kubernetes_rpm_version* | 1.26.14 | Kubernetes RPM version.
+| *vm_size* | Standard_B2ms | Instance type for image build.
+| *node_custom_roles_post* | stratio | Custom Ansible role for the node.
+|===
+
+The official Image Builder documentation for image configuration can be found at https://image-builder.sigs.k8s.io/capi/capi.html#customization[customization] and the complete list of parameters at https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/packer/azure/packer.json[packer.json].
 
 == Image construction
 
@@ -123,6 +88,13 @@ cd image-builder
 git pull
 ----
 
+. Unpack the Ansible role required for image construction.
++
+[source,console]
+----
+tar zxf stratio.tar.gz
+----
+
 . Position yourself in the path _images/capi_ inside the repository.
 +
 [source,console]
@@ -144,11 +116,11 @@ make deps-azure
 make help | grep build-azure-sig
 ----
 
-. Generate the desired image. For example, to build an Ubuntu 22.04 image, run:
+. Generate the desired image by passing it the configuration JSON prepared earlier as the `PACKER_VAR_FILES` environment variable and the target of the image to be built. For example, to build an Ubuntu 22.04 image, run:
 +
 [source,console]
 ----
-make build-azure-sig-ubuntu-2204
+PACKER_VAR_FILES=aws.json make build-ami-ubuntu-2204
 ----
 
 == Debugging

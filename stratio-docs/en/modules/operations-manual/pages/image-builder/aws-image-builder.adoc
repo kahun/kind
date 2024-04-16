@@ -6,11 +6,11 @@ This section explains how to build your own images for _Stratio Cloud Provisione
 
 === Global
 
-Packer and Ansible are used to build the images.
+It is necessary to download the xref:attachment$stratio.tar.gz[Ansible role named "stratio.tar.gz"] for building the image as well as having the following tools installed:
 
-* Packer version ≥ 1.6.0
-* Goss add-on for Packer version ≥ 1.2.0
-* Ansible version ≥ 2.10.0
+* Packer version ≥ 1.6.0.
+* Goss add-on for Packer version ≥ 1.2.0.
+* Ansible version ≥ 2.10.0.
 
 If the required binary files are not present, they can be installed in _~/.local/bin_ with the `make deps-ami` command. This directory should be added to your _$PATH_.
 
@@ -19,8 +19,130 @@ If the required binary files are not present, they can be installed in _~/.local
 You need to have:
 
 * An AWS account with a https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[IAM user with the minimum permissions required to create an image].
-* https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html[AWS CLI installed and configured].
-* Default VPC for the AWS user.
+* https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html[AWS CLI] installed and configured.
+* A default VPC for the AWS user.
+* A key pair for SSH connection to the instance.
+* A security group allowing traffic on port 22 for the TCP protocol.
+
+== Image configuration
+
+To build an AWS image, you need to create a single configuration JSON file for Packer. This file contains the configuration parameters for image generation (image configuration, instance type, region, Kubernetes version, etc.).
+
+This is an example descriptor for an Ubuntu 22.04 and Kubernetes 1.26.14 image:
+
+[source,json]
+----
+{
+    "crictl_version": "1.26.1",
+    "kubernetes_series": "v1.26",
+    "kubernetes_semver": "v1.26.14",
+    "kubernetes_deb_version": "1.26.14-1.1",
+    "kubernetes_rpm_version": "1.26.14",
+    "builder_instance_type": "t3.medium",
+    "node_custom_roles_post": "stratio",
+    "ansible_extra_vars": "pinned_debs=\"cloud-init=23.1.2-0ubuntu0~22.04.1\"",
+    "associate_public_ip_address": "true",
+    "ssh_interface": "public_ip",
+    "aws_region": "eu-west-1",
+    "ami_regions": "eu-west-1",
+    "aws_security_group_ids": "sg-0bae9383628c59c25",
+    "ssh_keypair_name": "stratio",
+    "ssh_private_key_file": "/home/stratio/.ssh/id_ed25519"
+}
+----
+
+Explanation of the parameters:
+
+[%autowidth]
+|===
+| *crictl_version* | 1.26.1 | Version of the https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools], follow the https://github.com/kubernetes-sigs/cri-tools#compatibility-matrix-cri-tools--kubernetes[compatibility matrix] with the Kubernetes version.
+| *kubernetes_series* | v1.26 | Kubernetes version to be installed in the image.
+| *kubernetes_semver* | v1.26.14 | Semantic version of Kubernetes to be installed in the image.
+| *kubernetes_deb_version* | 1.26.14-1.1 | Debian version of Kubernetes.
+| *kubernetes_rpm_version* | 1.26.14 | Kubernetes version for RPM.
+| *builder_instance_type* | t3.medium | Instance type for building the image.
+| *node_custom_roles_post* | stratio | Custom Ansible role for the node.
+| * *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | cloud-init patch for Ubuntu 22.04 AMIs on AWS.
+| *associate_public_ip_address* | true | Assign a public IP to the instance.
+| *ssh_interface* | public_ip | Network interface through which to connect to the instance.
+| *aws_region* | eu-west-1 | AWS region where the instance will be created for building the image.
+| *ami_regions* | eu-west-1 | AWS regions where the image will be made available.
+| *aws_security_group_ids* | sg-0bae9383628c59c25 | Instance security group ID.
+| *ssh_keypair_name* | stratio | SSH key name.
+| *ssh_private_key_file* | /home/stratio/.ssh/id_ed25519 | Path to the SSH private key file.
+|===
+
+The official Image Builder documentation for image configuration can be found at https://image-builder.sigs.k8s.io/capi/capi.html#customization[customization] and the complete list of parameters at https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/packer/ami/packer.json[packer.json].
+
+== Image construction
+
+. Clone the _image-builder_ repository if you didn't have it previously.
++
+[source,console]
+----
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder
+----
++
+Or update it if you already had it.
++
+[source,console]
+----
+cd image-builder
+git pull
+----
+
+. Unpack the Ansible role required for image construction.
++
+[source,console]
+----
+tar zxf stratio.tar.gz
+----
+
+. Position yourself in the _images/capi_ path inside the repository.
++
+[source,console]
+----
+cd images/capi
+----
+
+. Install the dependencies needed to create the image.
++
+[source,console]
+----
+make deps-ami
+----
++
+image::desp-ami.png[]
+
+. See the images that can be built.
++
+[source,console]
+----
+make help | grep build-ami
+----
+
+. Generate the desired image by passing it the configuration JSON prepared earlier as the `PACKER_VAR_FILES` environment variable and the target of the image to be built. For example, to build an Ubuntu 22.04 image, run:
++
+[source,console]
+----
+PACKER_VAR_FILES=aws.json make build-ami-ubuntu-2204
+----
++
+image::build-ami-ubuntu-2204-part1.png[]
++
+image::build-ami-ubuntu-2204-part2.png[]
++
+image::amis.png[]
+
+== Debugging
+
+The image creation process can be debugged with the `PACKER_LOG` environment variable.
+
+[source,console]
+----
+export PACKER_LOG=1
+----
 
 ==== Frequent errors
 
@@ -78,235 +200,3 @@ image::security-group.png[]
 . Create an _internet gateway_ and a _route table_ (or use the default one) for your AWS account's VPC and associate them.
 +
 image::internet-gatway.png[]
-
-== Image configuration
-
-To modify the https://image-builder.sigs.k8s.io/capi/capi.html#customization[image configuration] you can edit the _images/capi/packer/config/ami-<OS>.json_ file. The configuration parameters can be found at https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/ami[Packer documentation].
-
-Here are some recommendations:
-
-* Modify the Kubernetes versions.
-+
-Edit the _images/capi/packer/packer/config/kubernetes.json_ file and modify the values of the `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` and `kubernetes_series` variables.
-+
-[%autowidth]
-|===
-| *crictl_version* | 1.26.1 | cri-tools version.
-| *kubernetes_deb_version* | 1.24.10-00 | Debian version of Kubernetes.
-| *kubernetes_rpm_version* | 1.24.10-0 | RPM version of Kubernetes.
-| *kubernetes_semver* | 1.24.10 | Semantic version of Kubernetes to be installed in the image.
-| *kubernetes_series* | 1.24 | Kubernetes series version to be installed in the image.
-|===
-+
-The version of the https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools] must be aligned with the Kubernetes version being used.
-+
-[%autowidth]
-|===
-| cri-tools version | Kubernetes version
-| 1.26.1 | 1.24, 1.25, 1.26
-| 1.27.1 | 1.27
-| 1.28.0 | 1.28
-|===
-
-* Modify the kernel parameters.
-+
-IMPORTANT: Required for Stratio monitoring to work.
-+
-Edit the file _ansible/roles/node/tasks/main.yml_ and modify the task with the name "Set and persist kernel params" to add the parameter `vm.max_map_count` with the value "262144".
-+
-[source,yaml]
-----
-- name: Set and persist kernel params
-  sysctl:
-    name: "{{ item.param }}"
-    value: "{{ item.val }}"
-    state: present
-    sysctl_set: yes
-    sysctl_file: "{{ sysctl_conf_file }}"
-    reload: yes
-  loop:
-    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
-    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
-    - { param: net.ipv4.ip_forward, val: 1 }
-    - { param: net.ipv6.conf.all.forwarding, val: 1 }
-    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
-    - { param: net.ipv4.tcp_congestion_control, val: bbr }
-    - { param: vm.overcommit_memory, val: 1 }
-    - { param: kernel.panic, val: 10 }
-    - { param: kernel.panic_on_oops, val: 1 }
-    - { param: fs.inotify.max_user_instances, val: 8192 }
-    - { param: fs.inotify.max_user_watches, val: 524288 }
-    - { param: vm.max_map_count, val: 262144 }
-----
-
-* Change the instance type of the image.
-+
-Edit the _images/capi/packer/packer/ami/packer.json_ file and change the value of the `builder_instance_type` variable in the 'builders' section to the desired instance type.
-+
-[source,json]
-----
-"builder_instance_type": "t3.medium"
-----
-
-* Modify the region where to create the instance for building the image.
-+
-Edit the _images/capi/packer/packer/ami/packer.json_ file and modify the value of the `region` variable in the 'builders' section by the region where the instance will be created.
-+
-[source,json]
-----
-"region": "eu-west-1".
-----
-
-* Limit the regions where to make the image available.
-+
-Edit the _images/capi/packer/packer/ami/packer.json_ file and modify the value of the `ami_regions` variable in the 'variables' section by the regions where the image will be made available.
-+
-[source,json]
-----
-"ami_regions": ["eu-west-1", "eu-west-2"]
-----
-
-== Image construction
-
-. Clone the _image-builder_ repository if you didn't have it previously.
-+
-[source,console]
-----
-git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder
-----
-+
-Or update it if you already had it.
-+
-[source,console]
-----
-cd image-builder
-git pull
-----
-
-. Modify the _image-builder_ to enable authentication with ECR.
-+
-IMPORTANT: Required for Kubernetes versions higher than 1.27.
-+
-Create the binary for ECR authentication management.
-+
-[source,console]
-----
-cd ..
-git clone git@github.com:kubernetes/cloud-provider-aws.git
-pushd cloud-provider-aws/cmd/ecr-credential-provider
-GOOS=linux go build -ldflags="-s -w"
-popd
-----
-+
-Copy the generated binary to the repository and create the configuration file `ecr-credential-provider-config.yaml`.
-+
-[source,console]
-----
-cd image-builder
-mkdir -p images/capi/ansible/roles/providers/files
-cp ../cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider images/capi/ansible/roles/providers/files/
-cat <<EOF >> images/capi/ansible/roles/providers/files/ecr-credential-provider-config.yaml
-apiVersion: kubelet.config.k8s.io/v1
-kind: CredentialProviderConfig
-providers:
-  - name: ecr-credential-provider
-    matchImages:
-      - "*.dkr.ecr.*.amazonaws.com"
-      - "*.dkr.ecr.*.amazonaws.com.cn"
-      - "*.dkr.ecr-fips.*.amazonaws.com"
-      - "*.dkr.ecr.us-iso-east-1.c2s.ic.gov"
-      - "*.dkr.ecr.us-isob-east-1.sc2s.sgov.gov"
-    defaultCacheDuration: "12h"
-    apiVersion: credentialprovider.kubelet.k8s.io/v1
-EOF
-----
-+
-Update the Ansible task to copy the files created in the image.
-+
-[source,console]
-----
-cat <<EOF >> images/capi/ansible/roles/providers/tasks/aws.yml
-- name: Add ecr credentials provider
-  copy:
-    src: files/ecr-credential-provider
-    dest: /usr/local/bin
-    mode: 0755
-    owner: root
-    group: root
-- name: Ensure credentials config file directory exists
-  file:
-    path: /etc/aws
-    state: directory
-    mode: 0755
-    owner: root
-    group: root
-- name: Add ecr credentials config file
-  copy:
-    src: files/ecr-credential-provider-config.yaml
-    dest: /etc/aws/credential-provider-config
-    mode: 0644
-    owner: root
-    group: root
-EOF
-----
-+
-[NOTE]
-====
-Find more information about the requirements for Kubernetes >1.27 in the following links:
-
-* https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider[https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider]
-* https://github.com/kubernetes-sigs/image-builder/issues/1249[https://github.com/kubernetes-sigs/image-builder/issues/1249]
-====
-
-. Position yourself in the _images/capi_ path inside the repository.
-+
-[source,console]
-----
-cd images/capi
-----
-
-. Install the dependencies needed to create the image.
-+
-[source,console]
-----
-make deps-ami
-----
-+
-image::desp-ami.png[]
-
-. See the images that can be built.
-+
-[source,console]
-----
-make help | grep build-ami
-----
-
-. Generate the desired image. For example, to build an Ubuntu 22.04 image, run:
-+
-[source,console]
-----
-make build-ami-ubuntu-2204
-----
-+
-image::build-ami-ubuntu-2204-part1.png[]
-+
-image::build-ami-ubuntu-2204-part2.png[]
-+
-image::amis.png[]
-+
-To generate images for all available operating systems, use the `-all` parameter. If you want to build them in parallel, use `make -j`.
-+
-[source,console]
-----
-make -j build-ami-all
-----
-
-== Debugging
-
-The image creation process can be debugged with the `PACKER_LOG` environment variable.
-
-[source,console]
-----
-export PACKER_LOG=1
-----

@@ -26,6 +26,26 @@ Al centralizar todas las operaciones sobre el _cluster_ y los distintos recursos
 
 Para ello, se define el subrecurso del _KeosCluster_, _status_ que informará del tipo de operación que se encuentra haciendo en caso de que así sea.
 
+== Objeto _ClusterConfig_
+
+Del mismo modo que el objeto _KeosCluster_, durante la fase de instalación se creará el recurso _ClusterConfig_, que permite indicar configuraciones específicas para ese _cluster_ en particular.
+
+La declaración de este recurso de Kubernetes deberá hacerse en el propio fichero descriptor, junto al objeto _KeosCluster_. En caso de no indicarse durante la instalación del _cluster_, se generará el recurso con los valores por defecto.
+
+TIP: Para más detalles, consulta la sección de xref:operations-manual:api-reference.adoc[referencia API].
+
+=== Elección del _Cluster Operator_
+
+Por defecto, se instalará la última versión del _chart_ disponible en el repositorio de Helm indicado en el objeto _KeosCluster_, aunque este comportamiento se puede sobrescribir e indicar la versión que se quiere instalar indicando el valor en la xref:operations-manual:api-reference.adoc[configuración del _ClusterConfig_].
+
+Para la elección de la última versión disponible se tiene en cuenta tanto el orden de precedencia del versionado como la ordenación alfanumérica de las versiones. Es decir, se dará prioridad a las versiones en el siguiente orden: _release_, _prerrelease_, _milestone_, _snapshot_ y _pull++_++request_.
+
+En caso de que coincidan en un mismo repositorio varias versiones de la misma precedencia (exceptuando _prerreleases_), se devolverá la última versión alfanuméricamente ordenada. De este modo, se devolverá antes, por ejemplo, la versión 0.2.1 a la versión 0.2.0.
+
+Existe una excepción a este mecanismo de elección. Debido al _naming_ de versionado en Stratio, si las versiones existentes de mayor precedencia son _prerreleases_, al no poder establecer el orden de forma alfanumérica se devolverá la última versión subida al repositorio de Helm.
+
+NOTE: En caso de optar por la elección por defecto del _chart_, no será necesario indicar el campo durante la instalación pero sí se verá reflejado este campo cuando el objeto se cree en el _cluster_ con la versión que se ha recuperado.
+
 == Objetos del proveedor del _cloud_
 
 En un *despliegue por defecto* se crean los siguientes objetos en cada proveedor _cloud_ (en [silver]#gris# los objetos opcionales que dependerán de lo especificado en el descriptor del _cluster_):
@@ -537,3 +557,30 @@ La siguiente tabla muestra los _registries_ soportados según proveedor/_flavour
 ^|AKS
 ^|acr
 |===
+
+== Repositorio de Helm
+
+Como prerrequisito de la instalación, se debe indicar un repositorio de Helm del que se pueda extraer el _chart_ del _Cluster Operator_. Este repositorio puede utilizar protocolos HTTPS u OCI (utilizados para repositorios de proveedores _cloud_ como ECR, GAR o ACR).
+
+[.center,cols="2,1",width=40%]
+|===
+^|AWS
+^|ecr, generic
+
+^|EKS
+^|ecr, generic
+
+^|GCP
+^|gar, gcr, generic
+
+^|Azure
+^|acr, generic
+
+^|AKS
+^|acr, generic
+|===
+
+NOTE: Las URL de los repositorios de tipo OCI llevan el prefijo *oci://*. Por ejemplo: oci://stratioregistry.azurecr.io/helm-repository-example.
+
+NOTE: Recuerda verificar en la documentación de _keos-installer_ los repositorios que se soporten en la versión a utilizar.
+
