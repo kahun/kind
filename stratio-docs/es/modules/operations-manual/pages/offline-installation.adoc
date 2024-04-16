@@ -1,0 +1,36 @@
+= Manual de instalación _offline_
+
+Se entiende como instalación _offline_ aquella en la que las imágenes que utilizarán los distintos _workloads_ del _cluster_ provendrán de repositorios accesibles desde entornos sin acceso a internet. En este módulo se hace referencia a las imágenes que deben ser accesibles desde dichos repositorios.
+
+== _Descriptor - Cluster.yaml_
+
+Actualmente, el descriptor del _cluster_ se compone de dos recursos de Kubernetes, el _KeosCluster_ (obligatorio) y el _ClusterConfig_ (opcional). El primero permite especificar los parámetros necesarios para la creación del _cluster_ y el segundo especifica las configuraciones para ese _cluster_ en particular.
+
+Para llevar a cabo una instalación _offline_ de forma satisfactoria, es necesario indicar:
+
+* _ClusterConfig_:
+** *`spec.private_registry`: _true_*. Con este parámetro se le indica a _Stratio Cloud Provisioner_ que todas las imágenes necesarias durante el aprovisionamiento e instalación del _cluster_ se deben recuperar del _keos registry_.
+* _KeosCluster_:
+** `spec.docker_registries`: en la sección de 'docker_registries' se debe indicar el _keos registry_ del que se descargarán las imágenes para el despliegue _offline_. Este _registry_ deberá contar con las imágenes necesarias para cada instalación.
+
+NOTE: Las imágenes deberán estar accesibles en el repositorio indicado como _keos registry_ pero se deberá respetar la ruta del nombre de las imágenes. Por ejemplo, la imagen `registry.k8s.io/cluster-api/cluster-api-controller:v1.5.3` deberá recuperarse de `<keos_registry_url>/cluster-api/cluster-api-controller:v1.5.3`.
+
+== Imágenes
+
+Las imágenes necesarias para una instalación _offline_ se componen de dos tipos: imágenes comunes a todos los proveedores _cloud_ e imágenes específicas de cada uno. Por ello, se indican a continuación las referencias a las imágenes necesarias según el proveedor _cloud_ elegido para el _cluster_.
+
+|===
+|Versión | Comunes | AWS no gestionado | EKS | AZURE no gestionado | AKS | GCP no gestionado
+
+| v1.26.x
+| xref:operations-manual:offline-installation/common-images.adoc[Imágenes comunes]
+| xref:operations-manual:offline-installation/aws-vms-images.adoc[AWS no gestionado]
+| xref:operations-manual:offline-installation/aws-eks-images.adoc[EKS]
+| xref:operations-manual:offline-installation/azure-vms-images.adoc[AZURE no gestionado]
+| xref:operations-manual:offline-installation/azure-aks-images.adoc[AKS]
+| xref:operations-manual:offline-installation/gcp-vms-images.adoc[GCP no gestionado]
+|===
+
+NOTE: Las imágenes _core_ de Kubernetes están contenidas en las propias imágenes de los nodos. Es por ello que no se indican en ninguna de las referencias a las imágenes necesarias, ya que estarán disponibles en todas las imágenes construidas según la guía de construcción de imágenes a la que se hace referencia en el xref:operations-manual:operations-manual.adoc#_generación_de_imágenes_personalizadas[manual de operaciones].
+
+NOTE: Es también fundamental *disponer en el _keos registry_ de la imagen del _cluster-operator_*, ya sea la de la última _release_ o la específica para esa instalación indicada en el _ClusterConfig_.
