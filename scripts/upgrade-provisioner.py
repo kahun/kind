@@ -346,7 +346,7 @@ def add_cluster_autoscaler_annotations(provider, managed, dry_run):
 
     if provider == "gcp":
         print("[INFO] Adding cluster-autoscaler annotations to csi-gce-pd-controller:", end =" ", flush=True)
-        command = kubectl + ' -n gce-pd-csi-driver patch deploy csi-gce-pd-controller -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"socket-dir\"}}}}}\''
+        command = kubectl + ' -n kube-system patch deploy csi-gce-pd-controller -p \'{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"' + ca_annotation + '\": \"socket-dir\"}}}}}\''
         execute_command(command, dry_run)
 
 def upgrade_capx(kubeconfig, managed, provider, namespace, version, env_vars, dry_run):
