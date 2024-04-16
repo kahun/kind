@@ -1,0 +1,267 @@
+= Imágenes Azure no gestionado
+
+== Imágenes propias de Azure no gestionado
+
+|===
+| Chart | Version | Public image | Version
+
+| *Installed by Cluster API - CAPZ*
+| *v1.11.4*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api-azure/cluster-api-azure-controller
+| v1.11.4
+
+|
+|
+| mcr.microsoft.com/k8s/azureserviceoperator
+| v2.3.0
+
+|
+|
+| gcr.io/kubebuilder/kube-rbac-proxy
+| v0.13.1
+
+|
+|
+| mcr.microsoft.com/oss/azure/aad-pod-identity/nmi
+| v1.8.14
+
+| *azuredisk-csi-driver*
+| *v1.28.3*
+|
+|
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner
+| v3.5.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-attacher
+| v4.3.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-snapshotter
+| v6.2.2
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-resizer
+| v1.8.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/livenessprobe
+| v2.10.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/azuredisk-csi
+| v1.28.3
+
+| *azurefile-csi-driver*
+| *v1.28.3*
+|
+|
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-provisioner
+| v3.5.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-attacher
+| v4.3.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-snapshotter
+| v6.2.1
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/csi-resizer
+| v1.8.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/livenessprobe
+| v2.10.0
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes-csi/azurefile-csi
+| v1.28.3
+
+| *cloud-provider-azure*
+| *v1.26.7*
+|
+|
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes/azure-cloud-controller-manager
+| v1.26.7
+
+|
+|
+| mcr.microsoft.com/oss/kubernetes/azure-cloud-node-manager
+| v1.26.7
+|===
+
+In this case, there is an additional requirement that the following images installed by CAPZ:
+
+* mcr.microsoft.com/k8s/azureserviceoperator
+* gcr.io/kubebuilder/kube-rbac-proxy
+* mcr.microsoft.com/oss/azure/aad-pod-identity/nmi
+
+Exist in the repository defined as _keos registry_ under the name of:
+
+* <value of keos_registry>/cluster-api-azure/azureserviceoperator
+* <value of keos_registry>/cluster-api-azure/kube-rbac-proxy
+* <value of keos_registry>/cluster-api-azure/nmi
+
+== Common images needed in unmanaged Azure
+
+Associated with the charts that _Stratio Cloud Provisioner_ installs on unmanaged Azure, the required images are:
+
+|===
+| Chart | Version | Public image | Version
+
+| *tigera-operator*
+| *v3.26.1*
+|
+|
+
+|
+|
+| docker.io/calico/kube-controllers
+| v3.26.1
+
+|
+|
+| docker.io/calico/typha
+| v3.26.1
+
+|
+|
+| docker.io/calico/node
+| v3.26.1
+
+|
+|
+| docker.io/calico/csi
+| v3.26.1
+
+|
+|
+| docker.io/calico/node-driver-registrar
+| v3.26.1
+
+|
+|
+| docker.io/calico/ctl
+| v3.26.1
+
+|
+|
+| docker.io/calico/cni
+| v3.26.1
+
+|
+|
+| docker.io/calico/pod2daemon-flexvol
+| v3.26.1
+
+|
+|
+| quay.io/tigera/operator
+| v1.30.5
+
+| *cert-manager*
+| *v1.12.3*
+|
+|
+
+|
+|
+| quay.io/jetstack/cert-manager-controller
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-cainjector
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-webhook
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-acmesolver
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-ctl
+| v1.12.3
+
+| *cluster-autoscaler*
+| *9.29.1*
+|
+|
+
+|
+|
+| registry.k8s.io/autoscaling/cluster-autoscaler
+| v1.27.2
+
+| *cluster-operator*
+| ***
+|
+|
+
+|
+|
+| gcr.io/kubebuilder/kube-rbac-proxy
+| v0.13.1
+
+| *Installed by Cluster API - CAPI Component*
+| *v1.5.3*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-bootstrap-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-control-plane-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/cluster-api-controller
+| v1.5.3
+
+| *cluster-operator*
+| ***
+|
+|
+
+|
+|
+| gcr.io/kubebuilder/kube-rbac-proxy
+| v0.13.1
+|===

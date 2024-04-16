@@ -1,3 +1,0 @@
-mcr.microsoft.com/oss/azure/aad-pod-identity/nmi:v1.8.14
-registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:v1.11.4
-mcr.microsoft.com/k8s/azureserviceoperator:v2.3.0

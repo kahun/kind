@@ -1,6 +1,6 @@
 name: cloud-provisioner
 title: Stratio Cloud Provisioner
-version: '0.3'
+version: '0.4'
 nav:
 - modules/ROOT/nav.adoc
 start_page: introduction.adoc

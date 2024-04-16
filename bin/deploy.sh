@@ -25,3 +25,8 @@ fi
 mv "$DIR"/cloud-provisioner-${VERSION}.${EXTENSION} "$DIR"/cloud-provisioner.${EXTENSION}
 mv "$DIR"/upgrade-provisioner-${VERSION}.${EXTENSION} "$DIR"/upgrade-provisioner.${EXTENSION}
 
+DIR=docs/descriptor
+EXTENSION="yaml"
+echo "Uploading keoscluster_v1beta1_template-$VERSION..."
+curl -sS -u stratio:${NEXUSPASS} --upload-file "$DIR"/keoscluster_v1beta1_template-${VERSION}.${EXTENSION} http://qa.int.stratio.com/${GROUP_ID_NEXUS}/
+echo "$GROUP_ID:keoscluster_v1beta1_template:$EXTENSION" >> "$BASEDIR/deploy-recorder.lst"

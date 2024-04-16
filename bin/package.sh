@@ -15,3 +15,8 @@ else
 	echo "Run 'make build' first"
 	exit 1
 fi
+
+DIR=docs/descriptor
+EXTENSION="yaml"
+echo "Packaging keoscluster_v1beta1_template-$VERSION..."
+cp "$DIR"/keoscluster_v1beta1_template.${EXTENSION} "$DIR"/keoscluster_v1beta1_template-${VERSION}.${EXTENSION}

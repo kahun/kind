@@ -1,0 +1,53 @@
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+metadata:
+  name: ${cluster_name}
+spec:
+  infra_provider: ${infra_provider}
+  k8s_version: ${k8s_version}
+  region: ${region}
+  credentials:
+    aws: <% for (i in aws_credentials) { %>
+         <%= i.key + ": " + i.value %>
+         <% } %>
+    github_token: ${github_token}
+    docker_registries:  <% for (item in docker_registries_credentials) { %>
+                        <% item.eachWithIndex { i, index ->  %>
+                        <%= if (index == 0) "- " + i.key + ": " + i.value else "  " + i.key + ": " + i.value %>
+                        <% } %>
+                        <% } %>
+
+    helm_repository:  <% for (i in helm_repository_credentials) { %>
+                      <%= i.key + ": " + i.value %>
+                      <% } %>
+  docker_registries:  <% for (item in docker_registries) { %>
+                      <% item.eachWithIndex { i, index ->  %>
+                      <%= if (index == 0) "- " + i.key + ": " + i.value else "  " + i.key + ": " + i.value %>
+                      <% } %>
+                      <% } %>
+  helm_repository:
+    auth_required: ${helm_repository_auth_required}
+    url: ${helm_repository_url}
+  control_plane:
+    managed: ${control_plane_managed}
+    aws:
+      logging: <% for (i in control_plane_aws_logging) { %>
+               <%= i.key + ": " + i.value %>
+               <% } %>
+  worker_nodes:
+    - name: ${worker_nodes_name}
+      quantity: ${worker_nodes_quantity}
+      size: ${worker_nodes_size}
+      zone_distribution: balanced
+      labels:
+        tainted: false
+      max_size: ${worker_nodes_max_size}
+      min_size: ${worker_nodes_min_size}
+      root_volume:
+        size: ${worker_nodes_root_volume_size}
+        type: ${worker_nodes_root_volume_type}
+        encrypted: true
+  external_domain: ${external_domain}
+  keos:
+    version: ${keos_version}
+    flavour: ${keos_flavour}

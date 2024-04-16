@@ -1,0 +1,95 @@
+= API reference
+
+== _ClusterConfig_
+
+This Kubernetes object allows you to define the various configurations for the _keoscluster_ next to which it is created.
+
+[cols="20a,50a,15a,15a", options="header"]
+|===
+| Parameter | Description | Default value | Validation
+
+| *`metadata`* https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#objectmeta-v1-meta[ObjectMeta]
+| See the Kubernetes API documentation for _metadata_ fields.
+| -
+| -
+
+| * `spec`* _ClusterConfigSpec_
+| -
+| -
+| -
+
+| *`status`* _ClusterConfigStatus_
+| -
+| -
+| -
+|===
+
+=== _ClusterConfigSpec_
+
+This object defines the desired state of _ClusterConfig_.
+
+[cols="20a,50a,15a,15a", options="header"]
+|===
+| Parameter | Description | Default value | Validation
+
+| * `eks_lb_controller`* _boolean_
+| Enables the `aws-load-balancer-controller-manager` operator to be installed.
+| false
+| -
+
+| * `private_registry`* _boolean_
+| Specifies the type of installation. If this field is enabled, images to be downloaded during the cluster installation process will be retrieved from the registry specified as _keos++_++registry_.
+| false
+| -
+
+| *`controlplane_config`* _ControlplaneConfig_
+| The _control-plane_ can be configured with different settings.
+| -
+| -
+
+| *`workers_config`* _WorkersConfig_
+| The different configurations for the _workers_ nodes can be specified.
+| -
+| -
+
+| *`cluster_operator_version`* _string_
+| Specifies the chart version of the _cluster operator_ to be downloaded from the Helm repository specified in the _keoscluster_. By default, the latest version present in the Helm repository is downloaded.
+| -
+
+| *`cluster_operator_image_version`* _string_
+| Allows to overwrite the version of the image that will be displayed next to the chart. By default, the version indicated in the _values.yaml_ file of the chart is installed, but with this field, you can overwrite the default version.
+| -
+| -
+|===
+
+=== _ClusterConfigStatus_
+
+Defines the observed status of _ClusterConfig_.
+
+== _ControlplaneConfig_
+
+Defines the configurations for the _control-plane_.
+
+[cols="20a,50a,15a,15a", options="header"]
+|===
+| Parameter | Description | Default value | Validation
+
+| *`max_unhealthy`* _integer_
+| Specifies the maximum percentage of machines in the _control-plane_ that can be in an _unhealthy_ state before starting the repair.
+| 34
+| Maximum: 100. Minimum: 0.
+|===
+
+== _WorkersConfig_
+
+Defines the configurations for the _workers_ nodes.
+
+[cols="20a,50a,15a,15a", options="header"]
+|===
+| Parameter | Description | Default value | Validation
+
+| *`max_unhealthy`* _integer_
+| Specifies the maximum percentage of machines in a group of _workers_ nodes that can be in an _unhealthy_ state before starting the repair.
+| 34
+| Maximum: 100. Minimum: 0.
+|===
