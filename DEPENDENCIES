@@ -21,11 +21,11 @@ aws:
   managed:
     aws-load-balancer-controller:1.6.2
     eks-addons:
-      aws-ebs-csi-driver: v1.19.0-eksbuild.2
-      coredns: v1.9.3-eksbuild.3
+      aws-ebs-csi-driver: v1.29.1-eksbuild.1
+      coredns: v1.10.1-eksbuild.7
       kube-proxy: v1.24.15-eksbuild.2  # k8s 1.24-1.25
       kube-proxy: v1.26.7-eksbuild.2 # k8s 1.26-...
-      vpc-cni: v1.12.6-eksbuild.2
+      vpc-cni: v1.27.10-eksbuild.2
   unmanaged:
     aws-ebs-csi-driver-chart: v2.20.0
     aws-ebs-csi-driver: v2.20.0
@@ -40,13 +40,13 @@ azure:
   cluster-api-azure: v1.11.4
   cluster-api-azure-templates: v1.11.4
   unmanaged:
-    cloud-provider-azure-chart: v1.26.7
+    cloud-provider-azure-chart: v1.28.5
     azure-cloud-controller-manager: v1.24.18
     azure-cloud-node-manager: v1.24.18
-    azuredisk-csi-driver-chart: v1.28.3
-    azuredisk-csi-driver: v1.28.3
-    azurefile-csi-driver-chart: v1.28.3
-    azurefile-csi-driver: v1.28.3
+    azuredisk-csi-driver-chart: v1.28.7
+    azuredisk-csi-driver: v1.28.7
+    azurefile-csi-driver-chart: v1.28.7
+    azurefile-csi-driver: v1.28.7
     csi-provisioner: v3.3.0
     csi-attacher: v4.0.0
     csi-snapshotter: v5.0.1

@@ -16,6 +16,7 @@
 *.iml
 .vscode/
 *.swp
+*.code-workspace
 *.sublime-project
 *.sublime-workspace
 *~
