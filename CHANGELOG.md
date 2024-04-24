@@ -4,6 +4,8 @@
 
 * [Core] Update runc golang module to fix GHSA-xr7r-f8xq-vfvv
 * [Core] Improve command execution retries.
+* [Core] Improve command execution retries
+* [Core] Support k8s v1.28
 * [Core] Fix panic when keos_version is not defined
 
 ## 0.17.0-0.4.0 (2024-02-22)
