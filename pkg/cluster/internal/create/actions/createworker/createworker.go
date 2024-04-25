@@ -508,15 +508,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			// Wait for container metrics to be available
-			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system get deployment | grep metrics-server"
-			output, err := commons.ExecuteCommand(n, c, 5)
-			if err != nil {
-				return errors.Wrap(err, "failed to get metrics-server deployment")
-			}
-
-			// Wait for container metrics to be available
-			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment " + strings.Split(output, " ")[0] + " --timeout=90s"
-			_, err = commons.ExecuteCommand(n, c, 5)
+			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment -l k8s-app=metrics-server --timeout=90s"
+			_, err = commons.ExecuteCommand(n, c, 15)
 			if err != nil {
 				return errors.Wrap(err, "failed to wait for container metrics to be available")
 			}
