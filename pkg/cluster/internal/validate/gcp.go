@@ -40,7 +40,6 @@ var GCPNodeImageFormat = "projects/[PROJECT_ID]/global/images/[IMAGE_NAME]"
 
 func validateGCP(spec commons.KeosSpec, providerSecrets map[string]string) error {
 	var err error
-	var isGKEVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}-gke.\d{3,4}$`).MatchString
 
 	credentialsJson := getGCPCreds(providerSecrets)
 
@@ -77,11 +76,7 @@ func validateGCP(spec commons.KeosSpec, providerSecrets map[string]string) error
 		}
 	}
 
-	if spec.ControlPlane.Managed {
-		if !isGKEVersion(spec.K8SVersion) {
-			return errors.New("spec: Invalid value: \"k8s_version\": must have the format 'v1.27.3-gke-1400'")
-		}
-	} else {
+	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage == "" || !isGCPNodeImage(spec.ControlPlane.NodeImage) {
 			return errors.New("spec.control_plane: Invalid value: \"node_image\": is required and have the format " + GCPNodeImageFormat)
 		}

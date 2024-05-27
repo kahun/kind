@@ -1,16 +1,16 @@
 = Constructor de imágenes de AWS
 
-Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisioner_ https://image-builder.sigs.k8s.io/capi/providers/aws[en AWS] ^[English]^.
+Esta sección explica cómo crear imágenes propias para _Stratio Cloud Provisioner_ en https://image-builder.sigs.k8s.io/capi/providers/aws[AWS] ^[English]^.
 
 == Prerrequisitos
 
 === Globales
 
-Se utilizan Packer y Ansible para construir las imágenes.
+Es necesario descargar el xref:attachment$stratio.tar.gz[rol de Ansible llamado "stratio.tar.gz"] para la construcción de la imagen así como tener instaladas las siguientes herramientas:
 
-* Versión del empaquetador (Packer) ≥ 1.6.0
-* Complemento de Goss para la versión de Packer ≥ 1.2.0
-* Versión de Ansible ≥ 2.10.0
+* Versión del empaquetador (Packer) ≥ 1.9.4.
+* Complemento de Goss para Packer ≥ 3.1.4.
+* Versión de Ansible ≥ 2.15.4.
 
 Si los archivos binarios necesarios no están presentes, se pueden instalar en _~/.local/bin_ con el comando `make deps-ami`. Este directorio deberá agregarse a su _$PATH_.
 
@@ -19,152 +19,60 @@ Si los archivos binarios necesarios no están presentes, se pueden instalar en _
 Es necesario tener:
 
 * Una cuenta de AWS con un https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[usuario IAM con los permisos mínimos necesarios para crear una imagen] ^[English]^.
-* https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI instalado y configurado].
-* VPC por defecto para el usuario de AWS.
-
-==== Errores frecuentes
-
-* *VPCIdNotSpecified: no hay VPC por defecto para este usuario*
-+
-Para solucionarlo, edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS. Para conseguir dicho valor debes navegar a la sección 'VPC' de la consola de AWS y copiar el _VPC ID_ de la pestaña 'Details'.
-+
-image::vpc-id.png[]
-
-* *"`subnet_id` or `subnet_filter` must be provided for non-default VPCs"*
-+
-Para solucionarlo, edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `subnet_id` por el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
-
-* *"Timeout waiting for SSH"*
-+
-Sigue estos pasos para solucionarlo:
-+
-. Edita el fichero _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ssh_keypair_name` por el nombre de la clave SSH.
-+
-[source,json]
-----
-"ssh_keypair_name": "my-ssh-keypair"
-----
-+
-. Modifica el valor de la variable `ssh_private_key_file` por la ruta al fichero de la clave privada SSH.
-+
-[source,json]
-----
-"ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
-----
-+
-. La máquina virtual debe tener una IP pública para poder conectarse a ella. Si no tiene, puedes crearla para la instancia editando el fichero _images/capi/packer/ami/packer.json_ y modificando/añadiendo el valor de la variable `associate_public_ip_address` a _true_ en la sección 'builders'.
-+
-[source,json]
-----
-"associate_public_ip_address": "true"
-----
-+
-. Crea/asigna un grupo de seguridad (con permisos al puerto 22) a la instancia creada (en la misma red que esta) y modifica/añade el valor de la variable `security_group_id` con el ID del grupo de seguridad creado/asignado en el fichero _images/capi/packer/ami/packer.json_ en la sección 'builders'.
-+
-[source,json]
-----
-"security_group_id": "sg-1234567890"
-----
-+
-image::security-group.png[]
-+
-. Añade la variable `ssh_interface` = "public_ip" en la sección 'builders' del fichero _images/capi/packer/ami/packer.json_ para que se conecte a la instancia por la IP privada.
-+
-[source,json]
-----
-"ssh_interface": "public_ip"
-----
-+
-. Crea un _internet gateway_ y una _route table_ (o usa la de por defecto) para la VPC de tu cuenta de AWS y asócialos.
-+
-image::internet-gatway.png[]
+* https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI] instalado y configurado.
+* Un VPC por defecto para el usuario de AWS.
+* Un par de claves para la conexión SSH a la instancia.
+* Un grupo de seguridad permitiendo el tráfico por el puerto 22 para el protocolo TCP.
 
 == Configuración de la imagen
 
-Para modificar la https://image-builder.sigs.k8s.io/capi/capi.html#customization[configuración de la imagen] ^[English]^ puedes editar el archivo _images/capi/packer/config/ami-<OS>.json_. Los parámetros de configuración se pueden encontrar en la https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/ami[documentación de Packer] ^[English]^.
+Para construir una imagen de AWS es necesario crear un único fichero JSON de configuración para Packer. Este fichero contiene los parámetros de configuración para la generación de la imagen (configuración de la imagen, tipo de instancia, región, versión de Kubernetes, etc.).
 
-Estas son algunas recomendaciones:
+Este es un descriptor de ejemplo para una imagen de Ubuntu 22.04 y Kubernetes 1.26.14:
 
-* Modifica las versiones de Kubernetes.
-+
-Edita el archivo _images/capi/packer/config/kubernetes.json_ y modifica los valores de las variables `kubernetes_deb_version`, `kubernetes_rpm_version`, `kubernetes_semver` y `kubernetes_series`.
-+
+[source,json]
+----
+{
+    "crictl_version": "1.26.1",
+    "kubernetes_series": "v1.26",
+    "kubernetes_semver": "v1.26.14",
+    "kubernetes_deb_version": "1.26.14-1.1",
+    "kubernetes_rpm_version": "1.26.14",
+    "builder_instance_type": "t3.medium",
+    "node_custom_roles_post": "stratio",
+    "ansible_extra_vars": "pinned_debs=\"cloud-init=23.1.2-0ubuntu0~22.04.1\"",
+    "associate_public_ip_address": "true",
+    "ssh_interface": "public_ip",
+    "aws_region": "eu-west-1",
+    "ami_regions": "eu-west-1",
+    "aws_security_group_ids": "sg-0bae9383628c59c25",
+    "ssh_keypair_name": "stratio",
+    "ssh_private_key_file": "/home/stratio/.ssh/id_ed25519"
+}
+----
+
+Explicación de los parámetros:
+
 [%autowidth]
 |===
-| *crictl_version* | 1.26.1 | Versión de las cri-tools.
-| *kubernetes_deb_version* | 1.24.10-00 | Versión de Kubernetes para Debian.
-| *kubernetes_rpm_version* | 1.24.10-0 | Versión de Kubernetes para RPM.
-| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen.
-| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen.
+| *crictl_version* | 1.26.1 | Versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools], hay que seguir la https://github.com/kubernetes-sigs/cri-tools#compatibility-matrix-cri-tools--kubernetes[matriz de compatibilidad] con la versión de Kubernetes.
+| *kubernetes_series* | v1.26 | Versión de Kubernetes que se instalará en la imagen.
+| *kubernetes_semver* | v1.26.14 | Versión semántica de Kubernetes que se instalará en la imagen.
+| *kubernetes_deb_version* | 1.26.14-1.1 | Versión de Kubernetes para Debian.
+| *kubernetes_rpm_version* | 1.26.14 | Versión de Kubernetes para RPM.
+| *builder_instance_type* | t3.medium | Tipo de instancia para la construcción de la imagen.
+| *node_custom_roles_post* | stratio | Rol de Ansible personalizado para el nodo.
+| *ansible_extra_vars* | pinned_debs="cloud-init=23.1.2-0ubuntu0~22.04.1" | Parche de cloud-init para las AMI de Ubuntu 22.04 en AWS.
+| *associate_public_ip_address* | true | Asigna una IP pública a la instancia.
+| *ssh_interface* | public_ip | Interfaz de red por la que se conectará a la instancia.
+| *aws_region* | eu-west-1 | Región de AWS donde se creará la instancia para la construcción de la imagen.
+| *ami_regions* | eu-west-1 | Regiones de AWS donde se disponibilizará la imagen.
+| *aws_security_group_ids* | sg-0bae9383628c59c25 | ID del grupo de seguridad de la instancia.
+| *ssh_keypair_name* | stratio | Nombre de la clave SSH.
+| *ssh_private_key_file* | /home/stratio/.ssh/id_ed25519 | Ruta al fichero de la clave privada SSH.
 |===
-+
-La versión de las https://github.com/kubernetes-sigs/cri-tools/tags[cri-tools] tiene que ir pareja con la versión de Kubernetes que se esté utilizando.
-+
-[%autowidth]
-|===
-| Versión de las cri-tools | Versión de Kubernetes
-| 1.26.1 | 1.24, 1.25, 1.26
-| 1.27.1 | 1.27
-| 1.28.0 | 1.28
-|===
 
-* Modifica los parámetros del kernel.
-+
-IMPORTANT: Requerido para que funcione la monitorización de Stratio.
-+
-Edita el fichero _ansible/roles/node/tasks/main.yml_ y modifica la tarea con el nombre "Set and persist kernel params" para añadir el parámetro `vm.max_map_count` con el valor "262144".
-+
-[source,yaml]
-----
-- name: Set and persist kernel params
-  sysctl:
-    name: "{{ item.param }}"
-    value: "{{ item.val }}"
-    state: present
-    sysctl_set: yes
-    sysctl_file: "{{ sysctl_conf_file }}"
-    reload: yes
-  loop:
-    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
-    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
-    - { param: net.ipv4.ip_forward, val: 1 }
-    - { param: net.ipv6.conf.all.forwarding, val: 1 }
-    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
-    - { param: net.ipv4.tcp_congestion_control, val: bbr }
-    - { param: vm.overcommit_memory, val: 1 }
-    - { param: kernel.panic, val: 10 }
-    - { param: kernel.panic_on_oops, val: 1 }
-    - { param: fs.inotify.max_user_instances, val: 8192 }
-    - { param: fs.inotify.max_user_watches, val: 524288 }
-    - { param: vm.max_map_count, val: 262144 }
-----
-
-* Cambia el tipo de instancia de la imagen.
-+
-Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `builder_instance_type` en la sección 'builders' por el tipo de instancia deseado.
-+
-[source,json]
-----
-"builder_instance_type": "t3.medium"
-----
-
-* Modifica la región donde crear la instancia para la construcción de la imagen.
-+
-Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `region` en la sección 'builders' por la región donde se creará la instancia.
-+
-[source,json]
-----
-"region": "eu-west-1"
-----
-
-* Limita las regiones donde disponibilizar la imagen.
-+
-Edita el archivo _images/capi/packer/ami/packer.json_ y modifica el valor de la variable `ami_regions` en la sección 'variables' por las regiones donde se disponibilizará la imagen.
-+
-[source,json]
-----
-"ami_regions": ["eu-west-1", "eu-west-2"]
-----
+La documentación oficial de Image Builder para la configuración de las imágenes se encuentra en https://image-builder.sigs.k8s.io/capi/capi.html#customization[customization] ^[English]^ y la lista completa de parámetros en https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/packer/ami/packer.json[packer.json] ^[English]^.
 
 == Construcción de la imagen
 
@@ -184,80 +92,12 @@ cd image-builder
 git pull
 ----
 
-. Modifica el _image-builder_ para habilitar la autenticación con ECR.
-+
-IMPORTANT: Requerido para versiones de Kubernetes superiores a la 1.27.
-+
-Crea el binario para la gestión de la autenticación ECR.
+. Desempaqueta el rol de Ansible necesario para la construcción de la imagen.
 +
 [source,console]
 ----
-cd ..
-git clone git@github.com:kubernetes/cloud-provider-aws.git
-pushd cloud-provider-aws/cmd/ecr-credential-provider
-GOOS=linux go build -ldflags="-s -w"
-popd
+tar zxf stratio.tar.gz
 ----
-+
-Copia el binario generado al repositorio y crea el fichero de configuración `ecr-credential-provider-config.yaml`.
-+
-[source,console]
-----
-cd image-builder
-mkdir -p images/capi/ansible/roles/providers/files
-cp ../cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider images/capi/ansible/roles/providers/files/
-cat <<EOF >> images/capi/ansible/roles/providers/files/ecr-credential-provider-config.yaml
-apiVersion: kubelet.config.k8s.io/v1
-kind: CredentialProviderConfig
-providers:
-  - name: ecr-credential-provider
-    matchImages:
-      - "*.dkr.ecr.*.amazonaws.com"
-      - "*.dkr.ecr.*.amazonaws.com.cn"
-      - "*.dkr.ecr-fips.*.amazonaws.com"
-      - "*.dkr.ecr.us-iso-east-1.c2s.ic.gov"
-      - "*.dkr.ecr.us-isob-east-1.sc2s.sgov.gov"
-    defaultCacheDuration: "12h"
-    apiVersion: credentialprovider.kubelet.k8s.io/v1
-EOF
-----
-+
-Actualiza la tarea de Ansible para copiar los archivos creados en la imagen.
-+
-[source,console]
-----
-cat <<EOF >> images/capi/ansible/roles/providers/tasks/aws.yml
-- name: Add ecr credentials provider
-  copy:
-    src: files/ecr-credential-provider
-    dest: /usr/local/bin
-    mode: 0755
-    owner: root
-    group: root
-- name: Ensure credentials config file directory exists
-  file:
-    path: /etc/aws
-    state: directory
-    mode: 0755
-    owner: root
-    group: root
-- name: Add ecr credentials config file
-  copy:
-    src: files/ecr-credential-provider-config.yaml
-    dest: /etc/aws/credential-provider-config
-    mode: 0644
-    owner: root
-    group: root
-EOF
-----
-+
-[NOTE]
-====
-Encuentra más información sobre los requisitos para Kubernetes >1.27 en los siguientes enlaces:
-
-* https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider[https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider]
-* https://github.com/kubernetes-sigs/image-builder/issues/1249[https://github.com/kubernetes-sigs/image-builder/issues/1249]
-====
 
 . Posiciónate en la ruta _images/capi_ dentro del repositorio.
 +
@@ -282,11 +122,11 @@ image::desp-ami.png[]
 make help | grep build-ami
 ----
 
-. Genera la imagen deseada. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
+. Genera la imagen deseada pasándole el JSON de configuración preparado anteriormente como variable de entorno `PACKER_VAR_FILES` y el objetivo de la imagen que se quiere construir. Por ejemplo, para construir una imagen de Ubuntu 22.04, ejecuta:
 +
 [source,console]
 ----
-make build-ami-ubuntu-2204
+PACKER_VAR_FILES=aws.json make build-ami-ubuntu-2204
 ----
 +
 image::build-ami-ubuntu-2204-part1.png[]
@@ -294,13 +134,6 @@ image::build-ami-ubuntu-2204-part1.png[]
 image::build-ami-ubuntu-2204-part2.png[]
 +
 image::amis.png[]
-+
-Para generar las imágenes de todos los sistemas operativos disponibles utiliza el parámetro `-all`. Si deseas construirlas en paralelo, utiliza `make -j`.
-+
-[source,console]
-----
-make -j build-ami-all
-----
 
 == Depuración
 
@@ -310,3 +143,60 @@ El proceso de creación de la imagen se puede depurar con la variable de entorno
 ----
 export PACKER_LOG=1
 ----
+
+== Errores frecuentes
+
+* *VPCIdNotSpecified: no hay VPC por defecto para este usuario*
++
+Para solucionarlo, edita el fichero JSON de configuración y añade la variable `vpc_id` con el ID de la VPC por defecto de tu cuenta de AWS. Para conseguir dicho valor debes navegar a la sección 'VPC' de la consola de AWS y copiar el VPC ID de la pestaña 'Details'.
++
+image::vpc-id.png[]
+
+* *"`subnet_id` or `subnet_filter` must be provided for non-default VPCs"*
++
+Para solucionarlo, edita el fichero JSON de configuración y añade la variable `subnet_id` con el ID de una _subnet_ de la VPC especificada en la variable `vpc_id`.
+
+* *"Timeout waiting for SSH"*
++
+Sigue estos pasos para solucionarlo:
++
+. Asegúrate de que la variable `ssh_keypair_name` está presente en el fichero json de configuración y que su valor sea el nombre de la clave SSH que tienes en tu cuenta de AWS.
++
+[source,json]
+----
+"ssh_keypair_name": "my-ssh-keypair"
+----
++
+. Modifica el valor de la variable `ssh_private_key_file` por la ruta al fichero de la clave privada SSH.
++
+[source,json]
+----
+"ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
+----
++
+. La máquina virtual debe tener una IP pública para poder conectarse a ella. Asegúrate de que la variable `associate_public_ip_address` esté presente en el fichero JSON de configuración y que su valor sea _true_.
++
+[source,json]
+----
+"associate_public_ip_address": "true"
+----
++
+. Crea un grupo de seguridad en la misma red que la instancia que se va a crear, permite el tráfico por el puerto 22 para el protocolo TCP y asegúrate de que la variable `aws_security_group_ids` esté presente en el fichero JSON de configuración y que su valor sea el ID del grupo de seguridad creado.
++
+[source,json]
+----
+"security_group_id": "sg-1234567890"
+----
++
+image::security-group.png[]
++
+. Asegúrate de que la variable `ssh_interface` esté presente en el fichero JSON de configuración y que su valor sea "public_ip".
++
+[source,json]
+----
+"ssh_interface": "public_ip"
+----
++
+. Crea un _internet gateway_ y una _route table_ (o usa la de por defecto) para la VPC de tu cuenta de AWS y asócialos.
++
+image::internet-gatway.png[]

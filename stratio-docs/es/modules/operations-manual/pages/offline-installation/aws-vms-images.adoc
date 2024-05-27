@@ -1,0 +1,145 @@
+= Imágenes AWS no gestionado
+
+== Imágenes propias de AWS no gestionado
+
+|===
+| _Chart_ | Versión | Imagen pública | Versión
+
+| *Instalado por Cluster API - CAPA*
+| *v2.2.1*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api-aws/cluster-api-aws-controller
+| v2.2.1
+|===
+
+== Imágenes comunes necesarias en AWS no gestionado
+
+Asociadas a los _charts_ que instala _Stratio Cloud Provisioner_ en AWS no gestionado, las imágenes necesarias son:
+
+|===
+| _Chart_ | Versión | Imagen pública | Versión
+
+| *tigera-operator*
+| *v3.26.1*
+|
+|
+
+|
+|
+| docker.io/calico/kube-controllers
+| v3.26.1
+
+|
+|
+| docker.io/calico/typha
+| v3.26.1
+
+|
+|
+| docker.io/calico/node
+| v3.26.1
+
+|
+|
+| docker.io/calico/csi
+| v3.26.1
+
+|
+|
+| docker.io/calico/node-driver-registrar
+| v3.26.1
+
+|
+|
+| docker.io/calico/ctl
+| v3.26.1
+
+|
+|
+| docker.io/calico/cni
+| v3.26.1
+
+|
+|
+| docker.io/calico/pod2daemon-flexvol
+| v3.26.1
+
+|
+|
+| quay.io/tigera/operator
+| v1.30.5
+
+| *cert-manager*
+| *v1.12.3*
+|
+|
+
+|
+|
+| quay.io/jetstack/cert-manager-controller
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-cainjector
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-webhook
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-acmesolver
+| v1.12.3
+
+|
+|
+| quay.io/jetstack/cert-manager-ctl
+| v1.12.3
+
+| *cluster-autoscaler*
+| *9.29.1*
+|
+|
+
+|
+|
+| registry.k8s.io/autoscaling/cluster-autoscaler
+| v1.27.2
+
+| *cluster-operator*
+| ***
+|
+|
+
+|
+|
+| gcr.io/kubebuilder/kube-rbac-proxy
+| v0.13.1
+
+| *Instalado por Cluster API - CAPI Component*
+| *v1.5.3*
+|
+|
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-bootstrap-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/kubeadm-control-plane-controller
+| v1.5.3
+
+|
+|
+| registry.k8s.io/cluster-api/cluster-api-controller
+| v1.5.3
+|===

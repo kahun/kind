@@ -64,7 +64,7 @@ const (
 	manifestsPath           = "/kind/manifests"
 	cniDefaultFile          = "/kind/manifests/default-cni.yaml"
 	storageDefaultPath      = "/kind/manifests/default-storage.yaml"
-	infraGCPVersion         = "v1.4.0"
+	infraGCPVersion         = "v1.6.1"
 	infraAWSVersion         = "v2.2.1"
 )
 
@@ -138,6 +138,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	awsEKSEnabled := a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed
 	isMachinePool := a.keosCluster.Spec.InfraProvider != "aws" && a.keosCluster.Spec.ControlPlane.Managed
+	gcpGKEEnabled := a.keosCluster.Spec.InfraProvider == "gcp" && a.keosCluster.Spec.ControlPlane.Managed
 
 	var privateParams PrivateParams
 	if a.clusterConfig != nil {
@@ -248,7 +249,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Create docker-registry secret in provider-system namespace
 		c = "kubectl create secret docker-registry regcred" +
-			" --docker-server=" + keosRegistry.url +
+			" --docker-server=" + strings.Split(keosRegistry.url, "/")[0] +
 			" --docker-username=" + keosRegistry.user +
 			" --docker-password=" + keosRegistry.pass +
 			" --namespace=" + provider.capxName + "-system"
@@ -300,6 +301,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		_, err = commons.ExecuteCommand(n, c, 5)
 		if err != nil {
 			return err
+		}
+	} else if gcpGKEEnabled {
+		c = "echo \"images:\" >> /root/.cluster-api/clusterctl.yaml && " +
+			"echo \"  infrastructure-gcp:\" >> /root/.cluster-api/clusterctl.yaml && " +
+			"echo \"    repository: " + keosRegistry.url + "/cluster-api-gcp\" >> /root/.cluster-api/clusterctl.yaml && " +
+			"echo \"    tag: " + provider.capxImageVersion + "\" >> /root/.cluster-api/clusterctl.yaml "
+
+		_, err = commons.ExecuteCommand(n, c, 5)
+
+		if err != nil {
+			return errors.Wrap(err, "failed to overwrite image registry clusterctl config")
 		}
 	}
 
@@ -508,8 +520,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			// Wait for container metrics to be available
-			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment metrics-server --timeout=90s"
-			_, err = commons.ExecuteCommand(n, c, 5)
+			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment -l k8s-app=metrics-server --timeout=90s"
+			_, err = commons.ExecuteCommand(n, c, 15)
 			if err != nil {
 				return errors.Wrap(err, "failed to wait for container metrics to be available")
 			}

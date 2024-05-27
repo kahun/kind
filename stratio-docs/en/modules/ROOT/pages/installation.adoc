@@ -6,11 +6,10 @@
 
 * Roles and policies
 +
-For automated provisioning in AWS/EKS, it is necessary to execute actions on various AWS services such as EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. While the use or lack of use of these actions will depend on the type of installation, the provider validates that the indicated user has these permissions in order to run normally.
+For automated provisioning in AWS/EKS, it is necessary to execute actions on various AWS services such as EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. While the use or lack of use of these actions will depend on the type of installation, the provider validates that the indicated user has these permissions to run normally.
 +
 ** xref:attachment$stratio-eks-policy.json[Download permanent permissions for EKS].
-** xref:attachment$stratio-aws-temp-policy.json[Download temporary permissions for EKS].
-
+** xref:attachment$stratio-aws-temp-policy.json[Download temporary permissions for EKS and AWS unmanaged].
 +
 For EKS deployment, you must manually create the "AWSServiceRoleForAmazonEKS" role and associate to it the "AmazonEKSServiceRolePolicy" policy (created by default in AWS).
 
@@ -54,15 +53,15 @@ As with other supported providers, provisioning requires an account with all the
 
 * Certified operating systems
 +
-For environments in Azure it will be possible to use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder/azure-image-builder.adoc[guide for Azure].
+For environments in Azure, it will be possible to use https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[image builder], an official tool that allows to create and make images available for _Stratio KEOS_. For more details on image building see the xref:operations-manual:image-builder/azure-image-builder.adoc[guide for Azure].
 +
-The currently recommended operating system for this provider is Ubuntu 22.04, being the one that creates by default the controller of this cloud provider.
+The currently recommended operating system for this provider is Ubuntu 22.04, the one that creates by default the controller of this cloud provider.
 
 === AKS
 
 * Permissions
 +
-This type of clusters should be deployed using one identity with the necessary roles for the creation of the resources in Azure as well as for the _workers_ of the cluster (indicated in the descriptor in "spec.security.nodes_identity") and another for the _control-plane_ (indicated in the descriptor in "spec.security.control_plane_identity").
+This type of cluster should be deployed using one identity with the necessary roles for the creation of the resources in Azure as well as for the _workers_ of the cluster (indicated in the descriptor in "spec.security.nodes_identity") and another for the _control-plane_ (indicated in the descriptor in "spec.security.control_plane_identity").
 +
 ** xref:attachment$stratio-aks-role.json[Download permissions for Azure].
 ** xref:attachment$stratio-aks-nodes-role.json[Download permissions for Azure _workers_]
@@ -70,13 +69,13 @@ This type of clusters should be deployed using one identity with the necessary r
 
 * Certified operating systems
 +
-This flavour does not allow to specify any custom image and deploys by default Ubuntu 22.04.
+This flavor does not allow the specification of any custom image and deploys by default Ubuntu 22.04.
 
 === Considerations for images
 
-Referring to the _control-plane_, in EKS and AKS you will not be able to indicate an image, but in unmanaged AWS and Azure and in GCP you will be able to.
+Referring to the _control-plane_, in EKS and AKS you will not be able to indicate an image, but in unmanaged AWS, Azure, and GCP, you will be able to.
 
-For both _control-plane_ and _worker_ nodes it is mandatory to indicate images in unmanaged GCP for all versions and in unmanaged AWS for Kubernetes versions ≥ 1.27 in the case of using ECR as registry.
+For both _control-plane_ and _worker_ nodes it is mandatory to indicate images in unmanaged GCP for all versions and in unmanaged AWS for Kubernetes versions ≥ 1.27 in the case of using ECR as a registry.
 
 For _worker_ nodes, it is optional on all cloud providers except in the cases described above (when not specified, the controller assigns one made available by the cloud provider).
 
@@ -119,9 +118,9 @@ metadata:
 spec:
 ----
 
-=== metadata
+=== _metadata_
 
-The metadata of the _KeosCluster_ consists of the following fields:
+The _metadata_ of the _KeosCluster_ consists of the following fields:
 
 [cols="1,4,2,1"]
 |===
@@ -247,6 +246,33 @@ The following fields are considered provisioning secrets:
 
 NOTE: Any changes to _spec.credentials_ must be made with all credentials in the cluster descriptor and removing the _secrets.yml_ beforehand.
 
+=== Helm repository
+
+As an installation prerequisite, the Helm repository from which the _Cluster Operator_ chart can be extracted must be specified. This section allows you to specify the URL of the repository, its type and whether it is an authenticated repository.
+
+[cols="1,4,2,1"]
+|===
+^|Name ^|Description ^|Example ^|Optional
+
+| _auth++_++required_
+| Indicates if the repository is authenticated.
+| false
+| Yes. Default: false.
+
+| _url_
+| URL of the repository.
+| *OCI repositories*: oci://stratioregistry.azurecr.io/helm-repository-example +
+*HTTPS repositories*: https://[IP]:8080
+| No
+
+| _type_
+| Repository type.
+| generic or ecr.
+| Yes. Default: generic.
+|===
+
+NOTE: OCI repositories (from _cloud_ providers such as ECR, GAR or ACR) are never authenticated. Authentication will be done by the credentials used in provisioning. Please check the _Stratio KEOS_ documentation for the repositories supported in the version to be used.
+
 === Networking
 
 As mentioned above, the installer allows you to use network elements of the cloud provider that you have previously created (e.g. by a network security team), thus enabling architectures that best suit your needs.
@@ -279,7 +305,7 @@ a|
 
 === _control-plane_
 
-In this section you will find the specifics for the Kubernetes _control-plane_.
+In this section, you will find the specifics for the Kubernetes _control-plane_.
 
 [cols="1,4,2,1"]
 |===
@@ -330,7 +356,7 @@ The images used must be supported by EKS. See the https://docs.aws.amazon.com/ek
 |No
 
 |_quantity_
-|Number of nodes in the group. It is recommended that the number is a multiple of 3 in order to avoid unbalanced zones.
+|Number of nodes in the group. It is recommended that the number is a multiple of 3 to avoid unbalanced zones.
 |15
 |No
 
@@ -387,10 +413,12 @@ root_volume:
 |Yes
 
 |_ssh++_++key_
-|Public SSH key to access _worker_ nodes. It must be previously created in AWS. It is recommended not to add any SSH key to the nodes.
+|Public SSH key to access _worker_ nodes. It must have been previously created in AWS. It is recommended not to add any SSH key to the nodes.
 |prod-key
 |Yes
 |===
+
+NOTE: The option to set _min++_++size_ equal to zero has been implemented, allowing autoscaling to increase or decrease the number of nodes to zero as needed. This functionality provides significant cost savings compared to previous versions as it allows the definition of a _workers_ pool without instantiating any resources in the cloud provider that are not needed.
 
 === _Stratio KEOS_
 
@@ -514,7 +542,7 @@ spec:
 
 In this example you can see the following particularities:
 
-* Cluster on AWS with umanaged _control-plane_.
+* Cluster on AWS with unmanaged _control-plane_.
 * Kubernetes version 1.26.x.
 * Use of ECR as _Docker registry_ (no credentials needed).
 * Use of VPC and custom subnets (previously created). This section is optional.
@@ -807,7 +835,7 @@ In this example you can see the following particularities:
 * Use of ACR as _Docker registry_ (no credentials needed).
 * With AKS tier _Paid_ (recommended for production).
 * Group of _worker_ nodes:
-** _Standard++_++D8s++_++v3_ type instances in order to support premium volumes.
+** _Standard++_++D8s++_++v3_ type instances to support premium volumes.
 ** With K8s labels.
 ** With auto-scaling ranges.
 ** With on-disk customizations.
@@ -864,9 +892,9 @@ spec:
         type: Managed
 ----
 
-== Creation of the _cluster_
+== Creation of the cluster
 
-_Stratio Cloud Provisioner_ is a tool that facilitates the provisioning of the necessary elements in the specified _cloud_ provider for the creation of a Kubernetes _cluster_ according to the specified <<cluster_descriptor, descriptor>>.
+_Stratio Cloud Provisioner_ is a tool that facilitates the provisioning of the necessary elements in the specified cloud provider for the creation of a Kubernetes cluster according to the specified <<cluster_descriptor, descriptor>>.
 
 Currently, this binary includes the following options:
 
@@ -876,7 +904,7 @@ Currently, this binary includes the following options:
 - `--keep-mgmt`: creates the cluster worker but leaves its management in the cluster local (only for *non-productive* environments).
 - `--retain`: keeps the cluster local even without management.
 
-To create a _cluster_, a simple command is enough (see the particularities of each provider in their quick start guides):
+To create a cluster, a simple command is enough (see the particularities of each provider in their quick start guides):
 
 [source,bash]
 -----
@@ -926,3 +954,125 @@ Due to a bug in the various _controllers_ (fixed in master branches but not yet 
 Eventually, this could generate request problems in case of failure of any of the _control-plane_ nodes, since the load balancer will send requests to _control-plane_ nodes whose port is responsive but cannot handle requests.
 
 To avoid this problem, the health check of the load balancer created must be modified, using the HTTPS protocol and the _/readyz_ path. The port should be maintained, being 443 for GCP and 6443 for Azure.
+
+== Deployment of _aws-load-balancer-controller-manager_ (EKS only)
+
+In EKS clusters, it is possible to deploy a controller (aws-load-balancer-controller-manager) responsible for creating _Elastic Load Balancers_, used by objects such as _Ingress_ and _Service_ type _LoadBalancer_.
+
+Since this deployment is not enabled by default, it must be indicated with _spec.eks_lb_controller_: "true" in the ClusterConfig object of the cluster descriptor.
+
+To authorize the controller, we will use https://docs.aws.amazon.com/es_es/eks/latest/userguide/iam-roles-for-service-accounts.html[IAM roles for Service Accounts], which involves creating the corresponding IAM objects as indicated below:
+
+* Define the following environment variables:
++
+[source,shell]
+----
+export AWS_ACCOUNT_ID=<account_id>
+export AWS_REGION=<aws_region>
+export AWS_VPC_ID=<vpc_id>
+export AWS_EKS_CLUSTER_NAME=<aws_eks_cluster_name>
+export AWS_EKS_OIDC_ID=$(aws eks describe-cluster --region ${AWS_REGION} --name ${AWS_EKS_CLUSTER_NAME} --query 'cluster.identity.oidc.issuer' --output text | awk -F'/' '{print $NF}')
+export AWS_IAM_POLICY_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+export AWS_IAM_ROLE_NAME="${AWS_EKS_CLUSTER_NAME}-lb-controller-manager"
+----
+
+* https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html[Create the IAM role] that will be used by the _service account_ of the _aws-load-balancer-controller-manager_ deployment with the following trust policy:
++
+[source,console]
+----
+$ cat << EOF > trustpolicy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+                    "oidc.eks.${AWS_REGION}.amazonaws.com/id/${AWS_EKS_OIDC_ID}:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+$ aws iam create-role --role-name ${AWS_IAM_ROLE_NAME} --assume-role-policy-document file://trustpolicy.json
+----
+
+* https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html[Create the IAM policy] with the strictly necessary permissions:
++
+[source,console]
+----
+$ cat << EOF > policy.json
+{
+	"Statement": [
+		{
+			"Action": [
+        			"ec2:DescribeAvailabilityZones",
+				"ec2:DescribeInstances",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSubnets",
+				"elasticloadbalancing:DescribeListeners",
+				"elasticloadbalancing:DescribeLoadBalancers",
+				"elasticloadbalancing:DescribeLoadBalancerAttributes",
+				"elasticloadbalancing:DescribeRules",
+				"elasticloadbalancing:DescribeTags",
+				"elasticloadbalancing:DescribeTargetGroups",
+				"elasticloadbalancing:DescribeTargetGroupAttributes",
+				"elasticloadbalancing:DescribeTargetHealth"
+			],
+			"Effect": "Allow",
+			"Resource": "*"
+		},
+		{
+			"Action": [
+				"ec2:AuthorizeSecurityGroupIngress",
+				"ec2:CreateSecurityGroup",
+        			"ec2:CreateTags",
+				"ec2:DeleteSecurityGroup",
+				"ec2:RevokeSecurityGroupIngress"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:vpc/${AWS_VPC_ID}",
+				"arn:aws:ec2:${AWS_REGION}:${AWS_ACCOUNT_ID}:security-group/*"
+			]
+		},
+		{
+			"Action": [
+				"elasticloadbalancing:AddTags",
+				"elasticloadbalancing:CreateListener",
+				"elasticloadbalancing:CreateLoadBalancer",
+				"elasticloadbalancing:CreateTargetGroup",
+				"elasticloadbalancing:DeleteLoadBalancer",
+				"elasticloadbalancing:DeleteTargetGroup",
+				"elasticloadbalancing:DeregisterTargets",
+				"elasticloadbalancing:ModifyLoadBalancerAttributes",
+				"elasticloadbalancing:ModifyTargetGroup",
+				"elasticloadbalancing:RegisterTargets"
+			],
+			"Effect": "Allow",
+			"Resource": "*",
+			"Condition": {
+				"StringEquals": {
+					"aws:ResourceTag/elbv2.k8s.aws/cluster": "${AWS_EKS_CLUSTER_NAME}"
+				}
+			}
+		}
+	],
+	"Version": "2012-10-17"
+}
+EOF
+$ aws iam create-policy --policy-name ${AWS_IAM_POLICY_NAME} --policy-document file://policy.json
+----
+
+* https://docs.aws.amazon.com/es_es/IAM/latest/UserGuide/access_policies_manage-attach-detach.html[Associate the IAM policy] with the role created earlier:
++
+[source,console]
+----
+$ aws iam attach-role-policy --role-name ${AWS_IAM_ROLE_NAME} --policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${AWS_IAM_POLICY_NAME}
+----

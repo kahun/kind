@@ -11,9 +11,6 @@
                 "actions": [
                     "Microsoft.Authorization/*/read",
                     "Microsoft.ContainerRegistry/registries/pull/read",
-                    "Microsoft.ContainerRegistry/registries/*/read",
-                    "Microsoft.ContainerRegistry/registries/*/write",
-                    "Microsoft.ContainerRegistry/registries/generateCredentials/action",
                     "Microsoft.Resources/subscriptions/resourcegroups/read",
                     "Microsoft.Resources/subscriptions/resourcegroups/write",
                     "Microsoft.Resources/subscriptions/resourcegroups/delete",
@@ -66,11 +63,7 @@
                     "Microsoft.Network/privateDnsZones/read"
                 ],
                 "notActions": [],
-                "dataActions": [
-                    "Microsoft.ContainerRegistry/registries/repositories/content/read",
-                    "Microsoft.ContainerRegistry/registries/repositories/content/write",
-                    "Microsoft.ContainerRegistry/registries/repositories/metadata/read"
-                ],
+                "dataActions": [],
                 "notDataActions": []
             }
         ]

@@ -4,9 +4,6 @@
     "Description": "Stratio aks role permissions",
     "Actions": [
         "Microsoft.ContainerRegistry/registries/pull/read",
-        "Microsoft.ContainerRegistry/registries/*/read",
-        "Microsoft.ContainerRegistry/registries/*/write",
-        "Microsoft.ContainerRegistry/registries/generateCredentials/action",
         "Microsoft.Resources/subscriptions/resourcegroups/read",
         "Microsoft.Resources/subscriptions/resourcegroups/write",
         "Microsoft.Resources/subscriptions/resourcegroups/delete",
@@ -30,12 +27,6 @@
     "NotActions": [
         "Microsoft.Compute/galleries/share/action"
     ],
-    "dataActions": [
-        "Microsoft.ContainerRegistry/registries/repositories/content/read",
-        "Microsoft.ContainerRegistry/registries/repositories/content/write",
-        "Microsoft.ContainerRegistry/registries/repositories/metadata/read"
-    ],
-    "NotDataActions": [],  
     "AssignableScopes": [
         "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65"
     ]
