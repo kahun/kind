@@ -286,11 +286,14 @@ def cluster_operator(kubeconfig, helm_repo, provider, credentials, cluster_name,
 
         # Upgrade cluster-operator
         print("[INFO] Upgrading Cluster Operator " + CLUSTER_OPERATOR + ":", end =" ", flush=True)
-        command = (helm + " -n kube-system upgrade cluster-operator cluster-operator" +
-            " --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
+        command = (helm + " -n kube-system upgrade cluster-operator")
+        if "oci" in helm_repo["url"]:
+            command += " " + helm_repo["url"] + "/cluster-operator"
+        else:
+            command += " cluster-operator --repo " + helm_repo["url"]
+        command += (" --wait --version " + CLUSTER_OPERATOR + " --values ./clusteroperator.values" +
             " --set provider=" + provider +
-            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR +
-            " --repo " + helm_repo["url"])
+            " --set app.containers.controllerManager.image.tag=" + CLUSTER_OPERATOR)
         if "user" in helm_repo:
             command += " --username=" + helm_repo["user"]
             command += " --password=" + helm_repo["pass"]

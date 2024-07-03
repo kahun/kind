@@ -8,6 +8,7 @@
 +
 For automated provisioning in AWS/EKS, it is necessary to execute actions on various AWS services such as EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. While the use or lack of use of these actions will depend on the type of installation, the provider validates that the indicated user has these permissions to run normally.
 +
+** xref:attachment$stratio-aws-unmanaged-policy.json[Download temporary permissions for AWS unmanaged].
 ** xref:attachment$stratio-eks-policy.json[Download permanent permissions for EKS].
 ** xref:attachment$stratio-aws-temp-policy.json[Download temporary permissions for EKS and AWS unmanaged].
 +

@@ -381,6 +381,38 @@ By default, a _StorageClass_ with the name "keos" is made available for block di
 
 NOTE: Note that _PersistentVolumes_ created from this _StorageClass_ will have an affinity to the area where they have been consumed.
 
+From the cluster descriptor it is possible to indicate the encryption key, the class of disks or free parameters.
+
+*Example with basic options:*
+
+[source,bash]
+----
+spec:
+  infra_provider: aws
+  storageclass:
+    encryption_key: <my_simm_key>
+    class: premium
+----
+
+The `class` parameter can be _premium_ or _standard_, this will depend on the cloud provider:
+
+[.center,cols=“1,2,2”,width=70%,center]
+|===
+^|Provider ^|Standard class ^|Premium class
+
+^|AWS
+^|gp3
+^|io2 (64k IOPS)
+
+^|GCP
+^|pd-standard
+^|pd-ssd
+
+^|Azure
+^|StandardSSD_LRS
+^|Premium_LRS
+|===
+
 *Example with free parameters:*
 
 [source,bash]

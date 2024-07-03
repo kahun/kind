@@ -329,7 +329,7 @@ Dado que los _pods_ pueden impersonar al nodo donde se ejecutan simplemente inte
 
 A su vez, en EKS se habilita el proveedor OIDC para permitir el uso de roles de IAM para _Service Accounts_, asegurando el uso de políticas IAM con mínimos privilegios.
 
-=== Acceso al _endpoint_ del _API Server_
+=== Acceso al _endpoint_ del API Server
 
 ==== EKS
 
