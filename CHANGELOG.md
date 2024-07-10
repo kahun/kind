@@ -2,7 +2,6 @@
 
 ## 0.17.0-0.4.1 (upcoming)
 
-* [Core] Improve command execution retries.
 * [Core] Fix panic when keos_version is not defined
 
 ## 0.17.0-0.4.0 (2024-03-06)
