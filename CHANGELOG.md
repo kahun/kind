@@ -21,6 +21,8 @@
 * [Core] Added default retrieval of the latest cluster-operator helm chart.
 * [Core] Override the cluster-operator chart and image versions in clusterconfig
 * [AWS][EKS] Support aws load balancer controller manager (optional)
+* [Core] Enable OCI during upgrade
+* [Core] Enabled min_size to be set to zero during upgrade
 
 ## 0.17.0-0.3.7 (2024-01-31)
 
